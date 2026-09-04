@@ -1,0 +1,28 @@
+{
+  "app_title": "Medrese — University Management",
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Incorrect username or password"
+  },
+  "nav": {
+    "teachers": "Teachers",
+    "schedule": "Schedule",
+    "logout": "Log out"
+  },
+  "teachers": {
+    "title": "Teachers",
+    "full_name": "Full name",
+    "department": "Department",
+    "degree": "Academic degree",
+    "phone": "Phone"
+  },
+  "schedule": {
+    "title": "My schedule",
+    "day": "Day",
+    "time": "Time",
+    "room": "Room"
+  }
+}

@@ -1,0 +1,91 @@
+from datetime import date, time
+
+from sqlalchemy.orm import Session
+
+from app.core.security import hash_password
+from app.models.assignment import TeachingAssignment
+from app.models.department import Department
+from app.models.enums import HourType, UserRole
+from app.models.faculty import Faculty
+from app.models.group import Group
+from app.models.room import Room
+from app.models.semester import Semester
+from app.models.subject import Subject
+from app.models.teacher import TeacherProfile
+from app.models.timeslot import TimeSlot
+from app.models.user import User
+
+
+def make_department(db: Session, name: str = "Theology") -> Department:
+    faculty = Faculty(name=f"Faculty of {name}")
+    db.add(faculty)
+    db.flush()
+    department = Department(name=name, faculty_id=faculty.id)
+    db.add(department)
+    db.flush()
+    return department
+
+
+def make_teacher(db: Session, department: Department, username: str = "teacher1") -> TeacherProfile:
+    user = User(username=username, hashed_password=hash_password("password"), role=UserRole.TEACHER)
+    db.add(user)
+    db.flush()
+    teacher = TeacherProfile(user_id=user.id, department_id=department.id, full_name=username)
+    db.add(teacher)
+    db.flush()
+    return teacher
+
+
+def make_subject(db: Session, department: Department, code: str = "MTH101") -> Subject:
+    subject = Subject(name="Mathematics", code=code, department_id=department.id, lecture_hours=30)
+    db.add(subject)
+    db.flush()
+    return subject
+
+
+def make_group(db: Session, department: Department, name: str = "G-101") -> Group:
+    group = Group(name=name, specialty="Theology", course_year=1, department_id=department.id)
+    db.add(group)
+    db.flush()
+    return group
+
+
+def make_semester(db: Session, name: str = "2026 Fall") -> Semester:
+    semester = Semester(name=name, start_date=date(2026, 9, 1), end_date=date(2026, 12, 31), is_active=True)
+    db.add(semester)
+    db.flush()
+    return semester
+
+
+def make_room(db: Session, name: str = "101") -> Room:
+    room = Room(name=name, building="Main")
+    db.add(room)
+    db.flush()
+    return room
+
+
+def make_time_slot(db: Session, order: int = 1) -> TimeSlot:
+    slot = TimeSlot(order=order, start_time=time(8, 0), end_time=time(8, 50))
+    db.add(slot)
+    db.flush()
+    return slot
+
+
+def make_assignment(
+    db: Session,
+    teacher: TeacherProfile,
+    subject: Subject,
+    group: Group,
+    semester: Semester,
+    hour_type: HourType = HourType.LECTURE,
+) -> TeachingAssignment:
+    assignment = TeachingAssignment(
+        teacher_id=teacher.id,
+        subject_id=subject.id,
+        group_id=group.id,
+        semester_id=semester.id,
+        hour_type=hour_type,
+    )
+    db.add(assignment)
+    db.flush()
+    return assignment
