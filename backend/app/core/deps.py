@@ -55,14 +55,9 @@ def assert_department_access(current_user: User, department_id: int) -> None:
 
 
 def accessible_department_ids(current_user: User) -> Iterable[int] | None:
-    """Returns None if the user can see all departments (RECTOR), otherwise a list of ids they may see.
-    A TEACHER may read (not write) their own department's reference data — they need
-    subject/group names to make sense of their own assignments and timetable.
-    """
+    """Returns None if the user can see all departments (RECTOR), otherwise a list of ids they may see."""
     if current_user.role == UserRole.RECTOR:
         return None
     if current_user.role == UserRole.DEAN and current_user.headed_department is not None:
         return [current_user.headed_department.id]
-    if current_user.role == UserRole.TEACHER and current_user.teacher_profile is not None:
-        return [current_user.teacher_profile.department_id]
     return []

@@ -29,16 +29,10 @@ def list_assignments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[TeachingAssignment]:
+    dept_ids = accessible_department_ids(current_user)
     stmt = select(TeachingAssignment)
-    if current_user.role == UserRole.TEACHER:
-        teacher = db.scalar(select(TeacherProfile).where(TeacherProfile.user_id == current_user.id))
-        if teacher is None:
-            return []
-        stmt = stmt.where(TeachingAssignment.teacher_id == teacher.id)
-    else:
-        dept_ids = accessible_department_ids(current_user)
-        if dept_ids is not None:
-            stmt = stmt.join(TeacherProfile).where(TeacherProfile.department_id.in_(dept_ids))
+    if dept_ids is not None:
+        stmt = stmt.join(TeacherProfile).where(TeacherProfile.department_id.in_(dept_ids))
     if semester_id is not None:
         stmt = stmt.where(TeachingAssignment.semester_id == semester_id)
     return list(db.scalars(stmt).all())

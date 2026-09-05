@@ -11,19 +11,13 @@ i18n
   .use(initReactI18next)
   .init({
     resources: {
-      ky: { translation: ky },
-      ru: { translation: ru },
       en: { translation: en },
+      ru: { translation: ru },
+      ky: { translation: ky },
     },
-    fallbackLng: "ky",
-    supportedLngs: ["ky", "ru", "en"],
+    fallbackLng: "ru",
+    supportedLngs: ["en", "ru", "ky"],
     interpolation: { escapeValue: false },
-    detection: {
-      // Only remember an explicit user choice — new visitors always start in Kyrgyz,
-      // regardless of browser locale (the primary language per design spec).
-      order: ["localStorage"],
-      caches: ["localStorage"],
-    },
   });
 
 export default i18n;

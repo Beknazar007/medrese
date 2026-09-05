@@ -2,40 +2,26 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import AdminLayout from "./AdminLayout";
 import { AuthProvider } from "./context/AuthContext";
+import Layout from "./Layout";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./ProtectedRoute";
-import RoleRoute, { roleHome } from "./RoleRoute";
-import { useAuth } from "./context/AuthContext";
-
-import TeacherAppPage from "./pages/teacher/TeacherAppPage";
-
-import DeanTeachersPage from "./pages/dean/DeanTeachersPage";
-import DeanAssignmentsPage from "./pages/dean/DeanAssignmentsPage";
-import DeanSchedulePage from "./pages/dean/DeanSchedulePage";
-import DeanLayout from "./pages/dean/DeanLayout";
-
-import RectorDashboardPage from "./pages/rector/RectorDashboardPage";
-
-import FacultiesPage from "./pages/FacultiesPage";
+import RoleRoute from "./RoleRoute";
+import AssignmentsPage from "./pages/AssignmentsPage";
+import DashboardPage from "./pages/DashboardPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
-import UsersPage from "./pages/UsersPage";
-import SubjectsPage from "./pages/SubjectsPage";
+import FacultiesPage from "./pages/FacultiesPage";
 import GroupsPage from "./pages/GroupsPage";
-import SemestersPage from "./pages/SemestersPage";
 import RoomsPage from "./pages/RoomsPage";
-import TimeSlotsPage from "./pages/TimeSlotsPage";
+import ScheduleGridPage from "./pages/ScheduleGridPage";
+import SemestersPage from "./pages/SemestersPage";
+import SubjectsPage from "./pages/SubjectsPage";
 import TeachersPage from "./pages/TeachersPage";
-
+import TimeSlotsPage from "./pages/TimeSlotsPage";
+import UsersPage from "./pages/UsersPage";
 import { theme } from "./theme";
 
 const queryClient = new QueryClient();
-
-function DefaultRedirect() {
-  const { user } = useAuth();
-  return <Navigate to={user ? roleHome(user.role) : "/login"} replace />;
-}
 
 export default function App() {
   return (
@@ -46,52 +32,23 @@ export default function App() {
           <Router>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-
-              <Route
-                path="/teacher"
-                element={
-                  <ProtectedRoute>
-                    <RoleRoute roles={["TEACHER"]}>
-                      <TeacherAppPage />
-                    </RoleRoute>
-                  </ProtectedRoute>
-                }
-              />
-
               <Route
                 element={
                   <ProtectedRoute>
-                    <RoleRoute roles={["DEAN"]}>
-                      <DeanLayout />
-                    </RoleRoute>
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/dean/teachers" element={<DeanTeachersPage />} />
-                <Route path="/dean/assignments" element={<DeanAssignmentsPage />} />
-                <Route path="/dean/schedule" element={<DeanSchedulePage />} />
-              </Route>
-
-              <Route
-                path="/rector"
-                element={
-                  <ProtectedRoute>
-                    <RoleRoute roles={["RECTOR"]}>
-                      <RectorDashboardPage />
-                    </RoleRoute>
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout />
+                    <Layout />
                   </ProtectedRoute>
                 }
               >
                 <Route
-                  path="/admin/faculties"
+                  path="/dashboard"
+                  element={
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
+                      <DashboardPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/faculties"
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <FacultiesPage />
@@ -99,7 +56,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/departments"
+                  path="/departments"
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <DepartmentsPage />
@@ -107,7 +64,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/users"
+                  path="/users"
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <UsersPage />
@@ -115,15 +72,15 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/teachers"
+                  path="/teachers"
                   element={
-                    <RoleRoute roles={["RECTOR"]}>
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <TeachersPage />
                     </RoleRoute>
                   }
                 />
                 <Route
-                  path="/admin/subjects"
+                  path="/subjects"
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <SubjectsPage />
@@ -131,7 +88,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/groups"
+                  path="/groups"
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <GroupsPage />
@@ -139,7 +96,15 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/semesters"
+                  path="/assignments"
+                  element={
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
+                      <AssignmentsPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/semesters"
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <SemestersPage />
@@ -147,7 +112,7 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/rooms"
+                  path="/rooms"
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <RoomsPage />
@@ -155,16 +120,16 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/admin/timeslots"
+                  path="/timeslots"
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <TimeSlotsPage />
                     </RoleRoute>
                   }
                 />
+                <Route path="/schedule" element={<ScheduleGridPage />} />
+                <Route path="*" element={<Navigate to="/schedule" replace />} />
               </Route>
-
-              <Route path="*" element={<DefaultRedirect />} />
             </Routes>
           </Router>
         </AuthProvider>

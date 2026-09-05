@@ -64,8 +64,6 @@ export const usersApi = {
 export const teachersApi = {
   list: async (): Promise<import("./types").Teacher[]> =>
     (await api.get<import("./types").Teacher[]>("/teachers")).data,
-  me: async (): Promise<import("./types").Teacher> =>
-    (await api.get<import("./types").Teacher>("/teachers/me")).data,
   create: async (payload: Record<string, unknown>) => (await api.post("/teachers", payload)).data,
   update: async (id: number, payload: Record<string, unknown>) => (await api.patch(`/teachers/${id}`, payload)).data,
   remove: async (id: number): Promise<void> => {
@@ -78,15 +76,4 @@ export const dashboardApi = {
     (await api.get<TeacherWorkload[]>("/dashboard/workload", { params: { semester_id } })).data,
   unassignedSubjects: async (semester_id: number): Promise<Subject[]> =>
     (await api.get<Subject[]>("/dashboard/unassigned-subjects", { params: { semester_id } })).data,
-  groupCoverage: async (semester_id: number): Promise<GroupCoverage[]> =>
-    (await api.get<GroupCoverage[]>("/dashboard/group-coverage", { params: { semester_id } })).data,
 };
-
-export interface GroupCoverage {
-  group_id: number;
-  group_name: string;
-  department_id: number;
-  assignment_count: number;
-  scheduled_assignment_count: number;
-  coverage_percent: number;
-}
