@@ -30,6 +30,17 @@ def list_teachers(
     return list(db.scalars(stmt).all())
 
 
+@router.get("/me", response_model=TeacherOut)
+def get_my_teacher_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TeacherProfile:
+    teacher = db.scalar(select(TeacherProfile).where(TeacherProfile.user_id == current_user.id))
+    if teacher is None:
+        raise HTTPException(status_code=404, detail="No teacher profile for this account")
+    return teacher
+
+
 @router.get("/{teacher_id}", response_model=TeacherOut)
 def get_teacher(
     teacher_id: int,

@@ -5,7 +5,7 @@ from app.core.deps import require_role
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
-from app.services.workload import teacher_workload, unassigned_subjects
+from app.services.workload import group_coverage, teacher_workload, unassigned_subjects
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -34,3 +34,16 @@ def get_unassigned_subjects(
         department_id = current_user.headed_department.id
 
     return unassigned_subjects(db, semester_id=semester_id, department_id=department_id)
+
+
+@router.get("/group-coverage")
+def get_group_coverage(
+    semester_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.RECTOR, UserRole.DEAN)),
+):
+    department_id = None
+    if current_user.role == UserRole.DEAN and current_user.headed_department is not None:
+        department_id = current_user.headed_department.id
+
+    return group_coverage(db, semester_id=semester_id, department_id=department_id)

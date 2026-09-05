@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.assignment import TeachingAssignment
+from app.models.group import Group
 from app.models.schedule import ScheduleEntry
 from app.models.subject import Subject
 from app.models.teacher import TeacherProfile
@@ -72,3 +73,65 @@ def unassigned_subjects(db: Session, *, semester_id: int, department_id: int | N
     if department_id is not None:
         stmt = stmt.where(Subject.department_id == department_id)
     return list(db.scalars(stmt).all())
+
+
+@dataclass
+class GroupCoverage:
+    group_id: int
+    group_name: str
+    department_id: int
+    assignment_count: int
+    scheduled_assignment_count: int
+    coverage_percent: int
+
+
+def group_coverage(db: Session, *, semester_id: int, department_id: int | None = None) -> list[GroupCoverage]:
+    """Per-group timetable completeness: what share of a group's TeachingAssignments
+    in this semester have at least one ScheduleEntry placed on the timetable.
+    """
+    assignment_counts = (
+        select(TeachingAssignment.group_id, func.count(TeachingAssignment.id).label("count"))
+        .where(TeachingAssignment.semester_id == semester_id)
+        .group_by(TeachingAssignment.group_id)
+        .subquery()
+    )
+    scheduled_assignment_counts = (
+        select(
+            TeachingAssignment.group_id,
+            func.count(func.distinct(ScheduleEntry.assignment_id)).label("count"),
+        )
+        .join(ScheduleEntry, ScheduleEntry.assignment_id == TeachingAssignment.id)
+        .where(TeachingAssignment.semester_id == semester_id)
+        .group_by(TeachingAssignment.group_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(
+            Group.id,
+            Group.name,
+            Group.department_id,
+            func.coalesce(assignment_counts.c.count, 0),
+            func.coalesce(scheduled_assignment_counts.c.count, 0),
+        )
+        .outerjoin(assignment_counts, assignment_counts.c.group_id == Group.id)
+        .outerjoin(scheduled_assignment_counts, scheduled_assignment_counts.c.group_id == Group.id)
+    )
+    if department_id is not None:
+        stmt = stmt.where(Group.department_id == department_id)
+
+    results = []
+    for row in db.execute(stmt).all():
+        total, done = row[3], row[4]
+        percent = round((done / total) * 100) if total > 0 else 0
+        results.append(
+            GroupCoverage(
+                group_id=row[0],
+                group_name=row[1],
+                department_id=row[2],
+                assignment_count=total,
+                scheduled_assignment_count=done,
+                coverage_percent=percent,
+            )
+        )
+    return results

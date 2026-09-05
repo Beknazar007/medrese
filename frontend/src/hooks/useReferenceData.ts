@@ -42,6 +42,13 @@ export function useTimeSlots() {
   return useQuery({ queryKey: ["timeslots"], queryFn: () => timeSlotsApi.list() });
 }
 
+/** The semester in use across the app: whichever is marked active, else the most recent. */
+export function useActiveSemester() {
+  const { data: semesters, ...rest } = useSemesters();
+  const active = semesters?.find((s) => s.is_active) ?? semesters?.[semesters.length - 1];
+  return { activeSemester: active, semesters, ...rest };
+}
+
 export function nameById<T extends { id: number }>(
   items: T[] | undefined,
   id: number,
