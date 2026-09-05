@@ -5,6 +5,7 @@ import {
   groupsApi,
   roomsApi,
   semestersApi,
+  studentsApi,
   subjectsApi,
   teachersApi,
   timeSlotsApi,
@@ -40,6 +41,10 @@ export function useRooms() {
 
 export function useTimeSlots() {
   return useQuery({ queryKey: ["timeslots"], queryFn: () => timeSlotsApi.list() });
+}
+
+export function useStudents(params?: Record<string, unknown>) {
+  return useQuery({ queryKey: ["students", params], queryFn: () => studentsApi.list(params) });
 }
 
 export function nameById<T extends { id: number }>(

@@ -1,11 +1,16 @@
 import { api } from "./client";
 import type {
+  AttendanceStatus,
   Department,
   Faculty,
   Group,
+  LessonSessionDetail,
   Room,
   ScheduleEntry,
   Semester,
+  Student,
+  StudentNote,
+  StudentPerformanceRow,
   Subject,
   TeacherWorkload,
   TeachingAssignment,
@@ -64,6 +69,8 @@ export const usersApi = {
 export const teachersApi = {
   list: async (): Promise<import("./types").Teacher[]> =>
     (await api.get<import("./types").Teacher[]>("/teachers")).data,
+  me: async (): Promise<import("./types").Teacher> =>
+    (await api.get<import("./types").Teacher>("/teachers/me")).data,
   create: async (payload: Record<string, unknown>) => (await api.post("/teachers", payload)).data,
   update: async (id: number, payload: Record<string, unknown>) => (await api.patch(`/teachers/${id}`, payload)).data,
   remove: async (id: number): Promise<void> => {
@@ -76,4 +83,36 @@ export const dashboardApi = {
     (await api.get<TeacherWorkload[]>("/dashboard/workload", { params: { semester_id } })).data,
   unassignedSubjects: async (semester_id: number): Promise<Subject[]> =>
     (await api.get<Subject[]>("/dashboard/unassigned-subjects", { params: { semester_id } })).data,
+};
+
+export const studentsApi = crud<Student>("/students");
+
+export const journalApi = {
+  getOrCreateSession: async (schedule_entry_id: number, date: string): Promise<LessonSessionDetail> =>
+    (await api.post<LessonSessionDetail>("/journal/sessions", { schedule_entry_id, date })).data,
+  getSession: async (sessionId: number): Promise<LessonSessionDetail> =>
+    (await api.get<LessonSessionDetail>(`/journal/sessions/${sessionId}`)).data,
+  listSessions: async (schedule_entry_id: number) =>
+    (await api.get<import("./types").LessonSession[]>("/journal/sessions", { params: { schedule_entry_id } })).data,
+  putAttendance: async (
+    sessionId: number,
+    records: { student_id: number; status: AttendanceStatus }[],
+  ): Promise<LessonSessionDetail> =>
+    (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/attendance`, { records })).data,
+  putGrades: async (sessionId: number, records: { student_id: number; score: number }[]): Promise<LessonSessionDetail> =>
+    (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/grades`, { records })).data,
+  performance: async (assignment_id: number): Promise<StudentPerformanceRow[]> =>
+    (await api.get<StudentPerformanceRow[]>("/journal/performance", { params: { assignment_id } })).data,
+};
+
+export const notesApi = {
+  list: async (studentId: number): Promise<StudentNote[]> =>
+    (await api.get<StudentNote[]>(`/students/${studentId}/notes`)).data,
+  create: async (
+    studentId: number,
+    payload: { body: string; visibility: "PRIVATE" | "SHARED" },
+  ): Promise<StudentNote> => (await api.post<StudentNote>(`/students/${studentId}/notes`, payload)).data,
+  remove: async (noteId: number): Promise<void> => {
+    await api.delete(`/notes/${noteId}`);
+  },
 };

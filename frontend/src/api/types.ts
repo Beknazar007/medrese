@@ -101,3 +101,59 @@ export interface TeacherWorkload {
   assignment_count: number;
   weekly_scheduled_periods: number;
 }
+
+export interface Student {
+  id: number;
+  full_name: string;
+  group_id: number;
+  student_number: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  address: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  enrollment_date: string | null;
+  is_active: boolean;
+}
+
+export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+export type NoteVisibility = "PRIVATE" | "SHARED";
+
+export interface LessonSession {
+  id: number;
+  schedule_entry_id: number;
+  date: string;
+}
+
+export interface RosterStudent {
+  student_id: number;
+  full_name: string;
+  student_number: string | null;
+  attendance_status: AttendanceStatus | null;
+  score: number | null;
+}
+
+export interface LessonSessionDetail {
+  session: LessonSession;
+  roster: RosterStudent[];
+}
+
+export interface StudentPerformanceRow {
+  student_id: number;
+  full_name: string;
+  average_score: number | null;
+  sessions_count: number;
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+}
+
+export interface StudentNote {
+  id: number;
+  student_id: number;
+  author_teacher_id: number;
+  body: string;
+  visibility: NoteVisibility;
+  created_at: string;
+}

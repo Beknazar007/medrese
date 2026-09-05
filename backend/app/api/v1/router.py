@@ -7,9 +7,12 @@ from app.api.v1 import (
     departments,
     faculties,
     groups,
+    journal,
+    notes,
     rooms,
     schedule,
     semesters,
+    students,
     subjects,
     teachers,
     timeslots,
@@ -30,3 +33,6 @@ api_router.include_router(timeslots.router)
 api_router.include_router(assignments.router)
 api_router.include_router(schedule.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(students.router)
+api_router.include_router(journal.router)
+api_router.include_router(notes.router)

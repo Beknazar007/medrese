@@ -5,8 +5,6 @@ from app.db.base import Base
 
 
 class Group(Base):
-    """Student group placeholder — no Student entity yet; Students will FK into this later."""
-
     __tablename__ = "groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -17,3 +15,4 @@ class Group(Base):
 
     department: Mapped["Department"] = relationship(back_populates="groups")
     assignments: Mapped[list["TeachingAssignment"]] = relationship(back_populates="group")
+    students: Mapped[list["Student"]] = relationship(back_populates="group")

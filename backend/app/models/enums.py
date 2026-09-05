@@ -21,3 +21,15 @@ class DayOfWeek(int, enum.Enum):
     FRIDAY = 5
     SATURDAY = 6
     SUNDAY = 7
+
+
+class AttendanceStatus(str, enum.Enum):
+    PRESENT = "PRESENT"
+    ABSENT = "ABSENT"
+    LATE = "LATE"
+    EXCUSED = "EXCUSED"
+
+
+class NoteVisibility(str, enum.Enum):
+    PRIVATE = "PRIVATE"
+    SHARED = "SHARED"

@@ -15,8 +15,10 @@ import GroupsPage from "./pages/GroupsPage";
 import RoomsPage from "./pages/RoomsPage";
 import ScheduleGridPage from "./pages/ScheduleGridPage";
 import SemestersPage from "./pages/SemestersPage";
+import StudentsPage from "./pages/StudentsPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TeachersPage from "./pages/TeachersPage";
+import TeacherClassPage from "./pages/teacher/TeacherClassPage";
 import TimeSlotsPage from "./pages/TimeSlotsPage";
 import UsersPage from "./pages/UsersPage";
 import { theme } from "./theme";
@@ -124,6 +126,22 @@ export default function App() {
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <TimeSlotsPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/students"
+                  element={
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
+                      <StudentsPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/my-class"
+                  element={
+                    <RoleRoute roles={["TEACHER"]}>
+                      <TeacherClassPage />
                     </RoleRoute>
                   }
                 />

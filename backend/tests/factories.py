@@ -5,11 +5,13 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.models.assignment import TeachingAssignment
 from app.models.department import Department
-from app.models.enums import HourType, UserRole
+from app.models.enums import DayOfWeek, HourType, UserRole
 from app.models.faculty import Faculty
 from app.models.group import Group
 from app.models.room import Room
+from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
+from app.models.student import Student
 from app.models.subject import Subject
 from app.models.teacher import TeacherProfile
 from app.models.timeslot import TimeSlot
@@ -89,3 +91,31 @@ def make_assignment(
     db.add(assignment)
     db.flush()
     return assignment
+
+
+def make_student(db: Session, group: Group, full_name: str = "Student One") -> Student:
+    student = Student(full_name=full_name, group_id=group.id)
+    db.add(student)
+    db.flush()
+    return student
+
+
+def make_schedule_entry(
+    db: Session,
+    assignment: TeachingAssignment,
+    room: Room,
+    time_slot: TimeSlot,
+    day_of_week: DayOfWeek = DayOfWeek.MONDAY,
+) -> ScheduleEntry:
+    entry = ScheduleEntry(
+        assignment_id=assignment.id,
+        semester_id=assignment.semester_id,
+        teacher_id=assignment.teacher_id,
+        group_id=assignment.group_id,
+        room_id=room.id,
+        time_slot_id=time_slot.id,
+        day_of_week=day_of_week,
+    )
+    db.add(entry)
+    db.flush()
+    return entry

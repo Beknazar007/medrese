@@ -9,6 +9,8 @@ import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import SchoolIcon from "@mui/icons-material/School";
+import ClassIcon from "@mui/icons-material/Class";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import {
@@ -71,6 +73,7 @@ export default function Layout() {
       { to: "/teachers", label: t("nav.teachers"), icon: <PeopleIcon /> },
       { to: "/subjects", label: t("nav.subjects"), icon: <MenuBookIcon /> },
       { to: "/groups", label: t("nav.groups"), icon: <GroupsIcon /> },
+      { to: "/students", label: t("nav.students"), icon: <SchoolIcon /> },
       { to: "/assignments", label: t("nav.assignments"), icon: <AssignmentIcon /> },
     );
   }
@@ -80,6 +83,9 @@ export default function Layout() {
       { to: "/rooms", label: t("nav.rooms"), icon: <MeetingRoomIcon /> },
       { to: "/timeslots", label: t("nav.timeslots"), icon: <EventNoteIcon /> },
     );
+  }
+  if (user?.role === "TEACHER") {
+    navItems.push({ to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> });
   }
   navItems.push({ to: "/schedule", label: t("nav.schedule"), icon: <EventNoteIcon /> });
 
