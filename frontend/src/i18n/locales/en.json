@@ -8,21 +8,187 @@
     "error": "Incorrect username or password"
   },
   "nav": {
+    "dashboard": "Dashboard",
+    "faculties": "Faculties",
+    "departments": "Departments",
+    "admin_accounts": "Admin accounts",
     "teachers": "Teachers",
+    "subjects": "Subjects",
+    "groups": "Groups",
+    "assignments": "Assignments",
+    "semesters": "Semesters",
+    "rooms": "Rooms",
+    "timeslots": "Time slots",
     "schedule": "Schedule",
     "logout": "Log out"
+  },
+  "common": {
+    "add": "Add",
+    "edit_title": "Edit: {{title}}",
+    "new_title": "New: {{title}}",
+    "save": "Save",
+    "cancel": "Cancel",
+    "actions": "Actions",
+    "confirm_delete": "Delete this record?",
+    "failed_to_load": "Failed to load data",
+    "no_records": "No records yet",
+    "created": "Created",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "failed_to_create": "Failed to create",
+    "failed_to_save": "Failed to save",
+    "failed_to_delete": "Failed to delete",
+    "yes": "Yes",
+    "no": "No",
+    "not_assigned": "— not assigned —",
+    "select_semester": "Semester",
+    "active_prefix": "Active:",
+    "all_semesters": "All semesters",
+    "all_groups": "All groups",
+    "group_filter": "Group filter",
+    "pick_semester": "Select a semester",
+    "close": "Close",
+    "remove": "Remove"
+  },
+  "days": {
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat",
+    "7": "Sun"
+  },
+  "hour_type": {
+    "LECTURE": "Lecture",
+    "PRACTICE": "Practice",
+    "LAB": "Lab"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "pick_semester_hint": "Pick a semester to see workload and coverage.",
+    "no_teachers": "No teachers found for this scope.",
+    "teacher_workload": "Teacher workload",
+    "col_teacher": "Teacher",
+    "col_department": "Department",
+    "col_assignments": "Assignments",
+    "col_placed": "Placed on timetable",
+    "col_gap": "Gap",
+    "unassigned_subjects": "Subjects with no teacher assigned",
+    "all_assigned": "Every subject has a teacher assigned this semester.",
+    "col_subject": "Subject",
+    "col_code": "Code"
+  },
+  "faculties": {
+    "title": "Faculties",
+    "name": "Name",
+    "empty_hint": "No faculties yet. Rector can add one."
+  },
+  "departments": {
+    "title": "Departments",
+    "name": "Name",
+    "faculty": "Faculty",
+    "dean": "Dean",
+    "empty_hint": "No departments yet. Rector can add one (pick a faculty first)."
+  },
+  "users": {
+    "title": "Admin accounts (Rector / Dean)",
+    "username": "Username",
+    "email": "Email",
+    "role": "Role",
+    "role_dean": "Dean",
+    "role_rector": "Rector",
+    "password": "Password",
+    "empty_hint": "No admin accounts yet besides yourself."
   },
   "teachers": {
     "title": "Teachers",
     "full_name": "Full name",
     "department": "Department",
     "degree": "Academic degree",
-    "phone": "Phone"
+    "phone": "Phone",
+    "hired": "Hired",
+    "username_label": "Username (login)",
+    "password_label": "Password",
+    "email": "Email",
+    "bio": "Bio",
+    "empty_hint": "No teachers yet. Add the first one."
+  },
+  "subjects": {
+    "title": "Subjects",
+    "name": "Name",
+    "code": "Code",
+    "department": "Department",
+    "lecture_hours": "Lecture hours",
+    "practice_hours": "Practice hours",
+    "lab_hours": "Lab hours",
+    "empty_hint": "No subjects yet. Add the first one."
+  },
+  "groups": {
+    "title": "Groups",
+    "name": "Name",
+    "specialty": "Specialty",
+    "course_year": "Course year",
+    "department": "Department",
+    "empty_hint": "No groups yet — placeholders for future students. Add the first one."
+  },
+  "semesters": {
+    "title": "Semesters",
+    "name": "Name",
+    "start": "Start",
+    "end": "End",
+    "active": "Active",
+    "empty_hint": "No semesters yet. Rector can add one."
+  },
+  "rooms": {
+    "title": "Rooms",
+    "name": "Name",
+    "building": "Building",
+    "capacity": "Capacity",
+    "empty_hint": "No rooms yet. Rector can add one."
+  },
+  "timeslots": {
+    "title": "Time slots",
+    "order": "Period #",
+    "start": "Start",
+    "end": "End",
+    "empty_hint": "No time slots yet. Rector can add one (e.g. period 1 = 08:00-08:50)."
+  },
+  "assignments": {
+    "title": "Assignments",
+    "filter_semester": "Filter by semester",
+    "col_teacher": "Teacher",
+    "col_subject": "Subject",
+    "col_group": "Group",
+    "col_semester": "Semester",
+    "col_type": "Type",
+    "col_department": "Department",
+    "field_teacher": "Teacher",
+    "field_subject": "Subject",
+    "field_group": "Group",
+    "field_semester": "Semester",
+    "field_type": "Hour type",
+    "empty_hint": "No teaching assignments yet — assign a teacher to a subject+group+semester first, then build the timetable."
   },
   "schedule": {
-    "title": "My schedule",
-    "day": "Day",
-    "time": "Time",
-    "room": "Room"
+    "title": "Schedule",
+    "period": "Period",
+    "no_timeslots": "No time slots defined yet — ask the Rector to add periods first.",
+    "add_hint": "+ add",
+    "entry_title": "Schedule entry",
+    "add_title": "Add to timetable",
+    "period_label": " period",
+    "field_subject": "Subject:",
+    "field_teacher": "Teacher:",
+    "field_group": "Group:",
+    "field_room": "Room:",
+    "field_department": "Department:",
+    "pick_assignment": "Teaching assignment",
+    "pick_assignment_hint": "Teacher + subject + group for this semester",
+    "pick_room": "Room",
+    "added": "Added to timetable",
+    "add_failed": "Could not add — check conflicts",
+    "removed": "Removed",
+    "remove_failed": "Could not remove"
   }
 }

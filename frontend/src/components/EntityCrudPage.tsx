@@ -23,9 +23,12 @@ import {
   TableRow,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiErrorMessage } from "../lib/errors";
 
 export type FieldType = "text" | "number" | "select" | "date" | "time" | "checkbox";
@@ -82,6 +85,9 @@ export default function EntityCrudPage<T extends { id: number }>({
   extraToolbar,
   emptyHint,
 }: Props<T>) {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: [...queryKey, listParams],
@@ -118,29 +124,29 @@ export default function EntityCrudPage<T extends { id: number }>({
     mutationFn: (payload: Record<string, unknown>) => api.create!(payload),
     onSuccess: () => {
       invalidate();
-      setSnackbar("Created");
+      setSnackbar(t("common.created"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, "Failed to create")),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_create"))),
   });
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => api.update!(editingRow!.id, payload),
     onSuccess: () => {
       invalidate();
-      setSnackbar("Saved");
+      setSnackbar(t("common.saved"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, "Failed to save")),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_save"))),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.remove!(id),
     onSuccess: () => {
       invalidate();
-      setSnackbar("Deleted");
+      setSnackbar(t("common.deleted"));
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, "Failed to delete")),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"))),
   });
 
   function handleSubmit() {
@@ -167,44 +173,52 @@ export default function EntityCrudPage<T extends { id: number }>({
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
-        <Typography variant="h5">{title}</Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, gap: 1, flexWrap: "wrap" }}>
+        <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+          {title}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           {extraToolbar}
           {canCreate && api.create && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              Add
+              {t("common.add")}
             </Button>
           )}
         </Box>
       </Box>
 
-      {error && <Alert severity="error">Failed to load data</Alert>}
+      {error && <Alert severity="error">{t("common.failed_to_load")}</Alert>}
       {!isLoading && !error && data && data.length === 0 && (
-        <Alert severity="info">{emptyHint ?? "No records yet"}</Alert>
+        <Alert severity="info">{emptyHint ?? t("common.no_records")}</Alert>
       )}
 
       {data && data.length > 0 && (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
-                  <TableCell key={col.key}>{col.label}</TableCell>
+                  <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
+                    {col.label}
+                  </TableCell>
                 ))}
-                {(canEdit || canDelete) && <TableCell align="right">Actions</TableCell>}
+                {(canEdit || canDelete) && (
+                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                    {t("common.actions")}
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
               {data.map((row) => (
                 <TableRow key={row.id} hover>
                   {columns.map((col) => (
-                    <TableCell key={col.key}>
+                    <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
                       {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? "—")}
                     </TableCell>
                   ))}
                   {(canEdit || canDelete) && (
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                       {canEdit && api.update && (
                         <IconButton size="small" onClick={() => openEdit(row)}>
                           <EditIcon fontSize="small" />
@@ -214,7 +228,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                         <IconButton
                           size="small"
                           onClick={() => {
-                            if (confirm("Delete this record?")) deleteMutation.mutate(row.id);
+                            if (confirm(t("common.confirm_delete"))) deleteMutation.mutate(row.id);
                           }}
                         >
                           <DeleteIcon fontSize="small" />
@@ -229,8 +243,10 @@ export default function EntityCrudPage<T extends { id: number }>({
         </TableContainer>
       )}
 
-      <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{editingRow ? `Edit ${title}` : `New ${title}`}</DialogTitle>
+      <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth fullScreen={isMobile}>
+        <DialogTitle>
+          {editingRow ? t("common.edit_title", { title }) : t("common.new_title", { title })}
+        </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           {formError && <Alert severity="error">{formError}</Alert>}
           {fields.map((field) => {
@@ -288,9 +304,9 @@ export default function EntityCrudPage<T extends { id: number }>({
           })}
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDialog}>Cancel</Button>
+          <Button onClick={closeDialog}>{t("common.cancel")}</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={busy}>
-            Save
+            {t("common.save")}
           </Button>
         </DialogActions>
       </Dialog>

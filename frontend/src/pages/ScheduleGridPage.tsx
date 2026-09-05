@@ -18,29 +18,30 @@ import {
   TableRow,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { assignmentsApi, roomsApi, scheduleApi } from "../api/entities";
 import type { DayOfWeek, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../lib/errors";
 import { nameById, useDepartments, useGroups, useSemesters, useSubjects, useTeachers, useTimeSlots } from "../hooks/useReferenceData";
 
-const DAYS: { value: DayOfWeek; label: string }[] = [
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-  { value: 7, label: "Sun" },
-];
-
 export default function ScheduleGridPage() {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { user } = useAuth();
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const queryClient = useQueryClient();
+
+  const DAYS: { value: DayOfWeek; label: string }[] = [1, 2, 3, 4, 5, 6, 7].map((d) => ({
+    value: d as DayOfWeek,
+    label: t(`days.${d}`),
+  }));
 
   const { data: semesters } = useSemesters();
   const { data: timeSlots } = useTimeSlots();
@@ -95,20 +96,20 @@ export default function ScheduleGridPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      setSnackbar("Added to timetable");
+      setSnackbar(t("schedule.added"));
       setDialog(null);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, "Could not add — check conflicts")),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.add_failed"))),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => scheduleApi.remove(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
-      setSnackbar("Removed");
+      setSnackbar(t("schedule.removed"));
       setDialog(null);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, "Could not remove")),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"))),
   });
 
   function openCell(day: DayOfWeek, timeSlotId: number, entry: ScheduleEntry | null) {
@@ -120,7 +121,7 @@ export default function ScheduleGridPage() {
   function describeEntry(entry: ScheduleEntry) {
     const assignment = assignments?.find((a) => a.id === entry.assignment_id);
     const subjectName = assignment ? nameById(subjects, assignment.subject_id, (s) => s.name) : "";
-    const teacherName = nameById(teachers, entry.teacher_id, (t) => t.full_name);
+    const teacherName = nameById(teachers, entry.teacher_id, (t2) => t2.full_name);
     const groupName = nameById(groups, entry.group_id, (g) => g.name);
     const roomName = nameById(rooms, entry.room_id, (r) => r.name);
     return { subjectName, teacherName, groupName, roomName };
@@ -131,18 +132,20 @@ export default function ScheduleGridPage() {
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography variant="h5" sx={{ mr: 2 }}>
-          Schedule
+        <Typography variant="h5" sx={{ mr: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+          {t("schedule.title")}
         </Typography>
         <TextField
           select
           size="small"
-          label="Semester"
+          label={t("common.select_semester")}
           value={semesterId}
           onChange={(e) => setSemesterId(e.target.value === "" ? "" : Number(e.target.value))}
           sx={{ minWidth: 200 }}
         >
-          <MenuItem value="">{activeSemester ? `Active: ${activeSemester.name}` : "Select a semester"}</MenuItem>
+          <MenuItem value="">
+            {activeSemester ? `${t("common.active_prefix")} ${activeSemester.name}` : t("common.pick_semester")}
+          </MenuItem>
           {(semesters ?? []).map((s) => (
             <MenuItem key={s.id} value={s.id}>
               {s.name}
@@ -153,12 +156,12 @@ export default function ScheduleGridPage() {
           <TextField
             select
             size="small"
-            label="Group filter"
+            label={t("common.group_filter")}
             value={groupId}
             onChange={(e) => setGroupId(e.target.value === "" ? "" : Number(e.target.value))}
             sx={{ minWidth: 180 }}
           >
-            <MenuItem value="">All groups</MenuItem>
+            <MenuItem value="">{t("common.all_groups")}</MenuItem>
             {(groups ?? [])
               .filter((g) => user?.role === "RECTOR" || g.department_id === user?.headed_department_id)
               .map((g) => (
@@ -170,22 +173,20 @@ export default function ScheduleGridPage() {
         )}
       </Box>
 
-      {!effectiveSemesterId && user?.role !== "TEACHER" && (
-        <Alert severity="info">Pick a semester to view or build its timetable.</Alert>
-      )}
+      {!effectiveSemesterId && user?.role !== "TEACHER" && <Alert severity="info">{t("common.pick_semester")}</Alert>}
 
       {(effectiveSemesterId || user?.role === "TEACHER") && sortedSlots.length === 0 && (
-        <Alert severity="warning">No time slots defined yet — ask the Rector to add periods first.</Alert>
+        <Alert severity="warning">{t("schedule.no_timeslots")}</Alert>
       )}
 
       {(effectiveSemesterId || user?.role === "TEACHER") && sortedSlots.length > 0 && (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Period</TableCell>
+                <TableCell sx={{ whiteSpace: "nowrap" }}>{t("schedule.period")}</TableCell>
                 {DAYS.map((d) => (
-                  <TableCell key={d.value} align="center">
+                  <TableCell key={d.value} align="center" sx={{ whiteSpace: "nowrap" }}>
                     {d.label}
                   </TableCell>
                 ))}
@@ -194,7 +195,7 @@ export default function ScheduleGridPage() {
             <TableBody>
               {sortedSlots.map((slot) => (
                 <TableRow key={slot.id}>
-                  <TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>
                     <strong>{slot.order}</strong>
                     <br />
                     <Typography variant="caption" color="text.secondary">
@@ -232,7 +233,7 @@ export default function ScheduleGridPage() {
                         ) : (
                           canWrite && (
                             <Typography variant="caption" color="text.disabled">
-                              + add
+                              {t("schedule.add_hint")}
                             </Typography>
                           )
                         )}
@@ -246,25 +247,34 @@ export default function ScheduleGridPage() {
         </TableContainer>
       )}
 
-      <Dialog open={Boolean(dialog)} onClose={() => setDialog(null)} maxWidth="sm" fullWidth>
+      <Dialog open={Boolean(dialog)} onClose={() => setDialog(null)} maxWidth="sm" fullWidth fullScreen={isMobile}>
         <DialogTitle>
-          {dialog?.entry ? "Schedule entry" : "Add to timetable"} — {DAYS.find((d) => d.value === dialog?.day)?.label}
-          , period {sortedSlots.find((s) => s.id === dialog?.timeSlotId)?.order}
+          {dialog?.entry ? t("schedule.entry_title") : t("schedule.add_title")} —{" "}
+          {DAYS.find((d) => d.value === dialog?.day)?.label}, {sortedSlots.find((s) => s.id === dialog?.timeSlotId)?.order}
+          {t("schedule.period_label")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
           {dialog?.entry ? (
             (() => {
               const info = describeEntry(dialog.entry);
-              const dept = teachers?.find((t) => t.id === dialog.entry!.teacher_id)?.department_id;
+              const dept = teachers?.find((t2) => t2.id === dialog.entry!.teacher_id)?.department_id;
               return (
                 <Box>
-                  <Typography>Subject: {info.subjectName}</Typography>
-                  <Typography>Teacher: {info.teacherName}</Typography>
-                  <Typography>Group: {info.groupName}</Typography>
-                  <Typography>Room: {info.roomName}</Typography>
+                  <Typography>
+                    {t("schedule.field_subject")} {info.subjectName}
+                  </Typography>
+                  <Typography>
+                    {t("schedule.field_teacher")} {info.teacherName}
+                  </Typography>
+                  <Typography>
+                    {t("schedule.field_group")} {info.groupName}
+                  </Typography>
+                  <Typography>
+                    {t("schedule.field_room")} {info.roomName}
+                  </Typography>
                   {dept !== undefined && (
                     <Typography color="text.secondary">
-                      Department: {nameById(departments, dept, (d) => d.name)}
+                      {t("schedule.field_department")} {nameById(departments, dept, (d) => d.name)}
                     </Typography>
                   )}
                 </Box>
@@ -274,26 +284,26 @@ export default function ScheduleGridPage() {
             <>
               <TextField
                 select
-                label="Teaching assignment"
+                label={t("schedule.pick_assignment")}
                 value={assignmentId}
                 onChange={(e) => setAssignmentId(Number(e.target.value))}
                 required
-                helperText="Teacher + subject + group for this semester"
+                helperText={t("schedule.pick_assignment_hint")}
               >
                 {(assignments ?? []).map((a) => {
-                  const teacherName = nameById(teachers, a.teacher_id, (t) => t.full_name);
+                  const teacherName = nameById(teachers, a.teacher_id, (t2) => t2.full_name);
                   const subjectName = nameById(subjects, a.subject_id, (s) => s.name);
                   const groupName = nameById(groups, a.group_id, (g) => g.name);
                   return (
                     <MenuItem key={a.id} value={a.id}>
-                      {teacherName} — {subjectName} — {groupName} ({a.hour_type})
+                      {teacherName} — {subjectName} — {groupName} ({t(`hour_type.${a.hour_type}`)})
                     </MenuItem>
                   );
                 })}
               </TextField>
               <TextField
                 select
-                label="Room"
+                label={t("schedule.pick_room")}
                 value={roomId}
                 onChange={(e) => setRoomId(Number(e.target.value))}
                 required
@@ -308,10 +318,10 @@ export default function ScheduleGridPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialog(null)}>Close</Button>
+          <Button onClick={() => setDialog(null)}>{t("common.close")}</Button>
           {dialog?.entry && canWrite && (
             <Button color="error" onClick={() => deleteMutation.mutate(dialog.entry!.id)}>
-              Remove
+              {t("common.remove")}
             </Button>
           )}
           {!dialog?.entry && canWrite && (
@@ -320,7 +330,7 @@ export default function ScheduleGridPage() {
               disabled={!assignmentId || !roomId || createMutation.isPending}
               onClick={() => createMutation.mutate()}
             >
-              Add
+              {t("common.add")}
             </Button>
           )}
         </DialogActions>
@@ -330,4 +340,3 @@ export default function ScheduleGridPage() {
     </Box>
   );
 }
-

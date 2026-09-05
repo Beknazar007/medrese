@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { departmentsApi, usersApi } from "../api/entities";
 import type { Department } from "../api/types";
 import EntityCrudPage from "../components/EntityCrudPage";
@@ -11,6 +12,7 @@ interface DeanUser {
 }
 
 export default function DepartmentsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isRector = user?.role === "RECTOR";
   const { data: faculties } = useFaculties();
@@ -23,32 +25,32 @@ export default function DepartmentsPage() {
 
   return (
     <EntityCrudPage<Department>
-      title="Departments"
+      title={t("departments.title")}
       queryKey={["departments"]}
       api={departmentsApi}
       canCreate={isRector}
       canDelete={isRector}
       columns={[
-        { key: "name", label: "Name" },
+        { key: "name", label: t("departments.name") },
         {
           key: "faculty",
-          label: "Faculty",
+          label: t("departments.faculty"),
           render: (row) => nameById(faculties, row.faculty_id, (f) => f.name),
         },
         {
           key: "head",
-          label: "Dean",
+          label: t("departments.dean"),
           render: (row) =>
             row.head_user_id
               ? (deans?.find((d) => d.id === row.head_user_id)?.username ?? `#${row.head_user_id}`)
-              : "— not assigned —",
+              : t("common.not_assigned"),
         },
       ]}
       fields={[
-        { name: "name", label: "Name", type: "text", required: true },
+        { name: "name", label: t("departments.name"), type: "text", required: true },
         {
           name: "faculty_id",
-          label: "Faculty",
+          label: t("departments.faculty"),
           type: "select",
           required: true,
           options: (faculties ?? []).map((f) => ({ value: f.id, label: f.name })),
@@ -57,17 +59,17 @@ export default function DepartmentsPage() {
           ? [
               {
                 name: "head_user_id",
-                label: "Dean",
+                label: t("departments.dean"),
                 type: "select" as const,
                 options: [
-                  { value: "", label: "— not assigned —" },
+                  { value: "", label: t("common.not_assigned") },
                   ...(deans ?? []).map((d) => ({ value: d.id, label: d.username })),
                 ],
               },
             ]
           : []),
       ]}
-      emptyHint="No departments yet. Rector can add one (pick a faculty first)."
+      emptyHint={t("departments.empty_hint")}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { usersApi } from "../api/entities";
 import EntityCrudPage from "../components/EntityCrudPage";
 
@@ -10,9 +11,11 @@ interface AdminUser {
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation();
+
   return (
     <EntityCrudPage<AdminUser>
-      title="Admin accounts (Rector / Dean)"
+      title={t("users.title")}
       queryKey={["users", "admins"]}
       api={{
         list: () => usersApi.list(),
@@ -23,26 +26,26 @@ export default function UsersPage() {
       canEdit={false}
       canDelete={false}
       columns={[
-        { key: "username", label: "Username" },
-        { key: "email", label: "Email" },
-        { key: "role", label: "Role" },
+        { key: "username", label: t("users.username") },
+        { key: "email", label: t("users.email") },
+        { key: "role", label: t("users.role") },
       ]}
       fields={[
-        { name: "username", label: "Username", type: "text", required: true },
-        { name: "password", label: "Password", type: "text", required: true },
-        { name: "email", label: "Email", type: "text" },
+        { name: "username", label: t("users.username"), type: "text", required: true },
+        { name: "password", label: t("users.password"), type: "text", required: true },
+        { name: "email", label: t("users.email"), type: "text" },
         {
           name: "role",
-          label: "Role",
+          label: t("users.role"),
           type: "select",
           required: true,
           options: [
-            { value: "DEAN", label: "Dean" },
-            { value: "RECTOR", label: "Rector" },
+            { value: "DEAN", label: t("users.role_dean") },
+            { value: "RECTOR", label: t("users.role_rector") },
           ],
         },
       ]}
-      emptyHint="No admin accounts yet besides yourself."
+      emptyHint={t("users.empty_hint")}
     />
   );
 }

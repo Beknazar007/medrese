@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { groupsApi } from "../api/entities";
 import type { Group } from "../api/types";
 import EntityCrudPage from "../components/EntityCrudPage";
@@ -5,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { nameById, useDepartments } from "../hooks/useReferenceData";
 
 export default function GroupsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const { data: departments } = useDepartments();
@@ -15,7 +17,7 @@ export default function GroupsPage() {
 
   return (
     <EntityCrudPage<Group>
-      title="Groups"
+      title={t("groups.title")}
       queryKey={["groups"]}
       api={groupsApi}
       canCreate={canWrite}
@@ -23,29 +25,29 @@ export default function GroupsPage() {
       canDelete={canWrite}
       defaultValues={user?.role === "DEAN" ? { department_id: user.headed_department_id } : {}}
       columns={[
-        { key: "name", label: "Name" },
-        { key: "specialty", label: "Specialty" },
-        { key: "course_year", label: "Year" },
+        { key: "name", label: t("groups.name") },
+        { key: "specialty", label: t("groups.specialty") },
+        { key: "course_year", label: t("groups.course_year") },
         {
           key: "department",
-          label: "Department",
+          label: t("groups.department"),
           render: (row) => nameById(departments, row.department_id, (d) => d.name),
         },
       ]}
       fields={[
-        { name: "name", label: "Name", type: "text", required: true },
-        { name: "specialty", label: "Specialty", type: "text", required: true },
-        { name: "course_year", label: "Course year", type: "number", required: true },
+        { name: "name", label: t("groups.name"), type: "text", required: true },
+        { name: "specialty", label: t("groups.specialty"), type: "text", required: true },
+        { name: "course_year", label: t("groups.course_year"), type: "number", required: true },
         {
           name: "department_id",
-          label: "Department",
+          label: t("groups.department"),
           type: "select",
           required: true,
           options: departmentOptions,
           editableOnCreateOnly: true,
         },
       ]}
-      emptyHint="No groups yet — placeholders for future students. Add the first one."
+      emptyHint={t("groups.empty_hint")}
     />
   );
 }

@@ -28,8 +28,17 @@ export default function LoginPage() {
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", bgcolor: "grey.100" }}>
-      <Paper elevation={3} sx={{ p: 4, width: 360 }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100svh",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "grey.100",
+        px: 2,
+      }}
+    >
+      <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 }, width: "100%", maxWidth: 360 }}>
         <Typography variant="h5" sx={{ mb: 3 }}>
           {t("app_title")}
         </Typography>
