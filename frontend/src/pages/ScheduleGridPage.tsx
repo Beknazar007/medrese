@@ -22,6 +22,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -30,6 +31,9 @@ import type { DayOfWeek, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../lib/errors";
 import { nameById, useDepartments, useGroups, useSemesters, useSubjects, useTeachers, useTimeSlots } from "../hooks/useReferenceData";
+
+// Validated categorical palette (fixed order) from the dataviz skill's reference palette.
+const GROUP_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
 export default function ScheduleGridPage() {
   const { t } = useTranslation();
@@ -76,10 +80,24 @@ export default function ScheduleGridPage() {
   });
 
   const entriesByCell = useMemo(() => {
-    const map = new Map<string, ScheduleEntry>();
-    for (const e of entries ?? []) map.set(`${e.day_of_week}-${e.time_slot_id}`, e);
+    const map = new Map<string, ScheduleEntry[]>();
+    for (const e of entries ?? []) {
+      const key = `${e.day_of_week}-${e.time_slot_id}`;
+      const bucket = map.get(key);
+      if (bucket) bucket.push(e);
+      else map.set(key, [e]);
+    }
     return map;
   }, [entries]);
+
+  // Stable color per group (by ascending group id) so a group keeps its color across filters/renders.
+  const groupColorById = useMemo(() => {
+    const sortedIds = [...(groups ?? [])].sort((a, b) => a.id - b.id).map((g) => g.id);
+    const map = new Map<number, string>();
+    sortedIds.forEach((id, i) => map.set(id, GROUP_COLORS[i % GROUP_COLORS.length]));
+    return map;
+  }, [groups]);
+  const showAllGroups = !groupId;
 
   const [dialog, setDialog] = useState<{ day: DayOfWeek; timeSlotId: number; entry: ScheduleEntry | null } | null>(
     null,
@@ -204,40 +222,74 @@ export default function ScheduleGridPage() {
                     </Typography>
                   </TableCell>
                   {DAYS.map((d) => {
-                    const entry = entriesByCell.get(`${d.value}-${slot.id}`);
+                    const cellEntries = entriesByCell.get(`${d.value}-${slot.id}`) ?? [];
                     return (
                       <TableCell
                         key={d.value}
                         align="center"
                         sx={{
-                          cursor: canWrite ? "pointer" : entry ? "default" : "default",
+                          cursor: canWrite ? "pointer" : "default",
                           minWidth: 130,
-                          bgcolor: entry ? "action.hover" : undefined,
+                          verticalAlign: "top",
+                          bgcolor: cellEntries.length && !showAllGroups ? "action.hover" : undefined,
                           "&:hover": canWrite ? { bgcolor: "action.selected" } : undefined,
                         }}
                         onClick={() => {
-                          if (!entry && !canWrite) return; // nothing to view, and this viewer can't add one
-                          openCell(d.value, slot.id, entry ?? null);
+                          if (!canWrite) return; // viewers only ever open an entry, handled per-block below
+                          openCell(d.value, slot.id, null);
                         }}
                       >
-                        {entry ? (
-                          <Box>
-                            <Typography variant="body2">{describeEntry(entry).subjectName}</Typography>
-                            {user?.role !== "TEACHER" && (
-                              <Typography variant="caption" sx={{ display: "block" }}>
-                                {describeEntry(entry).teacherName}
-                              </Typography>
-                            )}
-                            <Chip size="small" label={describeEntry(entry).groupName} sx={{ mt: 0.5, mr: 0.5 }} />
-                            <Chip size="small" variant="outlined" label={describeEntry(entry).roomName} sx={{ mt: 0.5 }} />
-                          </Box>
-                        ) : (
-                          canWrite && (
-                            <Typography variant="caption" color="text.disabled">
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, alignItems: "stretch" }}>
+                          {cellEntries.map((entry) => {
+                            const info = describeEntry(entry);
+                            const color = showAllGroups ? groupColorById.get(entry.group_id) : undefined;
+                            return (
+                              <Box
+                                key={entry.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCell(d.value, slot.id, entry);
+                                }}
+                                sx={{
+                                  textAlign: "left",
+                                  cursor: "pointer",
+                                  borderRadius: 1,
+                                  px: 0.75,
+                                  py: 0.5,
+                                  borderLeft: color ? `3px solid ${color}` : undefined,
+                                  bgcolor: color ? alpha(color, 0.1) : undefined,
+                                  "&:hover": { bgcolor: color ? alpha(color, 0.18) : "action.selected" },
+                                }}
+                              >
+                                <Typography variant="body2">{info.subjectName}</Typography>
+                                {user?.role !== "TEACHER" && (
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                                    {info.teacherName}
+                                  </Typography>
+                                )}
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+                                  {showAllGroups && (
+                                    <Chip
+                                      size="small"
+                                      label={info.groupName}
+                                      sx={color ? { bgcolor: color, color: "#fff" } : undefined}
+                                    />
+                                  )}
+                                  <Chip size="small" variant="outlined" label={info.roomName} />
+                                </Box>
+                              </Box>
+                            );
+                          })}
+                          {canWrite && (
+                            <Typography
+                              variant="caption"
+                              color="text.disabled"
+                              sx={{ textAlign: "center", py: cellEntries.length ? 0 : undefined }}
+                            >
                               {t("schedule.add_hint")}
                             </Typography>
-                          )
-                        )}
+                          )}
+                        </Box>
                       </TableCell>
                     );
                   })}

@@ -27,6 +27,7 @@ class TeacherUpdate(BaseModel):
 class TeacherOut(BaseModel):
     id: int
     user_id: int
+    username: str
     department_id: int
     full_name: str
     academic_degree: str | None

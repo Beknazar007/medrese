@@ -26,6 +26,7 @@ export default function TeachersPage() {
       defaultValues={user?.role === "DEAN" ? { department_id: user.headed_department_id } : {}}
       columns={[
         { key: "full_name", label: t("teachers.full_name") },
+        { key: "username", label: t("teachers.username_label") },
         {
           key: "department",
           label: t("teachers.department"),

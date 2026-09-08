@@ -26,6 +26,7 @@ export interface Department {
 export interface Teacher {
   id: number;
   user_id: number;
+  username: string;
   department_id: number;
   full_name: string;
   academic_degree: string | null;
