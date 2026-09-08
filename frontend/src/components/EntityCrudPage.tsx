@@ -261,8 +261,15 @@ export default function EntityCrudPage<T extends { id: number }>({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredData.map((row) => (
-                    <TableRow key={row.id} hover>
+                  {filteredData.map((row) => {
+                    const rowIsClickable = canEdit && Boolean(api.update);
+                    return (
+                    <TableRow
+                      key={row.id}
+                      hover
+                      onClick={rowIsClickable ? () => openEdit(row) : undefined}
+                      sx={rowIsClickable ? { cursor: "pointer" } : undefined}
+                    >
                       {columns.map((col) => (
                         <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
                           {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? "—")}
@@ -271,19 +278,23 @@ export default function EntityCrudPage<T extends { id: number }>({
                       {(canEdit || canDelete) && (
                         <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                           {canEdit && api.update && (
-                            <IconButton size="small" onClick={() => openEdit(row)}>
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>
                               <EditIcon fontSize="small" />
                             </IconButton>
                           )}
                           {canDelete && api.remove && (
-                            <IconButton size="small" onClick={() => setPendingDeleteId(row.id)}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}
+                            >
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           )}
                         </TableCell>
                       )}
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
