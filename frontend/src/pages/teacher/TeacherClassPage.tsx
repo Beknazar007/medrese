@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -20,11 +21,15 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import CommentIcon from "@mui/icons-material/Comment";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { assignmentsApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
@@ -33,8 +38,32 @@ import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useR
 
 const ATTENDANCE_OPTIONS: AttendanceStatus[] = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
 
+const ATTENDANCE_SHORT: Record<AttendanceStatus, string> = {
+  PRESENT: "К",
+  ABSENT: "Ж",
+  LATE: "О",
+  EXCUSED: "С",
+};
+
+const ATTENDANCE_COLOR: Record<AttendanceStatus, string> = {
+  PRESENT: "#2e7d32",
+  ABSENT: "#c62828",
+  LATE: "#e08600",
+  EXCUSED: "#1565c0",
+};
+
+const ROW_TINT: Partial<Record<AttendanceStatus, string>> = {
+  ABSENT: "rgba(198,40,40,.06)",
+  LATE: "rgba(224,134,0,.08)",
+};
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function todayDayOfWeek(): number {
+  const js = new Date().getDay(); // 0 = Sunday
+  return js === 0 ? 7 : js;
 }
 
 export default function TeacherClassPage() {
@@ -49,18 +78,27 @@ export default function TeacherClassPage() {
   const sortedSlots = useMemo(() => [...(timeSlots ?? [])].sort((a, b) => a.order - b.order), [timeSlots]);
 
   const classOptions = useMemo(() => {
-    return (entries ?? []).map((entry) => {
-      const assignment = assignments?.find((a) => a.id === entry.assignment_id);
-      const subjectName = assignment ? nameById(subjects, assignment.subject_id, (s) => s.name) : "";
-      const groupName = nameById(groups, entry.group_id, (g) => g.name);
-      const slot = sortedSlots.find((s) => s.id === entry.time_slot_id);
-      const dayLabel = t(`days.${entry.day_of_week}`);
-      return {
-        entryId: entry.id,
-        assignmentId: entry.assignment_id,
-        label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
-      };
-    });
+    return [...(entries ?? [])]
+      .sort((a, b) => {
+        if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+        const sa = sortedSlots.find((s) => s.id === a.time_slot_id)?.order ?? 0;
+        const sb = sortedSlots.find((s) => s.id === b.time_slot_id)?.order ?? 0;
+        return sa - sb;
+      })
+      .map((entry) => {
+        const assignment = assignments?.find((a) => a.id === entry.assignment_id);
+        const subjectName = assignment ? nameById(subjects, assignment.subject_id, (s) => s.name) : "";
+        const groupName = nameById(groups, entry.group_id, (g) => g.name);
+        const slot = sortedSlots.find((s) => s.id === entry.time_slot_id);
+        const dayLabel = t(`days.${entry.day_of_week}`);
+        return {
+          entryId: entry.id,
+          assignmentId: entry.assignment_id,
+          dayOfWeek: entry.day_of_week,
+          isToday: entry.day_of_week === todayDayOfWeek(),
+          label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
+        };
+      });
   }, [entries, assignments, subjects, groups, sortedSlots, t]);
 
   const [selectedEntryId, setSelectedEntryId] = useState<number | "">("");
@@ -70,55 +108,104 @@ export default function TeacherClassPage() {
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [noteStudent, setNoteStudent] = useState<{ id: number; name: string } | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
+  const savedSnapshot = useRef<string>("[]");
+  const autoLoadedOnce = useRef(false);
+
+  const isDirty = JSON.stringify(roster) !== savedSnapshot.current;
+
+  // Comfort win: open today's class automatically, so a teacher who just wants to take
+  // attendance for the lesson happening right now doesn't have to pick anything.
+  useEffect(() => {
+    if (autoLoadedOnce.current || selectedEntryId !== "" || classOptions.length === 0) return;
+    const todaysClass = classOptions.find((c) => c.isToday);
+    if (todaysClass) {
+      autoLoadedOnce.current = true;
+      setSelectedEntryId(todaysClass.entryId);
+      openSessionFor(todaysClass.entryId, todayIso());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classOptions]);
 
   const selectedAssignmentId = classOptions.find((c) => c.entryId === selectedEntryId)?.assignmentId;
 
   const openSessionMutation = useMutation({
-    mutationFn: () => journalApi.getOrCreateSession(Number(selectedEntryId), selectedDate),
+    mutationFn: ({ entryId, date }: { entryId: number; date: string }) => journalApi.getOrCreateSession(entryId, date),
     onSuccess: (detail) => {
       setSessionId(detail.session.id);
       setRoster(detail.roster);
+      savedSnapshot.current = JSON.stringify(detail.roster);
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
   });
 
-  const saveAttendanceMutation = useMutation({
-    mutationFn: () =>
-      journalApi.putAttendance(
+  function openSessionFor(entryId: number, date: string) {
+    openSessionMutation.mutate({ entryId, date });
+  }
+
+  function confirmDiscardIfDirty(): boolean {
+    if (!isDirty) return true;
+    return window.confirm(t("journal.unsaved_confirm"));
+  }
+
+  function handleSelectClass(entryId: number | "") {
+    if (!confirmDiscardIfDirty()) return;
+    setSelectedEntryId(entryId);
+    setSessionId(null);
+    setRoster([]);
+    savedSnapshot.current = "[]";
+  }
+
+  function handleSelectDate(date: string) {
+    if (!confirmDiscardIfDirty()) return;
+    setSelectedDate(date);
+    setSessionId(null);
+    setRoster([]);
+    savedSnapshot.current = "[]";
+  }
+
+  const saveAllMutation = useMutation({
+    mutationFn: async () => {
+      await journalApi.putAttendance(
         sessionId!,
         roster
           .filter((r) => r.attendance_status !== null)
           .map((r) => ({ student_id: r.student_id, status: r.attendance_status as AttendanceStatus })),
-      ),
-    onSuccess: (detail) => {
-      setRoster(detail.roster);
-      setSnackbar(t("journal.saved"));
-    },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
-  });
-
-  const saveGradesMutation = useMutation({
-    mutationFn: () =>
-      journalApi.putGrades(
+      );
+      return journalApi.putGrades(
         sessionId!,
         roster
           .filter((r) => r.score !== null && r.score !== undefined)
           .map((r) => ({ student_id: r.student_id, score: r.score as number })),
-      ),
+      );
+    },
     onSuccess: (detail) => {
       setRoster(detail.roster);
+      savedSnapshot.current = JSON.stringify(detail.roster);
       setSnackbar(t("journal.saved"));
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
   });
 
-  function setAttendance(studentId: number, status: AttendanceStatus) {
+  function setAttendance(studentId: number, status: AttendanceStatus | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
   }
 
   function setScore(studentId: number, score: number | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, score } : r)));
   }
+
+  function markAllPresent() {
+    setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
+  }
+
+  const attendanceCounts = useMemo(() => {
+    const counts: Record<AttendanceStatus | "UNSET", number> = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0, UNSET: 0 };
+    for (const r of roster) {
+      if (r.attendance_status) counts[r.attendance_status] += 1;
+      else counts.UNSET += 1;
+    }
+    return counts;
+  }, [roster]);
 
   const { data: performance } = useQuery({
     queryKey: ["journal-performance", selectedAssignmentId],
@@ -132,22 +219,21 @@ export default function TeacherClassPage() {
         {t("journal.title")}
       </Typography>
 
-      <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap", alignItems: "center" }}>
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap", alignItems: "center" }}>
         <TextField
           select
           size="small"
           label={t("journal.select_class")}
           value={selectedEntryId}
-          onChange={(e) => {
-            setSelectedEntryId(e.target.value ? Number(e.target.value) : "");
-            setSessionId(null);
-            setRoster([]);
-          }}
+          onChange={(e) => handleSelectClass(e.target.value ? Number(e.target.value) : "")}
           sx={{ minWidth: 280 }}
         >
           {classOptions.map((opt) => (
             <MenuItem key={opt.entryId} value={opt.entryId}>
-              {opt.label}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                <span>{opt.label}</span>
+                {opt.isToday && <Chip label={t("journal.today")} size="small" color="primary" sx={{ height: 18, fontSize: 11 }} />}
+              </Box>
             </MenuItem>
           ))}
         </TextField>
@@ -156,13 +242,13 @@ export default function TeacherClassPage() {
           size="small"
           label={t("journal.select_date")}
           value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
+          onChange={(e) => handleSelectDate(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
         />
         <Button
           variant="contained"
           disabled={!selectedEntryId || openSessionMutation.isPending}
-          onClick={() => openSessionMutation.mutate()}
+          onClick={() => selectedEntryId && openSessionFor(Number(selectedEntryId), selectedDate)}
         >
           {t("journal.load_session")}
         </Button>
@@ -177,8 +263,26 @@ export default function TeacherClassPage() {
 
       {sessionId && roster.length > 0 && (
         <>
+          <Box sx={{ display: "flex", gap: 3, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+            <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
+              {t("journal.mark_all_present")}
+            </Button>
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", fontSize: 13, color: "text.secondary" }}>
+              {ATTENDANCE_OPTIONS.map((status) => (
+                <span key={status}>
+                  {t(`journal.attendance_${status.toLowerCase()}`)}: <strong>{attendanceCounts[status]}</strong>
+                </span>
+              ))}
+              {attendanceCounts.UNSET > 0 && (
+                <span style={{ color: "#e08600" }}>
+                  {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
+                </span>
+              )}
+            </Box>
+          </Box>
+
           <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 2 }}>
-            <Table size="small">
+            <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_student")}</TableCell>
@@ -191,22 +295,37 @@ export default function TeacherClassPage() {
               </TableHead>
               <TableBody>
                 {roster.map((r) => (
-                  <TableRow key={r.student_id} hover>
+                  <TableRow key={r.student_id} hover sx={{ bgcolor: r.attendance_status ? ROW_TINT[r.attendance_status] : undefined }}>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{r.full_name}</TableCell>
                     <TableCell>
-                      <TextField
-                        select
+                      <ToggleButtonGroup
                         size="small"
-                        value={r.attendance_status ?? ""}
-                        onChange={(e) => setAttendance(r.student_id, e.target.value as AttendanceStatus)}
-                        sx={{ minWidth: 150 }}
+                        exclusive
+                        value={r.attendance_status}
+                        onChange={(_e, value) => setAttendance(r.student_id, value)}
                       >
                         {ATTENDANCE_OPTIONS.map((status) => (
-                          <MenuItem key={status} value={status}>
-                            {t(`journal.attendance_${status.toLowerCase()}`)}
-                          </MenuItem>
+                          <ToggleButton
+                            key={status}
+                            value={status}
+                            sx={{
+                              px: 1.1,
+                              py: 0.3,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              "&.Mui-selected": {
+                                bgcolor: ATTENDANCE_COLOR[status],
+                                color: "#fff",
+                                "&:hover": { bgcolor: ATTENDANCE_COLOR[status], opacity: 0.9 },
+                              },
+                            }}
+                          >
+                            <Tooltip title={t(`journal.attendance_${status.toLowerCase()}`)}>
+                              <span>{ATTENDANCE_SHORT[status]}</span>
+                            </Tooltip>
+                          </ToggleButton>
                         ))}
-                      </TextField>
+                      </ToggleButtonGroup>
                     </TableCell>
                     <TableCell>
                       <TextField
@@ -229,14 +348,14 @@ export default function TeacherClassPage() {
             </Table>
           </TableContainer>
 
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button variant="contained" onClick={() => saveAttendanceMutation.mutate()} disabled={saveAttendanceMutation.isPending}>
-              {t("journal.save_attendance")}
-            </Button>
-            <Button variant="contained" onClick={() => saveGradesMutation.mutate()} disabled={saveGradesMutation.isPending}>
-              {t("journal.save_grades")}
-            </Button>
-          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => saveAllMutation.mutate()}
+            disabled={saveAllMutation.isPending || !isDirty}
+          >
+            {isDirty ? t("journal.save_all") : t("journal.saved")}
+          </Button>
         </>
       )}
 
