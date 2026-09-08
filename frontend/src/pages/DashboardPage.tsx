@@ -13,9 +13,11 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dashboardApi } from "../api/entities";
+import StatTile from "../components/StatTile";
+import WorkloadBars from "../components/WorkloadBars";
 import { useDepartments, useSemesters } from "../hooks/useReferenceData";
 
 export default function DashboardPage() {
@@ -37,6 +39,22 @@ export default function DashboardPage() {
     queryFn: () => dashboardApi.unassignedSubjects(Number(effectiveSemesterId)),
     enabled: Boolean(effectiveSemesterId),
   });
+
+  const rowsWithDept = useMemo(
+    () =>
+      (workload ?? []).map((row) => ({
+        ...row,
+        departmentName: departments?.find((d) => d.id === row.department_id)?.name ?? `#${row.department_id}`,
+      })),
+    [workload, departments],
+  );
+
+  const totals = useMemo(() => {
+    const assignments = (workload ?? []).reduce((sum, r) => sum + r.assignment_count, 0);
+    const placed = (workload ?? []).reduce((sum, r) => sum + r.weekly_scheduled_periods, 0);
+    const coverage = assignments > 0 ? Math.round((placed / assignments) * 100) : null;
+    return { teachers: workload?.length ?? 0, assignments, placed, coverage };
+  }, [workload]);
 
   return (
     <Box>
@@ -65,53 +83,32 @@ export default function DashboardPage() {
 
       {!effectiveSemesterId && <Alert severity="info">{t("dashboard.pick_semester_hint")}</Alert>}
 
-      {effectiveSemesterId && (
+      {effectiveSemesterId && workload && (
         <>
-          <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
+            <StatTile label={t("dashboard.stat_teachers")} value={totals.teachers} />
+            <StatTile label={t("dashboard.stat_assignments")} value={totals.assignments} />
+            <StatTile label={t("dashboard.stat_placed")} value={totals.placed} />
+            <StatTile
+              label={t("dashboard.stat_coverage")}
+              value={totals.coverage === null ? "—" : `${totals.coverage}%`}
+              tone={totals.coverage === null ? "neutral" : totals.coverage >= 100 ? "good" : "warning"}
+            />
+            <StatTile
+              label={t("dashboard.stat_unassigned")}
+              value={unassigned?.length ?? "—"}
+              tone={!unassigned ? "neutral" : unassigned.length === 0 ? "good" : "warning"}
+            />
+          </Box>
+
+          <Typography variant="h6" sx={{ mb: 1 }}>
             {t("dashboard.teacher_workload")}
           </Typography>
-          {workload && workload.length === 0 && <Alert severity="info">{t("dashboard.no_teachers")}</Alert>}
-          {workload && workload.length > 0 && (
-            <TableContainer component={Paper} sx={{ mb: 4, overflowX: "auto" }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{t("dashboard.col_teacher")}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{t("dashboard.col_department")}</TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                      {t("dashboard.col_assignments")}
-                    </TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                      {t("dashboard.col_placed")}
-                    </TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                      {t("dashboard.col_gap")}
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {workload.map((row) => (
-                    <TableRow key={row.teacher_id} hover>
-                      <TableCell sx={{ whiteSpace: "nowrap" }}>{row.full_name}</TableCell>
-                      <TableCell sx={{ whiteSpace: "nowrap" }}>
-                        {departments?.find((d) => d.id === row.department_id)?.name ?? `#${row.department_id}`}
-                      </TableCell>
-                      <TableCell align="right">{row.assignment_count}</TableCell>
-                      <TableCell align="right">{row.weekly_scheduled_periods}</TableCell>
-                      <TableCell align="right">
-                        {row.assignment_count - row.weekly_scheduled_periods > 0 ? (
-                          <Typography color="warning.main" component="span">
-                            {row.assignment_count - row.weekly_scheduled_periods}
-                          </Typography>
-                        ) : (
-                          "0"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+          {workload.length === 0 && <Alert severity="info">{t("dashboard.no_teachers")}</Alert>}
+          {workload.length > 0 && (
+            <Paper variant="outlined" sx={{ p: 2, mb: 4, overflowX: "auto" }}>
+              <WorkloadBars rows={rowsWithDept} />
+            </Paper>
           )}
 
           <Typography variant="h6" sx={{ mb: 1 }}>

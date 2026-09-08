@@ -81,7 +81,14 @@
     "unassigned_subjects": "Subjects with no teacher assigned",
     "all_assigned": "Every subject has a teacher assigned this semester.",
     "col_subject": "Subject",
-    "col_code": "Code"
+    "col_code": "Code",
+    "stat_teachers": "Teachers",
+    "stat_assignments": "Assignments",
+    "stat_placed": "Placed on timetable",
+    "stat_coverage": "Coverage",
+    "stat_unassigned": "Subjects with no teacher",
+    "legend_placed": "Placed on timetable",
+    "legend_gap": "Assigned, not yet on timetable"
   },
   "faculties": {
     "title": "Faculties",

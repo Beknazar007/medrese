@@ -81,7 +81,14 @@
     "unassigned_subjects": "Предметы без преподавателя",
     "all_assigned": "В этом семестре всем предметам назначен преподаватель.",
     "col_subject": "Предмет",
-    "col_code": "Код"
+    "col_code": "Код",
+    "stat_teachers": "Преподавателей",
+    "stat_assignments": "Назначений",
+    "stat_placed": "В расписании",
+    "stat_coverage": "Покрытие",
+    "stat_unassigned": "Предметов без преподавателя",
+    "legend_placed": "В расписании",
+    "legend_gap": "Назначено, но не в расписании"
   },
   "faculties": {
     "title": "Факультеты",

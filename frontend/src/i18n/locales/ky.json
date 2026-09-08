@@ -81,7 +81,14 @@
     "unassigned_subjects": "Мугалими дайындалбаган сабактар",
     "all_assigned": "Бул семестрде бардык сабактарга мугалим дайындалган.",
     "col_subject": "Сабак",
-    "col_code": "Код"
+    "col_code": "Код",
+    "stat_teachers": "Мугалимдер",
+    "stat_assignments": "Дайындоолор",
+    "stat_placed": "Кестеге коюлган",
+    "stat_coverage": "Камсыздоо",
+    "stat_unassigned": "Мугалими жок сабактар",
+    "legend_placed": "Кестеге коюлган",
+    "legend_gap": "Дайындалган, бирок кестеге коюла элек"
   },
   "faculties": {
     "title": "Факультеттер",
