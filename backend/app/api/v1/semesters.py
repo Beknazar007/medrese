@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,16 @@ from app.models.semester import Semester
 from app.schemas.semester import SemesterCreate, SemesterOut, SemesterUpdate
 
 router = APIRouter(prefix="/semesters", tags=["semesters"])
+
+
+def _deactivate_other_semesters(db: Session, *, keep_id: int | None) -> None:
+    """Only one semester may be active at a time — it's what the dashboard and the
+    teacher journal both fall back to when no semester is explicitly picked, so two
+    active semesters would make that fallback ambiguous."""
+    stmt = update(Semester).where(Semester.is_active.is_(True))
+    if keep_id is not None:
+        stmt = stmt.where(Semester.id != keep_id)
+    db.execute(stmt.values(is_active=False))
 
 
 @router.get("", response_model=list[SemesterOut])
@@ -25,6 +35,9 @@ def create_semester(
 ) -> Semester:
     semester = Semester(**payload.model_dump())
     db.add(semester)
+    db.flush()
+    if semester.is_active:
+        _deactivate_other_semesters(db, keep_id=semester.id)
     db.commit()
     db.refresh(semester)
     return semester
@@ -42,6 +55,8 @@ def update_semester(
         raise HTTPException(status_code=404, detail="Semester not found")
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(semester, field, value)
+    if semester.is_active:
+        _deactivate_other_semesters(db, keep_id=semester.id)
     db.commit()
     db.refresh(semester)
     return semester

@@ -111,6 +111,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   function openCreate() {
     setEditingRow(null);
@@ -159,6 +160,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       setSnackbar(t("common.deleted"));
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"))),
+    onSettled: () => setPendingDeleteId(null),
   });
 
   function handleSubmit() {
@@ -201,7 +203,18 @@ export default function EntityCrudPage<T extends { id: number }>({
 
       {error && <Alert severity="error">{t("common.failed_to_load")}</Alert>}
       {!isLoading && !error && data && data.length === 0 && (
-        <Alert severity="info">{emptyHint ?? t("common.no_records")}</Alert>
+        <Alert
+          severity="info"
+          action={
+            canCreate && api.create ? (
+              <Button color="inherit" size="small" onClick={openCreate}>
+                {t("common.add")}
+              </Button>
+            ) : undefined
+          }
+        >
+          {emptyHint ?? t("common.no_records")}
+        </Alert>
       )}
 
       {data && data.length > 0 && (
@@ -263,12 +276,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                             </IconButton>
                           )}
                           {canDelete && api.remove && (
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                if (confirm(t("common.confirm_delete"))) deleteMutation.mutate(row.id);
-                              }}
-                            >
+                            <IconButton size="small" onClick={() => setPendingDeleteId(row.id)}>
                               <DeleteIcon fontSize="small" />
                             </IconButton>
                           )}
@@ -344,6 +352,21 @@ export default function EntityCrudPage<T extends { id: number }>({
           <Button onClick={closeDialog}>{t("common.cancel")}</Button>
           <Button variant="contained" onClick={handleSubmit} disabled={busy}>
             {t("common.save")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={pendingDeleteId !== null} onClose={() => setPendingDeleteId(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t("common.confirm_delete")}</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setPendingDeleteId(null)}>{t("common.cancel")}</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteMutation.isPending}
+            onClick={() => pendingDeleteId !== null && deleteMutation.mutate(pendingDeleteId)}
+          >
+            {t("common.remove")}
           </Button>
         </DialogActions>
       </Dialog>

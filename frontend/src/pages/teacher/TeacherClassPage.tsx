@@ -32,6 +32,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { assignmentsApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
+import AttendanceBar from "../../components/AttendanceBar";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
@@ -366,29 +367,40 @@ export default function TeacherClassPage() {
       <Dialog open={showPerformance} onClose={() => setShowPerformance(false)} maxWidth="md" fullWidth>
         <DialogTitle>{t("journal.performance_title")}</DialogTitle>
         <DialogContent>
+          <Box sx={{ display: "flex", gap: 2.5, mb: 1.5, flexWrap: "wrap", fontSize: 12.5, color: "text.secondary" }}>
+            {(["present", "late", "excused", "absent"] as const).map((key) => (
+              <Box key={key} sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                <Box
+                  sx={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: "3px",
+                    bgcolor: { present: "#0ca30c", late: "#fab219", excused: "#2a78d6", absent: "#d03b3b" }[key],
+                  }}
+                />
+                {t(`journal.attendance_${key}`)}
+              </Box>
+            ))}
+          </Box>
           <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>{t("journal.col_student")}</TableCell>
                   <TableCell align="right">{t("journal.col_average")}</TableCell>
+                  <TableCell sx={{ minWidth: 140 }}>{t("journal.col_attendance")}</TableCell>
                   <TableCell align="right">{t("journal.col_sessions")}</TableCell>
-                  <TableCell align="right">{t("journal.attendance_present")}</TableCell>
-                  <TableCell align="right">{t("journal.attendance_absent")}</TableCell>
-                  <TableCell align="right">{t("journal.attendance_late")}</TableCell>
-                  <TableCell align="right">{t("journal.attendance_excused")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {(performance ?? []).map((row) => (
                   <TableRow key={row.student_id} hover>
-                    <TableCell>{row.full_name}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>{row.full_name}</TableCell>
                     <TableCell align="right">{row.average_score ?? "—"}</TableCell>
+                    <TableCell>
+                      <AttendanceBar row={row} />
+                    </TableCell>
                     <TableCell align="right">{row.sessions_count}</TableCell>
-                    <TableCell align="right">{row.present_count}</TableCell>
-                    <TableCell align="right">{row.absent_count}</TableCell>
-                    <TableCell align="right">{row.late_count}</TableCell>
-                    <TableCell align="right">{row.excused_count}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
