@@ -49,6 +49,8 @@
     "all_groups": "All groups",
     "group_filter": "Group filter",
     "pick_semester": "Select a semester",
+    "search": "Search...",
+    "no_search_results": "No results for this search.",
     "close": "Close",
     "remove": "Remove"
   },

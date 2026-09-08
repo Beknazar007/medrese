@@ -1,8 +1,10 @@
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -11,7 +13,7 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
-  MenuItem,
+  InputAdornment,
   Paper,
   Snackbar,
   Switch,
@@ -27,7 +29,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiErrorMessage } from "../lib/errors";
 
@@ -69,6 +71,7 @@ interface Props<T extends { id: number }> {
   defaultValues?: Record<string, unknown>;
   extraToolbar?: ReactNode;
   emptyHint?: string;
+  searchPlaceholder?: string;
 }
 
 export default function EntityCrudPage<T extends { id: number }>({
@@ -84,6 +87,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   defaultValues = {},
   extraToolbar,
   emptyHint,
+  searchPlaceholder,
 }: Props<T>) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -93,6 +97,14 @@ export default function EntityCrudPage<T extends { id: number }>({
     queryKey: [...queryKey, listParams],
     queryFn: () => api.list(listParams),
   });
+
+  const [search, setSearch] = useState("");
+  const filteredData = useMemo(() => {
+    if (!data) return data;
+    const q = search.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((row) => JSON.stringify(row).toLowerCase().includes(q));
+  }, [data, search]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<T | null>(null);
@@ -193,54 +205,82 @@ export default function EntityCrudPage<T extends { id: number }>({
       )}
 
       {data && data.length > 0 && (
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                {columns.map((col) => (
-                  <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
-                    {col.label}
-                  </TableCell>
-                ))}
-                {(canEdit || canDelete) && (
-                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                    {t("common.actions")}
-                  </TableCell>
-                )}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.map((row) => (
-                <TableRow key={row.id} hover>
-                  {columns.map((col) => (
-                    <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
-                      {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? "—")}
-                    </TableCell>
+        <>
+          <TextField
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder ?? t("common.search")}
+            sx={{ mb: 1.5, maxWidth: 320 }}
+            fullWidth
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          {filteredData && filteredData.length === 0 && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {t("common.no_search_results")}
+            </Alert>
+          )}
+
+          {filteredData && filteredData.length > 0 && (
+            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    {columns.map((col) => (
+                      <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
+                        {col.label}
+                      </TableCell>
+                    ))}
+                    {(canEdit || canDelete) && (
+                      <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                        {t("common.actions")}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredData.map((row) => (
+                    <TableRow key={row.id} hover>
+                      {columns.map((col) => (
+                        <TableCell key={col.key} sx={{ whiteSpace: "nowrap" }}>
+                          {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? "—")}
+                        </TableCell>
+                      ))}
+                      {(canEdit || canDelete) && (
+                        <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                          {canEdit && api.update && (
+                            <IconButton size="small" onClick={() => openEdit(row)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                          {canDelete && api.remove && (
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                if (confirm(t("common.confirm_delete"))) deleteMutation.mutate(row.id);
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          )}
+                        </TableCell>
+                      )}
+                    </TableRow>
                   ))}
-                  {(canEdit || canDelete) && (
-                    <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                      {canEdit && api.update && (
-                        <IconButton size="small" onClick={() => openEdit(row)}>
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                      {canDelete && api.remove && (
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            if (confirm(t("common.confirm_delete"))) deleteMutation.mutate(row.id);
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth fullScreen={isMobile}>
@@ -256,22 +296,19 @@ export default function EntityCrudPage<T extends { id: number }>({
             const value = formValues[field.name] ?? "";
 
             if (field.type === "select") {
+              const options = field.options ?? [];
+              const selected = options.find((opt) => opt.value === value) ?? null;
               return (
-                <TextField
+                <Autocomplete
                   key={field.name}
-                  select
-                  label={field.label}
-                  value={value}
-                  required={field.required}
-                  onChange={(e) => setField(field.name, e.target.value)}
+                  options={options}
+                  value={selected}
+                  isOptionEqualToValue={(opt, val) => opt.value === val.value}
+                  getOptionLabel={(opt) => opt.label}
+                  onChange={(_e, newValue) => setField(field.name, newValue ? newValue.value : "")}
+                  renderInput={(params) => <TextField {...params} label={field.label} required={field.required} />}
                   fullWidth
-                >
-                  {(field.options ?? []).map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                />
               );
             }
 

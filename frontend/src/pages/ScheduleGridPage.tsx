@@ -1,5 +1,6 @@
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -282,38 +283,39 @@ export default function ScheduleGridPage() {
             })()
           ) : (
             <>
-              <TextField
-                select
-                label={t("schedule.pick_assignment")}
-                value={assignmentId}
-                onChange={(e) => setAssignmentId(Number(e.target.value))}
-                required
-                helperText={t("schedule.pick_assignment_hint")}
-              >
-                {(assignments ?? []).map((a) => {
-                  const teacherName = nameById(teachers, a.teacher_id, (t2) => t2.full_name);
-                  const subjectName = nameById(subjects, a.subject_id, (s) => s.name);
-                  const groupName = nameById(groups, a.group_id, (g) => g.name);
-                  return (
-                    <MenuItem key={a.id} value={a.id}>
-                      {teacherName} — {subjectName} — {groupName} ({t(`hour_type.${a.hour_type}`)})
-                    </MenuItem>
-                  );
-                })}
-              </TextField>
-              <TextField
-                select
-                label={t("schedule.pick_room")}
-                value={roomId}
-                onChange={(e) => setRoomId(Number(e.target.value))}
-                required
-              >
-                {(rooms ?? []).map((r) => (
-                  <MenuItem key={r.id} value={r.id}>
-                    {r.name} ({r.building})
-                  </MenuItem>
-                ))}
-              </TextField>
+              {(() => {
+                const assignmentOptions = (assignments ?? []).map((a) => ({
+                  value: a.id,
+                  label: `${nameById(teachers, a.teacher_id, (t2) => t2.full_name)} — ${nameById(subjects, a.subject_id, (s) => s.name)} — ${nameById(groups, a.group_id, (g) => g.name)} (${t(`hour_type.${a.hour_type}`)})`,
+                }));
+                const selectedAssignment = assignmentOptions.find((opt) => opt.value === assignmentId) ?? null;
+                return (
+                  <Autocomplete
+                    options={assignmentOptions}
+                    value={selectedAssignment}
+                    isOptionEqualToValue={(opt, val) => opt.value === val.value}
+                    getOptionLabel={(opt) => opt.label}
+                    onChange={(_e, newValue) => setAssignmentId(newValue ? newValue.value : "")}
+                    renderInput={(params) => (
+                      <TextField {...params} label={t("schedule.pick_assignment")} required helperText={t("schedule.pick_assignment_hint")} />
+                    )}
+                  />
+                );
+              })()}
+              {(() => {
+                const roomOptions = (rooms ?? []).map((r) => ({ value: r.id, label: `${r.name} (${r.building})` }));
+                const selectedRoom = roomOptions.find((opt) => opt.value === roomId) ?? null;
+                return (
+                  <Autocomplete
+                    options={roomOptions}
+                    value={selectedRoom}
+                    isOptionEqualToValue={(opt, val) => opt.value === val.value}
+                    getOptionLabel={(opt) => opt.label}
+                    onChange={(_e, newValue) => setRoomId(newValue ? newValue.value : "")}
+                    renderInput={(params) => <TextField {...params} label={t("schedule.pick_room")} required />}
+                  />
+                );
+              })()}
             </>
           )}
         </DialogContent>
