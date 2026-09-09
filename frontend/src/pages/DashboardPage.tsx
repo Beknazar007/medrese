@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Chip,
   MenuItem,
   Paper,
   Table,
@@ -10,15 +11,27 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dashboardApi } from "../api/entities";
+import AttendanceBar from "../components/AttendanceBar";
+import MonitoringBar from "../components/MonitoringBar";
 import StatTile from "../components/StatTile";
 import WorkloadBars from "../components/WorkloadBars";
 import { useDepartments, useSemesters } from "../hooks/useReferenceData";
+import { computeRange, type RangePreset } from "../lib/dateRanges";
+
+const ATTENDANCE_LEGEND: { key: "present" | "late" | "excused" | "absent"; color: string }[] = [
+  { key: "present", color: "#0ca30c" },
+  { key: "late", color: "#fab219" },
+  { key: "excused", color: "#2a78d6" },
+  { key: "absent", color: "#d03b3b" },
+];
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -27,6 +40,8 @@ export default function DashboardPage() {
   const activeSemester = semesters?.find((s) => s.is_active);
   const [semesterId, setSemesterId] = useState<number | "">("");
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
+  const [preset, setPreset] = useState<RangePreset>("week");
+  const range = useMemo(() => computeRange(preset), [preset]);
 
   const { data: workload } = useQuery({
     queryKey: ["dashboard-workload", effectiveSemesterId],
@@ -37,6 +52,28 @@ export default function DashboardPage() {
   const { data: unassigned } = useQuery({
     queryKey: ["dashboard-unassigned", effectiveSemesterId],
     queryFn: () => dashboardApi.unassignedSubjects(Number(effectiveSemesterId)),
+    enabled: Boolean(effectiveSemesterId),
+  });
+
+  const { data: teacherSummary } = useQuery({
+    queryKey: ["dashboard-teacher-monitoring", effectiveSemesterId, range.from, range.to],
+    queryFn: () =>
+      dashboardApi.teacherMonitoringSummary({
+        semester_id: Number(effectiveSemesterId),
+        date_from: range.from,
+        date_to: range.to,
+      }),
+    enabled: Boolean(effectiveSemesterId),
+  });
+
+  const { data: studentSummary } = useQuery({
+    queryKey: ["dashboard-student-attendance", effectiveSemesterId, range.from, range.to],
+    queryFn: () =>
+      dashboardApi.studentAttendanceSummary({
+        semester_id: Number(effectiveSemesterId),
+        date_from: range.from,
+        date_to: range.to,
+      }),
     enabled: Boolean(effectiveSemesterId),
   });
 
@@ -55,6 +92,15 @@ export default function DashboardPage() {
     const coverage = assignments > 0 ? Math.round((placed / assignments) * 100) : null;
     return { teachers: workload?.length ?? 0, assignments, placed, coverage };
   }, [workload]);
+
+  const attendanceCounts = studentSummary
+    ? {
+        present_count: studentSummary.present,
+        absent_count: studentSummary.absent,
+        late_count: studentSummary.late,
+        excused_count: studentSummary.excused,
+      }
+    : null;
 
   return (
     <Box>
@@ -116,7 +162,7 @@ export default function DashboardPage() {
           </Typography>
           {unassigned && unassigned.length === 0 && <Alert severity="success">{t("dashboard.all_assigned")}</Alert>}
           {unassigned && unassigned.length > 0 && (
-            <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+            <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 4 }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -139,6 +185,87 @@ export default function DashboardPage() {
               </Table>
             </TableContainer>
           )}
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
+            <Typography variant="h6">{t("dashboard.monitoring_title")}</Typography>
+            <ToggleButtonGroup size="small" exclusive value={preset} onChange={(_e, value) => value && setPreset(value)}>
+              <ToggleButton value="day">{t("monitoring.range_day")}</ToggleButton>
+              <ToggleButton value="week">{t("monitoring.range_week")}</ToggleButton>
+              <ToggleButton value="month">{t("monitoring.range_month")}</ToggleButton>
+              <ToggleButton value="year">{t("monitoring.range_year")}</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mb: 4 }}>
+            <Box sx={{ flex: "1 1 380px", minWidth: 320 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                {t("dashboard.teacher_monitoring_title")}
+              </Typography>
+              {teacherSummary && (
+                <>
+                  <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+                    <StatTile label={t("monitoring.col_expected")} value={teacherSummary.expected_lessons} />
+                    <StatTile label={t("monitoring.col_conducted")} value={teacherSummary.conducted_lessons} tone="good" />
+                    <StatTile
+                      label={t("monitoring.col_missed")}
+                      value={teacherSummary.missed_lessons}
+                      tone={teacherSummary.missed_lessons > 0 ? "warning" : "good"}
+                    />
+                  </Box>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <MonitoringBar
+                      conducted={teacherSummary.conducted_lessons}
+                      missed={teacherSummary.missed_lessons}
+                    />
+                    {teacherSummary.top_missed.length > 0 ? (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 2 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {t("dashboard.top_missed_title")}
+                        </Typography>
+                        {teacherSummary.top_missed.map((row) => (
+                          <Box key={row.teacher_id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <Typography variant="body2">{row.full_name}</Typography>
+                            <Chip size="small" color="error" label={row.missed_lessons} />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Alert severity="success" sx={{ mt: 2 }}>
+                        {t("dashboard.no_missed_hint")}
+                      </Alert>
+                    )}
+                  </Paper>
+                </>
+              )}
+            </Box>
+
+            <Box sx={{ flex: "1 1 380px", minWidth: 320 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                {t("dashboard.student_stats_title")}
+              </Typography>
+              {studentSummary && attendanceCounts && (
+                <>
+                  <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+                    <StatTile
+                      label={t("journal.col_average")}
+                      value={studentSummary.average_score ?? "—"}
+                    />
+                  </Box>
+                  <Paper variant="outlined" sx={{ p: 2 }}>
+                    <AttendanceBar row={attendanceCounts} />
+                    <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mt: 2, fontSize: 12.5, color: "text.secondary" }}>
+                      {ATTENDANCE_LEGEND.map((item) => (
+                        <Box key={item.key} sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                          <Box sx={{ width: 9, height: 9, borderRadius: "3px", bgcolor: item.color }} />
+                          {t(`journal.attendance_${item.key}`)}
+                        </Box>
+                      ))}
+                    </Box>
+                  </Paper>
+                </>
+              )}
+            </Box>
+          </Box>
         </>
       )}
     </Box>

@@ -181,6 +181,21 @@ export interface TeacherMonitoringRow {
   missed_lessons: number;
 }
 
+export interface TeacherMonitoringSummary {
+  expected_lessons: number;
+  conducted_lessons: number;
+  missed_lessons: number;
+  top_missed: TeacherMonitoringRow[];
+}
+
+export interface StudentAttendanceSummary {
+  present: number;
+  absent: number;
+  late: number;
+  excused: number;
+  average_score: number | null;
+}
+
 export interface TeacherSessionLogRow {
   date: string;
   subject_name: string;

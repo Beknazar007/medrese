@@ -26,26 +26,7 @@ import { useTranslation } from "react-i18next";
 import { monitoringApi } from "../api/entities";
 import type { TeacherMonitoringRow } from "../api/types";
 import { nameById, useDepartments, useSemesters } from "../hooks/useReferenceData";
-
-type RangePreset = "day" | "week" | "year";
-
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function computeRange(preset: RangePreset): { from: string; to: string } {
-  const today = new Date();
-  if (preset === "day") return { from: toIso(today), to: toIso(today) };
-  if (preset === "week") {
-    const day = today.getDay(); // 0 = Sunday
-    const diffToMonday = day === 0 ? 6 : day - 1;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - diffToMonday);
-    return { from: toIso(monday), to: toIso(today) };
-  }
-  const jan1 = new Date(today.getFullYear(), 0, 1);
-  return { from: toIso(jan1), to: toIso(today) };
-}
+import { computeRange, type RangePreset } from "../lib/dateRanges";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
@@ -114,6 +95,7 @@ export default function TeacherMonitoringPage() {
         >
           <ToggleButton value="day">{t("monitoring.range_day")}</ToggleButton>
           <ToggleButton value="week">{t("monitoring.range_week")}</ToggleButton>
+          <ToggleButton value="month">{t("monitoring.range_month")}</ToggleButton>
           <ToggleButton value="year">{t("monitoring.range_year")}</ToggleButton>
         </ToggleButtonGroup>
       </Box>

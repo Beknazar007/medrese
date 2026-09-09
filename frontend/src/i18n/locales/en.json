@@ -93,7 +93,12 @@
     "stat_coverage": "Coverage",
     "stat_unassigned": "Subjects with no teacher",
     "legend_placed": "Placed on timetable",
-    "legend_gap": "Assigned, not yet on timetable"
+    "legend_gap": "Assigned, not yet on timetable",
+    "monitoring_title": "Monitoring",
+    "teacher_monitoring_title": "Teachers",
+    "student_stats_title": "Students",
+    "top_missed_title": "Most missed lessons",
+    "no_missed_hint": "No missed lessons for this period."
   },
   "faculties": {
     "title": "Faculties",
@@ -279,6 +284,7 @@
     "title": "Teacher monitoring",
     "range_day": "Day",
     "range_week": "Week",
+    "range_month": "Month",
     "range_year": "Year",
     "col_teacher": "Teacher",
     "col_expected": "Expected",

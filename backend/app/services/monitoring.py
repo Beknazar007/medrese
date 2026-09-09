@@ -1,9 +1,12 @@
+from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.attendance import AttendanceRecord
+from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
@@ -97,6 +100,36 @@ def teacher_monitoring(
 
 
 @dataclass
+class TeacherMonitoringSummary:
+    expected_lessons: int
+    conducted_lessons: int
+    missed_lessons: int
+    top_missed: list[TeacherMonitoringRow]
+
+
+def teacher_monitoring_summary(
+    db: Session,
+    *,
+    semester_id: int,
+    date_from: date,
+    date_to: date,
+    department_id: int | None = None,
+    today: date | None = None,
+) -> TeacherMonitoringSummary:
+    """School-wide (or department-wide) rollup of teacher_monitoring, for the dashboard:
+    totals plus the worst offenders (already sorted by missed_lessons descending)."""
+    rows = teacher_monitoring(
+        db, semester_id=semester_id, date_from=date_from, date_to=date_to, department_id=department_id, today=today
+    )
+    return TeacherMonitoringSummary(
+        expected_lessons=sum(r.expected_lessons for r in rows),
+        conducted_lessons=sum(r.conducted_lessons for r in rows),
+        missed_lessons=sum(r.missed_lessons for r in rows),
+        top_missed=[r for r in rows if r.missed_lessons > 0][:5],
+    )
+
+
+@dataclass
 class TeacherSessionLogRow:
     date: date
     subject_name: str
@@ -153,3 +186,67 @@ def teacher_session_log(
             )
     rows.sort(key=lambda r: r.date, reverse=True)
     return rows
+
+
+@dataclass
+class StudentAttendanceSummary:
+    present: int
+    absent: int
+    late: int
+    excused: int
+    average_score: float | None
+
+
+def student_attendance_summary(
+    db: Session,
+    *,
+    semester_id: int,
+    date_from: date,
+    date_to: date,
+    department_id: int | None = None,
+    today: date | None = None,
+) -> StudentAttendanceSummary:
+    """School-wide (or department-wide) attendance-status breakdown and average grade across
+    every AttendanceRecord/GradeRecord whose lesson falls in [date_from, date_to] within this
+    semester — the student-side counterpart to teacher_monitoring, for the dashboard.
+    """
+    effective_to = min(date_to, today or date.today())
+
+    attendance_stmt = (
+        select(AttendanceRecord.status)
+        .join(LessonSession, LessonSession.id == AttendanceRecord.session_id)
+        .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
+        .where(
+            ScheduleEntry.semester_id == semester_id,
+            LessonSession.date >= date_from,
+            LessonSession.date <= effective_to,
+        )
+    )
+    grade_stmt = (
+        select(GradeRecord.score)
+        .join(LessonSession, LessonSession.id == GradeRecord.session_id)
+        .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
+        .where(
+            ScheduleEntry.semester_id == semester_id,
+            LessonSession.date >= date_from,
+            LessonSession.date <= effective_to,
+        )
+    )
+    if department_id is not None:
+        attendance_stmt = attendance_stmt.join(
+            TeacherProfile, TeacherProfile.id == ScheduleEntry.teacher_id
+        ).where(TeacherProfile.department_id == department_id)
+        grade_stmt = grade_stmt.join(TeacherProfile, TeacherProfile.id == ScheduleEntry.teacher_id).where(
+            TeacherProfile.department_id == department_id
+        )
+
+    counts = Counter(status.value for status in db.scalars(attendance_stmt).all())
+    scores = list(db.scalars(grade_stmt).all())
+
+    return StudentAttendanceSummary(
+        present=counts.get("PRESENT", 0),
+        absent=counts.get("ABSENT", 0),
+        late=counts.get("LATE", 0),
+        excused=counts.get("EXCUSED", 0),
+        average_score=round(sum(scores) / len(scores), 1) if scores else None,
+    )

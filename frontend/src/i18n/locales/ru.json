@@ -93,7 +93,12 @@
     "stat_coverage": "Покрытие",
     "stat_unassigned": "Предметов без преподавателя",
     "legend_placed": "В расписании",
-    "legend_gap": "Назначено, но не в расписании"
+    "legend_gap": "Назначено, но не в расписании",
+    "monitoring_title": "Мониторинг",
+    "teacher_monitoring_title": "Преподаватели",
+    "student_stats_title": "Студенты",
+    "top_missed_title": "Больше всего пропусков",
+    "no_missed_hint": "Пропущенных уроков нет за этот период."
   },
   "faculties": {
     "title": "Факультеты",
@@ -279,6 +284,7 @@
     "title": "Мониторинг преподавателей",
     "range_day": "День",
     "range_week": "Неделя",
+    "range_month": "Месяц",
     "range_year": "Год",
     "col_teacher": "Преподаватель",
     "col_expected": "Ожидалось",

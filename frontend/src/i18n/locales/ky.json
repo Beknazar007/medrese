@@ -93,7 +93,12 @@
     "stat_coverage": "Камсыздоо",
     "stat_unassigned": "Мугалими жок сабактар",
     "legend_placed": "Жадыбалга коюлган",
-    "legend_gap": "Дайындалган, бирок жадыбалга коюла элек"
+    "legend_gap": "Дайындалган, бирок жадыбалга коюла элек",
+    "monitoring_title": "Мониторинг",
+    "teacher_monitoring_title": "Мугалимдер",
+    "student_stats_title": "Окуучулар",
+    "top_missed_title": "Эң көп сабак калтыргандар",
+    "no_missed_hint": "Бул мезгилде калтырылган сабак жок."
   },
   "faculties": {
     "title": "Факультеттер",
@@ -279,6 +284,7 @@
     "title": "Мугалимдерди мониторинг кылуу",
     "range_day": "Күн",
     "range_week": "Жума",
+    "range_month": "Ай",
     "range_year": "Жыл",
     "col_teacher": "Мугалим",
     "col_expected": "Пландалган",

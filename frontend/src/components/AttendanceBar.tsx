@@ -1,6 +1,5 @@
 import { Box, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import type { StudentPerformanceRow } from "../api/types";
 
 // Status-palette roles from the dataviz skill: present=good, late=warning,
 // absent=critical, excused=categorical blue (informational, not "bad").
@@ -16,7 +15,14 @@ interface Segment {
   color: string;
 }
 
-export default function AttendanceBar({ row }: { row: StudentPerformanceRow }) {
+interface AttendanceCounts {
+  present_count: number;
+  absent_count: number;
+  late_count: number;
+  excused_count: number;
+}
+
+export default function AttendanceBar({ row }: { row: AttendanceCounts }) {
   const { t } = useTranslation();
   const total = row.present_count + row.absent_count + row.late_count + row.excused_count;
 

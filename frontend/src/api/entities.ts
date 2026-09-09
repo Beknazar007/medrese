@@ -10,11 +10,13 @@ import type {
   ScheduleEntry,
   Semester,
   Student,
+  StudentAttendanceSummary,
   StudentHistoryRow,
   StudentNote,
   StudentPerformanceRow,
   Subject,
   TeacherMonitoringRow,
+  TeacherMonitoringSummary,
   TeacherSessionLogRow,
   TeacherWorkload,
   TeachingAssignment,
@@ -87,6 +89,18 @@ export const dashboardApi = {
     (await api.get<TeacherWorkload[]>("/dashboard/workload", { params: { semester_id } })).data,
   unassignedSubjects: async (semester_id: number): Promise<Subject[]> =>
     (await api.get<Subject[]>("/dashboard/unassigned-subjects", { params: { semester_id } })).data,
+  teacherMonitoringSummary: async (params: {
+    semester_id: number;
+    date_from: string;
+    date_to: string;
+  }): Promise<TeacherMonitoringSummary> =>
+    (await api.get<TeacherMonitoringSummary>("/dashboard/teacher-monitoring-summary", { params })).data,
+  studentAttendanceSummary: async (params: {
+    semester_id: number;
+    date_from: string;
+    date_to: string;
+  }): Promise<StudentAttendanceSummary> =>
+    (await api.get<StudentAttendanceSummary>("/dashboard/student-attendance-summary", { params })).data,
 };
 
 export const studentsApi = {
