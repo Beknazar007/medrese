@@ -1,5 +1,6 @@
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Chip,
@@ -55,35 +56,40 @@ export default function StudentProfileDialog({
       <DialogTitle>{student?.full_name ?? "…"}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {student && (
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", color: "text.secondary", fontSize: 14 }}>
-            <span>
-              {t("students.group")}: {nameById(groups, student.group_id, (g) => g.name)}
-            </span>
-            {student.student_number && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar src={student.photo ?? undefined} sx={{ width: 72, height: 72, fontSize: 28 }}>
+              {student.full_name.charAt(0)}
+            </Avatar>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", color: "text.secondary", fontSize: 14 }}>
               <span>
-                {t("students.student_number")}: {student.student_number}
+                {t("students.group")}: {nameById(groups, student.group_id, (g) => g.name)}
               </span>
-            )}
-            {student.phone && (
-              <span>
-                {t("students.phone")}: {student.phone}
-              </span>
-            )}
-            {student.guardian_name && (
-              <span>
-                {t("students.guardian_name")}: {student.guardian_name}
-              </span>
-            )}
-            {student.guardian_phone && (
-              <span>
-                {t("students.guardian_phone")}: {student.guardian_phone}
-              </span>
-            )}
-            <Chip
-              size="small"
-              label={student.is_active ? t("common.yes") : t("common.no")}
-              sx={{ height: 20 }}
-            />
+              {student.student_number && (
+                <span>
+                  {t("students.student_number")}: {student.student_number}
+                </span>
+              )}
+              {student.phone && (
+                <span>
+                  {t("students.phone")}: {student.phone}
+                </span>
+              )}
+              {student.guardian_name && (
+                <span>
+                  {t("students.guardian_name")}: {student.guardian_name}
+                </span>
+              )}
+              {student.guardian_phone && (
+                <span>
+                  {t("students.guardian_phone")}: {student.guardian_phone}
+                </span>
+              )}
+              <Chip
+                size="small"
+                label={student.is_active ? t("common.yes") : t("common.no")}
+                sx={{ height: 20 }}
+              />
+            </Box>
           </Box>
         )}
 

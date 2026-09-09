@@ -121,6 +121,7 @@ export interface Student {
   guardian_phone: string | null;
   enrollment_date: string | null;
   is_active: boolean;
+  photo: string | null;
 }
 
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";

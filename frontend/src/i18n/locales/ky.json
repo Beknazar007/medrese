@@ -211,6 +211,7 @@
   },
   "students": {
     "title": "Студенттер",
+    "photo": "Сүрөт",
     "full_name": "Аты-жөнү",
     "group": "Топ",
     "student_number": "Студенттик номур",

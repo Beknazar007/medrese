@@ -1,3 +1,4 @@
+import { Avatar } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { studentsApi } from "../api/entities";
@@ -29,6 +30,15 @@ export default function StudentsPage() {
         canDelete={canWrite}
         onRowClick={(row) => setProfileStudentId(row.id)}
         columns={[
+          {
+            key: "photo",
+            label: "",
+            render: (row) => (
+              <Avatar src={row.photo ?? undefined} sx={{ width: 32, height: 32, fontSize: 14 }}>
+                {row.full_name.charAt(0)}
+              </Avatar>
+            ),
+          },
           { key: "full_name", label: t("students.full_name") },
           { key: "group", label: t("students.group"), render: (row) => nameById(groups, row.group_id, (g) => g.name) },
           { key: "student_number", label: t("students.student_number") },
@@ -36,6 +46,7 @@ export default function StudentsPage() {
           { key: "is_active", label: t("students.active"), render: (row) => (row.is_active ? t("common.yes") : t("common.no")) },
         ]}
         fields={[
+          { name: "photo", label: t("students.photo"), type: "image" },
           { name: "full_name", label: t("students.full_name"), type: "text", required: true },
           { name: "group_id", label: t("students.group"), type: "select", required: true, options: groupOptions },
           { name: "student_number", label: t("students.student_number"), type: "text" },

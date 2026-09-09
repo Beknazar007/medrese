@@ -211,6 +211,7 @@
   },
   "students": {
     "title": "Студенты",
+    "photo": "Фото",
     "full_name": "ФИО",
     "group": "Группа",
     "student_number": "Студенческий номер",

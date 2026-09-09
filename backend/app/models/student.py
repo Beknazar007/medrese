@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Date, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -20,6 +20,7 @@ class Student(Base):
     guardian_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     enrollment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    photo: Mapped[str | None] = mapped_column(Text, nullable=True)  # base64 data URL, resized client-side
 
     group: Mapped["Group"] = relationship(back_populates="students")
     attendance_records: Mapped[list["AttendanceRecord"]] = relationship(back_populates="student")

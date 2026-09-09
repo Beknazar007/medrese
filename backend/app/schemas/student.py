@@ -14,6 +14,7 @@ class StudentCreate(BaseModel):
     guardian_phone: str | None = None
     enrollment_date: date | None = None
     is_active: bool = True
+    photo: str | None = None
 
 
 class StudentUpdate(BaseModel):
@@ -27,6 +28,7 @@ class StudentUpdate(BaseModel):
     guardian_phone: str | None = None
     enrollment_date: date | None = None
     is_active: bool | None = None
+    photo: str | None = None
 
 
 class StudentOut(BaseModel):
@@ -41,5 +43,6 @@ class StudentOut(BaseModel):
     guardian_phone: str | None
     enrollment_date: date | None
     is_active: bool
+    photo: str | None
 
     model_config = {"from_attributes": True}

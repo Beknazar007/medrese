@@ -211,6 +211,7 @@
   },
   "students": {
     "title": "Students",
+    "photo": "Photo",
     "full_name": "Full name",
     "group": "Group",
     "student_number": "Student number",
