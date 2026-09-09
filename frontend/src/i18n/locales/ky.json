@@ -233,7 +233,8 @@
     "col_subject": "Предмет",
     "col_teacher": "Мугалим",
     "col_type": "Сабактын түрү",
-    "col_grade": "Баа"
+    "col_grade": "Баа",
+    "notes_title": "Мугалимдердин комментарийлери"
   },
   "journal": {
     "title": "Класс журналы",

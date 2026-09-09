@@ -19,9 +19,9 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { studentsApi } from "../api/entities";
+import { notesApi, studentsApi } from "../api/entities";
 import type { AttendanceStatus } from "../api/types";
-import { nameById, useGroups } from "../hooks/useReferenceData";
+import { nameById, useGroups, useTeachers } from "../hooks/useReferenceData";
 
 // Same status-palette roles as AttendanceBar: present=good, late=warning, absent=critical,
 // excused=categorical blue (informational, not "bad").
@@ -41,6 +41,7 @@ export default function StudentProfileDialog({
 }) {
   const { t } = useTranslation();
   const { data: groups } = useGroups();
+  const { data: teachers } = useTeachers();
 
   const { data: student } = useQuery({
     queryKey: ["students", studentId],
@@ -49,6 +50,10 @@ export default function StudentProfileDialog({
   const { data: history } = useQuery({
     queryKey: ["students", studentId, "history"],
     queryFn: () => studentsApi.history(studentId),
+  });
+  const { data: notes } = useQuery({
+    queryKey: ["students", studentId, "notes"],
+    queryFn: () => notesApi.list(studentId),
   });
 
   return (
@@ -136,6 +141,25 @@ export default function StudentProfileDialog({
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+
+        <Typography variant="subtitle1">{t("students.notes_title")}</Typography>
+
+        {notes && notes.length === 0 && <Alert severity="info">{t("journal.note_empty")}</Alert>}
+
+        {notes && notes.length > 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {notes.map((n) => (
+              <Box key={n.id} sx={{ borderBottom: "1px solid", borderColor: "divider", pb: 1 }}>
+                <Typography variant="body2">{n.body}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {nameById(teachers, n.author_teacher_id, (t2) => t2.full_name)} ·{" "}
+                  {n.visibility === "SHARED" ? t("journal.note_shared") : t("journal.note_private")} ·{" "}
+                  {new Date(n.created_at).toLocaleDateString()}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
         )}
       </DialogContent>
       <DialogActions>

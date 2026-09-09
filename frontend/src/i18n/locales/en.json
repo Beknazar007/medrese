@@ -233,7 +233,8 @@
     "col_subject": "Subject",
     "col_teacher": "Teacher",
     "col_type": "Lesson type",
-    "col_grade": "Grade"
+    "col_grade": "Grade",
+    "notes_title": "Teacher comments"
   },
   "journal": {
     "title": "Class journal",
