@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,8 @@ class LessonSessionOut(BaseModel):
     id: int
     schedule_entry_id: int
     date: date
+    teacher_checked_in_at: datetime | None
+    teacher_checked_out_at: datetime | None
 
     model_config = {"from_attributes": True}
 

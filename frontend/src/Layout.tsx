@@ -11,6 +11,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SchoolIcon from "@mui/icons-material/School";
 import ClassIcon from "@mui/icons-material/Class";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import {
@@ -75,6 +76,7 @@ export default function Layout() {
       { to: "/groups", label: t("nav.groups"), icon: <GroupsIcon /> },
       { to: "/students", label: t("nav.students"), icon: <SchoolIcon /> },
       { to: "/assignments", label: t("nav.assignments"), icon: <AssignmentIcon /> },
+      { to: "/monitoring", label: t("nav.monitoring"), icon: <FactCheckIcon /> },
     );
   }
   if (user?.role === "RECTOR") {

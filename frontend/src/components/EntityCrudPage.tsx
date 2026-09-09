@@ -5,6 +5,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Autocomplete,
+  Avatar,
   Box,
   Button,
   Dialog,
@@ -33,7 +34,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiErrorMessage } from "../lib/errors";
 
-export type FieldType = "text" | "number" | "select" | "date" | "time" | "checkbox";
+export type FieldType = "text" | "number" | "select" | "date" | "time" | "checkbox" | "image";
 
 export interface FieldConfig {
   name: string;
@@ -41,8 +42,25 @@ export interface FieldConfig {
   type: FieldType;
   options?: { value: string | number; label: string }[];
   required?: boolean;
+  multiline?: boolean; // for long free text (type "text")
   editableOnCreateOnly?: boolean; // e.g. username — shown only when creating
   hidden?: (values: Record<string, unknown>) => boolean;
+}
+
+// Downscales + re-encodes as JPEG client-side before it's stored as a base64 string,
+// so an uploaded photo never bloats the record — a phone photo becomes a few dozen KB.
+async function resizeImageToDataUrl(file: File, maxDim = 400, quality = 0.82): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported");
+  ctx.drawImage(bitmap, 0, 0, width, height);
+  return canvas.toDataURL("image/jpeg", quality);
 }
 
 export interface ColumnConfig<T> {
@@ -347,6 +365,35 @@ export default function EntityCrudPage<T extends { id: number }>({
               );
             }
 
+            if (field.type === "image") {
+              const photoValue = typeof value === "string" && value ? value : null;
+              return (
+                <Box key={field.name} sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Avatar src={photoValue ?? undefined} sx={{ width: 64, height: 64 }} />
+                  <Button component="label" variant="outlined" size="small">
+                    {field.label}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        const dataUrl = await resizeImageToDataUrl(file);
+                        setField(field.name, dataUrl);
+                      }}
+                    />
+                  </Button>
+                  {photoValue && (
+                    <Button size="small" color="error" onClick={() => setField(field.name, null)}>
+                      {t("common.remove")}
+                    </Button>
+                  )}
+                </Box>
+              );
+            }
+
             return (
               <TextField
                 key={field.name}
@@ -354,6 +401,8 @@ export default function EntityCrudPage<T extends { id: number }>({
                 type={field.type === "date" ? "date" : field.type === "time" ? "time" : field.type}
                 value={value}
                 required={field.required}
+                multiline={field.multiline}
+                minRows={field.multiline ? 3 : undefined}
                 onChange={(e) =>
                   setField(field.name, field.type === "number" ? Number(e.target.value) : e.target.value)
                 }

@@ -18,6 +18,7 @@ import SemestersPage from "./pages/SemestersPage";
 import StudentsPage from "./pages/StudentsPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TeachersPage from "./pages/TeachersPage";
+import TeacherMonitoringPage from "./pages/TeacherMonitoringPage";
 import TeacherClassPage from "./pages/teacher/TeacherClassPage";
 import TimeSlotsPage from "./pages/TimeSlotsPage";
 import UsersPage from "./pages/UsersPage";
@@ -134,6 +135,14 @@ export default function App() {
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <StudentsPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/monitoring"
+                  element={
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
+                      <TeacherMonitoringPage />
                     </RoleRoute>
                   }
                 />

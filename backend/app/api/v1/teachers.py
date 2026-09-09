@@ -85,6 +85,12 @@ def create_teacher(
         phone=payload.phone,
         hire_date=payload.hire_date,
         bio=payload.bio,
+        photo=payload.photo,
+        education=payload.education,
+        competency=payload.competency,
+        teaching_experience_years=payload.teaching_experience_years,
+        previous_subjects=payload.previous_subjects,
+        can_teach=payload.can_teach,
     )
     db.add(teacher)
     db.commit()

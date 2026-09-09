@@ -21,6 +21,7 @@
     "timeslots": "Time slots",
     "schedule": "Schedule",
     "students": "Students",
+    "monitoring": "Monitoring",
     "my_class": "My class",
     "logout": "Log out"
   },
@@ -123,6 +124,12 @@
     "password_label": "Password",
     "email": "Email",
     "bio": "Bio",
+    "photo": "Photo",
+    "education": "Education (where they studied)",
+    "competency": "Competency",
+    "experience_years": "Teaching experience (years)",
+    "previous_subjects": "Subjects taught before",
+    "can_teach": "What they can teach",
     "empty_hint": "No teachers yet. Add the first one."
   },
   "subjects": {
@@ -256,6 +263,30 @@
     "performance_title": "Class summary",
     "col_average": "Average grade",
     "col_sessions": "Sessions",
-    "close": "Close"
+    "close": "Close",
+    "checked_in_at": "Checked in",
+    "checked_out_at": "Checked out",
+    "check_out": "Finish lesson",
+    "checked_out": "Lesson marked as finished"
+  },
+  "monitoring": {
+    "title": "Teacher monitoring",
+    "range_day": "Day",
+    "range_week": "Week",
+    "range_year": "Year",
+    "col_teacher": "Teacher",
+    "col_expected": "Expected",
+    "col_conducted": "Conducted",
+    "col_missed": "Missed",
+    "empty_hint": "No lessons scheduled for this period.",
+    "log_title": "Lessons: {{name}}",
+    "log_col_date": "Date",
+    "log_col_subject": "Subject",
+    "log_col_group": "Group",
+    "log_col_status": "Status",
+    "log_col_checkin": "Checked in",
+    "log_col_checkout": "Checked out",
+    "status_conducted": "Conducted",
+    "status_missed": "Missed"
   }
 }

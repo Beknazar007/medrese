@@ -68,6 +68,10 @@ function todayDayOfWeek(): number {
   return js === 0 ? 7 : js;
 }
 
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function TeacherClassPage() {
   const { t } = useTranslation();
 
@@ -106,6 +110,9 @@ export default function TeacherClassPage() {
   const [selectedEntryId, setSelectedEntryId] = useState<number | "">("");
   const [selectedDate, setSelectedDate] = useState<string>(todayIso());
   const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sessionTimes, setSessionTimes] = useState<{ checkedInAt: string | null; checkedOutAt: string | null } | null>(
+    null,
+  );
   const [roster, setRoster] = useState<RosterStudent[]>([]);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [noteStudent, setNoteStudent] = useState<{ id: number; name: string } | null>(null);
@@ -135,6 +142,10 @@ export default function TeacherClassPage() {
     mutationFn: ({ entryId, date }: { entryId: number; date: string }) => journalApi.getOrCreateSession(entryId, date),
     onSuccess: (detail) => {
       setSessionId(detail.session.id);
+      setSessionTimes({
+        checkedInAt: detail.session.teacher_checked_in_at,
+        checkedOutAt: detail.session.teacher_checked_out_at,
+      });
       setRoster(detail.roster);
       savedSnapshot.current = JSON.stringify(detail.roster);
     },
@@ -145,6 +156,15 @@ export default function TeacherClassPage() {
     openSessionMutation.mutate({ entryId, date });
   }
 
+  const checkOutMutation = useMutation({
+    mutationFn: () => journalApi.checkOut(sessionId!),
+    onSuccess: (session) => {
+      setSessionTimes({ checkedInAt: session.teacher_checked_in_at, checkedOutAt: session.teacher_checked_out_at });
+      setSnackbar(t("journal.checked_out"));
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+  });
+
   function confirmDiscardIfDirty(): boolean {
     if (!isDirty) return true;
     return window.confirm(t("journal.unsaved_confirm"));
@@ -154,6 +174,7 @@ export default function TeacherClassPage() {
     if (!confirmDiscardIfDirty()) return;
     setSelectedEntryId(entryId);
     setSessionId(null);
+    setSessionTimes(null);
     setRoster([]);
     savedSnapshot.current = "[]";
   }
@@ -162,6 +183,7 @@ export default function TeacherClassPage() {
     if (!confirmDiscardIfDirty()) return;
     setSelectedDate(date);
     setSessionId(null);
+    setSessionTimes(null);
     setRoster([]);
     savedSnapshot.current = "[]";
   }
@@ -266,6 +288,22 @@ export default function TeacherClassPage() {
 
       {sessionId && roster.length > 0 && (
         <>
+          <Box sx={{ display: "flex", gap: 2, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              {t("journal.checked_in_at")}:{" "}
+              <strong>{sessionTimes?.checkedInAt ? formatTime(sessionTimes.checkedInAt) : "—"}</strong>
+            </Typography>
+            {sessionTimes?.checkedOutAt ? (
+              <Typography variant="body2" color="text.secondary">
+                {t("journal.checked_out_at")}: <strong>{formatTime(sessionTimes.checkedOutAt)}</strong>
+              </Typography>
+            ) : (
+              <Button size="small" variant="outlined" disabled={checkOutMutation.isPending} onClick={() => checkOutMutation.mutate()}>
+                {t("journal.check_out")}
+              </Button>
+            )}
+          </Box>
+
           <Box sx={{ display: "flex", gap: 3, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
               {t("journal.mark_all_present")}

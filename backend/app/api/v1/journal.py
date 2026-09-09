@@ -128,6 +128,23 @@ def put_grades(
     return LessonSessionDetailOut(session=LessonSessionOut.model_validate(session), roster=roster)
 
 
+@router.put("/sessions/{session_id}/check-out", response_model=LessonSessionOut)
+def check_out(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> LessonSession:
+    session = db.get(LessonSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    _assert_can_access_entry(db, current_user, session.schedule_entry)
+
+    journal_service.check_out_session(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
 @router.get("/performance", response_model=list[StudentPerformanceRow])
 def get_performance(
     assignment_id: int,

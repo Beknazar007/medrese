@@ -13,6 +13,12 @@ class TeacherCreate(BaseModel):
     phone: str | None = None
     hire_date: date | None = None
     bio: str | None = None
+    photo: str | None = None
+    education: str | None = None
+    competency: str | None = None
+    teaching_experience_years: int | None = None
+    previous_subjects: str | None = None
+    can_teach: str | None = None
 
 
 class TeacherUpdate(BaseModel):
@@ -22,6 +28,12 @@ class TeacherUpdate(BaseModel):
     phone: str | None = None
     hire_date: date | None = None
     bio: str | None = None
+    photo: str | None = None
+    education: str | None = None
+    competency: str | None = None
+    teaching_experience_years: int | None = None
+    previous_subjects: str | None = None
+    can_teach: str | None = None
 
 
 class TeacherOut(BaseModel):
@@ -34,5 +46,11 @@ class TeacherOut(BaseModel):
     phone: str | None
     hire_date: date | None
     bio: str | None
+    photo: str | None
+    education: str | None
+    competency: str | None
+    teaching_experience_years: int | None
+    previous_subjects: str | None
+    can_teach: str | None
 
     model_config = {"from_attributes": True}

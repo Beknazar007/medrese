@@ -21,6 +21,7 @@
     "timeslots": "Пары",
     "schedule": "Расписание",
     "students": "Студенты",
+    "monitoring": "Мониторинг",
     "my_class": "Мой класс",
     "logout": "Выйти"
   },
@@ -123,6 +124,12 @@
     "password_label": "Пароль",
     "email": "Email",
     "bio": "Краткая информация",
+    "photo": "Фото",
+    "education": "Образование (где учился)",
+    "competency": "Компетенция",
+    "experience_years": "Стаж преподавания (лет)",
+    "previous_subjects": "Какие уроки вёл до этого",
+    "can_teach": "Что может преподавать",
     "empty_hint": "Преподавателей пока нет. Добавьте первого."
   },
   "subjects": {
@@ -256,6 +263,30 @@
     "performance_title": "Итоги по классу",
     "col_average": "Средний балл",
     "col_sessions": "Занятий",
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "checked_in_at": "Пришёл",
+    "checked_out_at": "Закончил",
+    "check_out": "Завершить урок",
+    "checked_out": "Урок отмечен как завершённый"
+  },
+  "monitoring": {
+    "title": "Мониторинг преподавателей",
+    "range_day": "День",
+    "range_week": "Неделя",
+    "range_year": "Год",
+    "col_teacher": "Преподаватель",
+    "col_expected": "Ожидалось",
+    "col_conducted": "Проведено",
+    "col_missed": "Пропущено",
+    "empty_hint": "Нет запланированных занятий за этот период.",
+    "log_title": "Занятия: {{name}}",
+    "log_col_date": "Дата",
+    "log_col_subject": "Предмет",
+    "log_col_group": "Группа",
+    "log_col_status": "Статус",
+    "log_col_checkin": "Пришёл",
+    "log_col_checkout": "Закончил",
+    "status_conducted": "Проведено",
+    "status_missed": "Пропущено"
   }
 }

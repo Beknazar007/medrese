@@ -4,6 +4,7 @@ import type {
   Department,
   Faculty,
   Group,
+  LessonSession,
   LessonSessionDetail,
   Room,
   ScheduleEntry,
@@ -13,6 +14,8 @@ import type {
   StudentNote,
   StudentPerformanceRow,
   Subject,
+  TeacherMonitoringRow,
+  TeacherSessionLogRow,
   TeacherWorkload,
   TeachingAssignment,
   TimeSlot,
@@ -107,8 +110,20 @@ export const journalApi = {
     (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/attendance`, { records })).data,
   putGrades: async (sessionId: number, records: { student_id: number; score: number }[]): Promise<LessonSessionDetail> =>
     (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/grades`, { records })).data,
+  checkOut: async (sessionId: number): Promise<LessonSession> =>
+    (await api.put<LessonSession>(`/journal/sessions/${sessionId}/check-out`)).data,
   performance: async (assignment_id: number): Promise<StudentPerformanceRow[]> =>
     (await api.get<StudentPerformanceRow[]>("/journal/performance", { params: { assignment_id } })).data,
+};
+
+export const monitoringApi = {
+  teachers: async (params: { semester_id: number; date_from: string; date_to: string }): Promise<TeacherMonitoringRow[]> =>
+    (await api.get<TeacherMonitoringRow[]>("/monitoring/teachers", { params })).data,
+  teacherSessions: async (
+    teacherId: number,
+    params: { semester_id: number; date_from: string; date_to: string },
+  ): Promise<TeacherSessionLogRow[]> =>
+    (await api.get<TeacherSessionLogRow[]>(`/monitoring/teachers/${teacherId}/sessions`, { params })).data,
 };
 
 export const notesApi = {

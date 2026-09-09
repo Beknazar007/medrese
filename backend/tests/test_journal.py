@@ -44,6 +44,29 @@ def test_get_or_create_session_is_idempotent(db: Session):
     assert session1.id == session2.id
 
 
+def test_get_or_create_session_stamps_check_in_only_once(db: Session):
+    entry, _, _, _ = _setup(db)
+
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    assert session1.teacher_checked_in_at is not None
+    first_stamp = session1.teacher_checked_in_at
+
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    assert session2.id == session1.id
+    assert session2.teacher_checked_in_at == first_stamp
+
+
+def test_check_out_session_stamps_checkout_time(db: Session):
+    entry, _, _, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    assert session.teacher_checked_out_at is None
+
+    journal_service.check_out_session(session)
+    assert session.teacher_checked_out_at is not None
+
+
 def test_roster_includes_all_active_group_students_with_no_marks_yet(db: Session):
     entry, _, student_a, student_b = _setup(db)
     session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))

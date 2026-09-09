@@ -21,6 +21,7 @@
     "timeslots": "Сабак убактылары",
     "schedule": "Сабак жадыбалы",
     "students": "Студенттер",
+    "monitoring": "Мониторинг",
     "my_class": "Менин классым",
     "logout": "Чыгуу"
   },
@@ -123,6 +124,12 @@
     "password_label": "Сырсөз",
     "email": "Электрондук почта",
     "bio": "Кыскача маалымат",
+    "photo": "Сүрөт",
+    "education": "Билими (кайда окуган)",
+    "competency": "Компетенттүүлүгү",
+    "experience_years": "Мугалимдик стажы (жыл)",
+    "previous_subjects": "Мурда кайсы сабактарды өткөн",
+    "can_teach": "Кайсы сабактарды бере алат",
     "empty_hint": "Азырынча мугалим жок. Биринчисин кошуңуз."
   },
   "subjects": {
@@ -256,6 +263,30 @@
     "performance_title": "Класстын жыйынтыгы",
     "col_average": "Орточо баа",
     "col_sessions": "Сабак саны",
-    "close": "Жабуу"
+    "close": "Жабуу",
+    "checked_in_at": "Келген убактысы",
+    "checked_out_at": "Аяктаган убактысы",
+    "check_out": "Сабакты аяктоо",
+    "checked_out": "Сабак аякталды деп белгиленди"
+  },
+  "monitoring": {
+    "title": "Мугалимдерди мониторинг кылуу",
+    "range_day": "Күн",
+    "range_week": "Жума",
+    "range_year": "Жыл",
+    "col_teacher": "Мугалим",
+    "col_expected": "Пландалган",
+    "col_conducted": "Өткөрүлгөн",
+    "col_missed": "Калтырылган",
+    "empty_hint": "Бул мезгилде пландалган сабак жок.",
+    "log_title": "Сабактар: {{name}}",
+    "log_col_date": "Күнү",
+    "log_col_subject": "Предмет",
+    "log_col_group": "Топ",
+    "log_col_status": "Статусу",
+    "log_col_checkin": "Келген убактысы",
+    "log_col_checkout": "Аяктаган убактысы",
+    "status_conducted": "Өткөрүлгөн",
+    "status_missed": "Калтырылган"
   }
 }

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -15,6 +15,9 @@ from app.schemas.journal import AttendanceUpsert, GradeUpsert, RosterStudentOut,
 
 
 def get_or_create_session(db: Session, *, schedule_entry: ScheduleEntry, on_date: date) -> LessonSession:
+    """Also doubles as the teacher's check-in: the first time this lesson's date is opened,
+    teacher_checked_in_at is stamped — re-opening the same date later doesn't move it.
+    """
     session = db.scalar(
         select(LessonSession).where(
             LessonSession.schedule_entry_id == schedule_entry.id,
@@ -24,10 +27,16 @@ def get_or_create_session(db: Session, *, schedule_entry: ScheduleEntry, on_date
     if session is not None:
         return session
 
-    session = LessonSession(schedule_entry_id=schedule_entry.id, date=on_date)
+    session = LessonSession(
+        schedule_entry_id=schedule_entry.id, date=on_date, teacher_checked_in_at=datetime.now(timezone.utc)
+    )
     db.add(session)
     db.flush()
     return session
+
+
+def check_out_session(session: LessonSession) -> None:
+    session.teacher_checked_out_at = datetime.now(timezone.utc)
 
 
 def roster_for_session(db: Session, session: LessonSession) -> list[RosterStudentOut]:

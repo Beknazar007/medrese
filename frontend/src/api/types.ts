@@ -33,6 +33,12 @@ export interface Teacher {
   phone: string | null;
   hire_date: string | null;
   bio: string | null;
+  photo: string | null;
+  education: string | null;
+  competency: string | null;
+  teaching_experience_years: number | null;
+  previous_subjects: string | null;
+  can_teach: string | null;
 }
 
 export interface Subject {
@@ -124,6 +130,8 @@ export interface LessonSession {
   id: number;
   schedule_entry_id: number;
   date: string;
+  teacher_checked_in_at: string | null;
+  teacher_checked_out_at: string | null;
 }
 
 export interface RosterStudent {
@@ -161,6 +169,24 @@ export interface StudentHistoryRow {
   semester_id: number;
   score: number | null;
   attendance_status: AttendanceStatus | null;
+}
+
+export interface TeacherMonitoringRow {
+  teacher_id: number;
+  full_name: string;
+  department_id: number;
+  expected_lessons: number;
+  conducted_lessons: number;
+  missed_lessons: number;
+}
+
+export interface TeacherSessionLogRow {
+  date: string;
+  subject_name: string;
+  group_name: string;
+  conducted: boolean;
+  checked_in_at: string | null;
+  checked_out_at: string | null;
 }
 
 export interface StudentNote {
