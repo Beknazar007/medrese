@@ -72,6 +72,8 @@ interface Props<T extends { id: number }> {
   extraToolbar?: ReactNode;
   emptyHint?: string;
   searchPlaceholder?: string;
+  /** When set, clicking a row calls this instead of opening the edit dialog (e.g. a read-only detail view). Edit/delete icon buttons keep working independently. */
+  onRowClick?: (row: T) => void;
 }
 
 export default function EntityCrudPage<T extends { id: number }>({
@@ -88,6 +90,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   extraToolbar,
   emptyHint,
   searchPlaceholder,
+  onRowClick,
 }: Props<T>) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -262,12 +265,13 @@ export default function EntityCrudPage<T extends { id: number }>({
                 </TableHead>
                 <TableBody>
                   {filteredData.map((row) => {
-                    const rowIsClickable = canEdit && Boolean(api.update);
+                    const rowIsClickable = onRowClick ? true : canEdit && Boolean(api.update);
+                    const handleRowClick = onRowClick ? () => onRowClick(row) : () => openEdit(row);
                     return (
                     <TableRow
                       key={row.id}
                       hover
-                      onClick={rowIsClickable ? () => openEdit(row) : undefined}
+                      onClick={rowIsClickable ? handleRowClick : undefined}
                       sx={rowIsClickable ? { cursor: "pointer" } : undefined}
                     >
                       {columns.map((col) => (

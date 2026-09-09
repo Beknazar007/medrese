@@ -214,7 +214,14 @@
     "guardian_phone": "Guardian phone",
     "enrollment_date": "Enrollment date",
     "active": "Active",
-    "empty_hint": "No students yet. Add the first one."
+    "empty_hint": "No students yet. Add the first one.",
+    "history_title": "Lesson history",
+    "history_empty": "No lessons held yet.",
+    "col_date": "Date",
+    "col_subject": "Subject",
+    "col_teacher": "Teacher",
+    "col_type": "Lesson type",
+    "col_grade": "Grade"
   },
   "journal": {
     "title": "Class journal",

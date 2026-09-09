@@ -150,6 +150,19 @@ export interface StudentPerformanceRow {
   excused_count: number;
 }
 
+export interface StudentHistoryRow {
+  session_id: number;
+  date: string;
+  subject_id: number;
+  subject_name: string;
+  teacher_id: number;
+  teacher_name: string;
+  hour_type: HourType;
+  semester_id: number;
+  score: number | null;
+  attendance_status: AttendanceStatus | null;
+}
+
 export interface StudentNote {
   id: number;
   student_id: number;

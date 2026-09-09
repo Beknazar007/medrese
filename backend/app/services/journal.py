@@ -1,14 +1,17 @@
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
+from app.models.assignment import TeachingAssignment
 from app.models.attendance import AttendanceRecord
 from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.student import Student
-from app.schemas.journal import AttendanceUpsert, GradeUpsert, RosterStudentOut, StudentPerformanceRow
+from app.models.subject import Subject
+from app.models.teacher import TeacherProfile
+from app.schemas.journal import AttendanceUpsert, GradeUpsert, RosterStudentOut, StudentHistoryRow, StudentPerformanceRow
 
 
 def get_or_create_session(db: Session, *, schedule_entry: ScheduleEntry, on_date: date) -> LessonSession:
@@ -121,3 +124,59 @@ def student_performance(db: Session, *, assignment_id: int) -> list[StudentPerfo
             )
         )
     return rows
+
+
+def student_history(
+    db: Session, *, student_id: int, group_id: int, teacher_id: int | None = None
+) -> list[StudentHistoryRow]:
+    """Every lesson ever held for the student's group, with that student's own grade and
+    attendance status for each (both None if the lesson hasn't been marked yet). Passing
+    teacher_id restricts this to lessons that teacher taught; omit it for the full history
+    across every subject and teacher.
+    """
+    stmt = (
+        select(
+            LessonSession.id,
+            LessonSession.date,
+            TeachingAssignment.subject_id,
+            Subject.name,
+            TeachingAssignment.teacher_id,
+            TeacherProfile.full_name,
+            TeachingAssignment.hour_type,
+            TeachingAssignment.semester_id,
+            GradeRecord.score,
+            AttendanceRecord.status,
+        )
+        .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
+        .join(TeachingAssignment, TeachingAssignment.id == ScheduleEntry.assignment_id)
+        .join(Subject, Subject.id == TeachingAssignment.subject_id)
+        .join(TeacherProfile, TeacherProfile.id == TeachingAssignment.teacher_id)
+        .outerjoin(
+            GradeRecord,
+            and_(GradeRecord.session_id == LessonSession.id, GradeRecord.student_id == student_id),
+        )
+        .outerjoin(
+            AttendanceRecord,
+            and_(AttendanceRecord.session_id == LessonSession.id, AttendanceRecord.student_id == student_id),
+        )
+        .where(TeachingAssignment.group_id == group_id)
+        .order_by(LessonSession.date.desc())
+    )
+    if teacher_id is not None:
+        stmt = stmt.where(TeachingAssignment.teacher_id == teacher_id)
+
+    return [
+        StudentHistoryRow(
+            session_id=row.id,
+            date=row.date,
+            subject_id=row.subject_id,
+            subject_name=row.name,
+            teacher_id=row.teacher_id,
+            teacher_name=row.full_name,
+            hour_type=row.hour_type,
+            semester_id=row.semester_id,
+            score=row.score,
+            attendance_status=row.status,
+        )
+        for row in db.execute(stmt).all()
+    ]

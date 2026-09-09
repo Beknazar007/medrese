@@ -9,6 +9,7 @@ import type {
   ScheduleEntry,
   Semester,
   Student,
+  StudentHistoryRow,
   StudentNote,
   StudentPerformanceRow,
   Subject,
@@ -85,7 +86,12 @@ export const dashboardApi = {
     (await api.get<Subject[]>("/dashboard/unassigned-subjects", { params: { semester_id } })).data,
 };
 
-export const studentsApi = crud<Student>("/students");
+export const studentsApi = {
+  ...crud<Student>("/students"),
+  get: async (id: number): Promise<Student> => (await api.get<Student>(`/students/${id}`)).data,
+  history: async (id: number): Promise<StudentHistoryRow[]> =>
+    (await api.get<StudentHistoryRow[]>(`/students/${id}/history`)).data,
+};
 
 export const journalApi = {
   getOrCreateSession: async (schedule_entry_id: number, date: string): Promise<LessonSessionDetail> =>

@@ -2,7 +2,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field
 
-from app.models.enums import AttendanceStatus
+from app.models.enums import AttendanceStatus, HourType
 
 
 class SessionGetOrCreate(BaseModel):
@@ -58,3 +58,16 @@ class StudentPerformanceRow(BaseModel):
     absent_count: int
     late_count: int
     excused_count: int
+
+
+class StudentHistoryRow(BaseModel):
+    session_id: int
+    date: date
+    subject_id: int
+    subject_name: str
+    teacher_id: int
+    teacher_name: str
+    hour_type: HourType
+    semester_id: int
+    score: int | None
+    attendance_status: AttendanceStatus | None

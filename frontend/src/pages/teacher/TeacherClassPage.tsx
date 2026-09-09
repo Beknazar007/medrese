@@ -33,6 +33,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { assignmentsApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import AttendanceBar from "../../components/AttendanceBar";
+import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
@@ -108,6 +109,7 @@ export default function TeacherClassPage() {
   const [roster, setRoster] = useState<RosterStudent[]>([]);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [noteStudent, setNoteStudent] = useState<{ id: number; name: string } | null>(null);
+  const [profileStudentId, setProfileStudentId] = useState<number | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
   const savedSnapshot = useRef<string>("[]");
   const autoLoadedOnce = useRef(false);
@@ -297,7 +299,15 @@ export default function TeacherClassPage() {
               <TableBody>
                 {roster.map((r) => (
                   <TableRow key={r.student_id} hover sx={{ bgcolor: r.attendance_status ? ROW_TINT[r.attendance_status] : undefined }}>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{r.full_name}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                      <Box
+                        component="span"
+                        onClick={() => setProfileStudentId(r.student_id)}
+                        sx={{ cursor: "pointer", textDecoration: "underline", textDecorationColor: "transparent", "&:hover": { textDecorationColor: "currentColor" } }}
+                      >
+                        {r.full_name}
+                      </Box>
+                    </TableCell>
                     <TableCell>
                       <ToggleButtonGroup
                         size="small"
@@ -362,6 +372,10 @@ export default function TeacherClassPage() {
 
       {noteStudent && (
         <NotesDialog student={noteStudent} onClose={() => setNoteStudent(null)} onError={(msg) => setSnackbar(msg)} />
+      )}
+
+      {profileStudentId !== null && (
+        <StudentProfileDialog studentId={profileStudentId} onClose={() => setProfileStudentId(null)} />
       )}
 
       <Dialog open={showPerformance} onClose={() => setShowPerformance(false)} maxWidth="md" fullWidth>

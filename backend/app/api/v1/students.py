@@ -11,7 +11,9 @@ from app.models.group import Group
 from app.models.student import Student
 from app.models.teacher import TeacherProfile
 from app.models.user import User
+from app.schemas.journal import StudentHistoryRow
 from app.schemas.student import StudentCreate, StudentOut, StudentUpdate
+from app.services import journal as journal_service
 
 router = APIRouter(prefix="/students", tags=["students"])
 
@@ -56,6 +58,30 @@ def get_student(
     elif current_user.role == UserRole.DEAN:
         assert_department_access(current_user, student.group.department_id)
     return student
+
+
+@router.get("/{student_id}/history", response_model=list[StudentHistoryRow])
+def get_student_history(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[StudentHistoryRow]:
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    teacher_id_filter: int | None = None
+    if current_user.role == UserRole.TEACHER:
+        if student.group_id not in _teacher_group_ids(db, current_user):
+            raise HTTPException(status_code=403, detail="You do not teach this student's group")
+        teacher = db.scalar(select(TeacherProfile).where(TeacherProfile.user_id == current_user.id))
+        teacher_id_filter = teacher.id if teacher is not None else None
+    elif current_user.role == UserRole.DEAN:
+        assert_department_access(current_user, student.group.department_id)
+
+    return journal_service.student_history(
+        db, student_id=student_id, group_id=student.group_id, teacher_id=teacher_id_filter
+    )
 
 
 @router.post("", response_model=StudentOut, status_code=201)

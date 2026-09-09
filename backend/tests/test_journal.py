@@ -2,7 +2,7 @@ from datetime import date
 
 from sqlalchemy.orm import Session
 
-from app.models.enums import AttendanceStatus
+from app.models.enums import AttendanceStatus, DayOfWeek
 from app.schemas.journal import AttendanceUpsert, GradeUpsert
 from app.services import journal as journal_service
 from tests.factories import (
@@ -125,3 +125,66 @@ def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     assert rows[student_a.id].absent_count == 1
     assert rows[student_b.id].average_score is None
     assert rows[student_b.id].sessions_count == 2
+
+
+def test_student_history_includes_every_group_session_with_this_students_own_marks(db: Session):
+    entry, assignment, student_a, student_b = _setup(db)
+
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
+    journal_service.upsert_attendance(
+        db, session=session1, records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.PRESENT)]
+    )
+    db.flush()
+
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    db.flush()
+
+    history = journal_service.student_history(
+        db, student_id=student_a.id, group_id=student_a.group_id
+    )
+    assert [row.date for row in history] == [date(2026, 9, 14), date(2026, 9, 7)]
+    graded_row = next(row for row in history if row.session_id == session1.id)
+    assert graded_row.score == 80
+    assert graded_row.attendance_status == AttendanceStatus.PRESENT
+    assert graded_row.subject_id == assignment.subject_id
+    assert graded_row.teacher_id == assignment.teacher_id
+    ungraded_row = next(row for row in history if row.session_id == session2.id)
+    assert ungraded_row.score is None
+    assert ungraded_row.attendance_status is None
+
+    # A different student's marks never leak into this student's history.
+    other_history = journal_service.student_history(
+        db, student_id=student_b.id, group_id=student_b.group_id
+    )
+    assert all(row.score is None and row.attendance_status is None for row in other_history)
+
+
+def test_student_history_teacher_filter_excludes_other_teachers_lessons(db: Session):
+    department = make_department(db)
+    group = make_group(db, department)
+    semester = make_semester(db)
+    student = make_student(db, group)
+
+    teacher_a = make_teacher(db, department, username="teacher_a")
+    subject_a = make_subject(db, department, code="A101")
+    assignment_a = make_assignment(db, teacher_a, subject_a, group, semester)
+    room = make_room(db)
+    slot_a = make_time_slot(db, order=1)
+    entry_a = make_schedule_entry(db, assignment_a, room, slot_a, day_of_week=DayOfWeek.MONDAY)
+    session_a = journal_service.get_or_create_session(db, schedule_entry=entry_a, on_date=date(2026, 9, 7))
+    db.flush()
+
+    teacher_b = make_teacher(db, department, username="teacher_b")
+    subject_b = make_subject(db, department, code="B101")
+    assignment_b = make_assignment(db, teacher_b, subject_b, group, semester)
+    slot_b = make_time_slot(db, order=2)
+    entry_b = make_schedule_entry(db, assignment_b, room, slot_b, day_of_week=DayOfWeek.MONDAY)
+    journal_service.get_or_create_session(db, schedule_entry=entry_b, on_date=date(2026, 9, 8))
+    db.flush()
+
+    history = journal_service.student_history(
+        db, student_id=student.id, group_id=group.id, teacher_id=teacher_a.id
+    )
+    assert [row.session_id for row in history] == [session_a.id]
