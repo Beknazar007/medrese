@@ -23,7 +23,11 @@
     "students": "Students",
     "monitoring": "Monitoring",
     "my_class": "My class",
-    "logout": "Log out"
+    "logout": "Log out",
+    "group_org": "Organization",
+    "group_academic": "Academics",
+    "group_monitoring": "Monitoring",
+    "group_schedule": "Schedule"
   },
   "common": {
     "add": "Add",

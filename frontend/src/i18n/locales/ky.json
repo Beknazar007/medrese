@@ -23,7 +23,11 @@
     "students": "Студенттер",
     "monitoring": "Мониторинг",
     "my_class": "Менин классым",
-    "logout": "Чыгуу"
+    "logout": "Чыгуу",
+    "group_org": "Уюм",
+    "group_academic": "Окуу процесси",
+    "group_monitoring": "Мониторинг",
+    "group_schedule": "Жадыбал"
   },
   "common": {
     "add": "Кошуу",

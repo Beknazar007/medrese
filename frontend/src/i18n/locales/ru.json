@@ -23,7 +23,11 @@
     "students": "Студенты",
     "monitoring": "Мониторинг",
     "my_class": "Мой класс",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "group_org": "Организация",
+    "group_academic": "Учебный процесс",
+    "group_monitoring": "Мониторинг",
+    "group_schedule": "Расписание"
   },
   "common": {
     "add": "Добавить",

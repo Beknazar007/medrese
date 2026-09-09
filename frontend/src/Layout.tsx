@@ -17,12 +17,14 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import {
   AppBar,
   Box,
+  Divider,
   Drawer,
   IconButton,
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  ListSubheader,
   MenuItem,
   Select,
   Toolbar,
@@ -43,6 +45,11 @@ interface NavItem {
   icon: ReactNode;
 }
 
+interface NavGroup {
+  label?: string; // omitted for the ungrouped top item (Dashboard)
+  items: NavItem[];
+}
+
 export default function Layout() {
   const { t, i18n } = useTranslation();
   const { logout, user } = useAuth();
@@ -56,40 +63,55 @@ export default function Layout() {
     navigate("/login");
   }
 
-  const navItems: NavItem[] = [];
+  const navGroups: NavGroup[] = [];
+
   if (user?.role === "RECTOR" || user?.role === "DEAN") {
-    navItems.push({ to: "/dashboard", label: t("nav.dashboard"), icon: <DashboardIcon /> });
+    navGroups.push({ items: [{ to: "/dashboard", label: t("nav.dashboard"), icon: <DashboardIcon /> }] });
+  }
+
+  const orgItems: NavItem[] = [];
+  if (user?.role === "RECTOR") {
+    orgItems.push({ to: "/faculties", label: t("nav.faculties"), icon: <ApartmentIcon /> });
+  }
+  if (user?.role === "RECTOR" || user?.role === "DEAN") {
+    orgItems.push({ to: "/departments", label: t("nav.departments"), icon: <AccountTreeIcon /> });
   }
   if (user?.role === "RECTOR") {
-    navItems.push({ to: "/faculties", label: t("nav.faculties"), icon: <ApartmentIcon /> });
+    orgItems.push({ to: "/users", label: t("nav.admin_accounts"), icon: <AdminPanelSettingsIcon /> });
   }
+  if (orgItems.length) navGroups.push({ label: t("nav.group_org"), items: orgItems });
+
+  const academicItems: NavItem[] = [];
   if (user?.role === "RECTOR" || user?.role === "DEAN") {
-    navItems.push({ to: "/departments", label: t("nav.departments"), icon: <AccountTreeIcon /> });
-  }
-  if (user?.role === "RECTOR") {
-    navItems.push({ to: "/users", label: t("nav.admin_accounts"), icon: <AdminPanelSettingsIcon /> });
-  }
-  if (user?.role === "RECTOR" || user?.role === "DEAN") {
-    navItems.push(
+    academicItems.push(
       { to: "/teachers", label: t("nav.teachers"), icon: <PeopleIcon /> },
+      { to: "/students", label: t("nav.students"), icon: <SchoolIcon /> },
       { to: "/subjects", label: t("nav.subjects"), icon: <MenuBookIcon /> },
       { to: "/groups", label: t("nav.groups"), icon: <GroupsIcon /> },
-      { to: "/students", label: t("nav.students"), icon: <SchoolIcon /> },
       { to: "/assignments", label: t("nav.assignments"), icon: <AssignmentIcon /> },
-      { to: "/monitoring", label: t("nav.monitoring"), icon: <FactCheckIcon /> },
     );
   }
+  if (academicItems.length) navGroups.push({ label: t("nav.group_academic"), items: academicItems });
+
+  const monitoringItems: NavItem[] = [];
+  if (user?.role === "RECTOR" || user?.role === "DEAN") {
+    monitoringItems.push({ to: "/monitoring", label: t("nav.monitoring"), icon: <FactCheckIcon /> });
+  }
+  if (monitoringItems.length) navGroups.push({ label: t("nav.group_monitoring"), items: monitoringItems });
+
+  const scheduleItems: NavItem[] = [];
+  if (user?.role === "TEACHER") {
+    scheduleItems.push({ to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> });
+  }
+  scheduleItems.push({ to: "/schedule", label: t("nav.schedule"), icon: <EventNoteIcon /> });
   if (user?.role === "RECTOR") {
-    navItems.push(
+    scheduleItems.push(
       { to: "/semesters", label: t("nav.semesters"), icon: <CalendarMonthIcon /> },
       { to: "/rooms", label: t("nav.rooms"), icon: <MeetingRoomIcon /> },
       { to: "/timeslots", label: t("nav.timeslots"), icon: <EventNoteIcon /> },
     );
   }
-  if (user?.role === "TEACHER") {
-    navItems.push({ to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> });
-  }
-  navItems.push({ to: "/schedule", label: t("nav.schedule"), icon: <EventNoteIcon /> });
+  navGroups.push({ label: t("nav.group_schedule"), items: scheduleItems });
 
   const drawerContent = (
     <List>
@@ -107,16 +129,24 @@ export default function Layout() {
           </Select>
         </Box>
       )}
-      {navItems.map((item) => (
-        <ListItemButton
-          key={item.to}
-          component={NavLink}
-          to={item.to}
-          onClick={() => isMobile && setMobileOpen(false)}
-        >
-          <ListItemIcon>{item.icon}</ListItemIcon>
-          <ListItemText primary={item.label} />
-        </ListItemButton>
+      {navGroups.map((group, i) => (
+        <Box key={group.label ?? `group-${i}`}>
+          {i > 0 && <Divider sx={{ my: 0.5 }} />}
+          {group.label && (
+            <ListSubheader sx={{ lineHeight: "32px", fontSize: 12, fontWeight: 600 }}>{group.label}</ListSubheader>
+          )}
+          {group.items.map((item) => (
+            <ListItemButton
+              key={item.to}
+              component={NavLink}
+              to={item.to}
+              onClick={() => isMobile && setMobileOpen(false)}
+            >
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.label} />
+            </ListItemButton>
+          ))}
+        </Box>
       ))}
     </List>
   );
