@@ -33,3 +33,13 @@ class AttendanceStatus(str, enum.Enum):
 class NoteVisibility(str, enum.Enum):
     PRIVATE = "PRIVATE"
     SHARED = "SHARED"
+
+
+class GroupType(str, enum.Enum):
+    REGULAR = "REGULAR"
+    HAFIZ = "HAFIZ"
+
+
+class HifzKind(str, enum.Enum):
+    HIFZ = "HIFZ"
+    REPEAT = "REPEAT"

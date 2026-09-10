@@ -23,7 +23,11 @@ export default function GroupsPage() {
       canCreate={canWrite}
       canEdit={canWrite}
       canDelete={canWrite}
-      defaultValues={user?.role === "DEAN" ? { department_id: user.headed_department_id } : {}}
+      defaultValues={
+        user?.role === "DEAN"
+          ? { department_id: user.headed_department_id, group_type: "REGULAR" }
+          : { group_type: "REGULAR" }
+      }
       columns={[
         { key: "name", label: t("groups.name") },
         { key: "specialty", label: t("groups.specialty") },
@@ -32,6 +36,11 @@ export default function GroupsPage() {
           key: "department",
           label: t("groups.department"),
           render: (row) => nameById(departments, row.department_id, (d) => d.name),
+        },
+        {
+          key: "group_type",
+          label: t("groups.type"),
+          render: (row) => (row.group_type === "HAFIZ" ? t("groups.type_hafiz") : t("groups.type_regular")),
         },
       ]}
       fields={[
@@ -45,6 +54,16 @@ export default function GroupsPage() {
           required: true,
           options: departmentOptions,
           editableOnCreateOnly: true,
+        },
+        {
+          name: "group_type",
+          label: t("groups.type"),
+          type: "select",
+          required: true,
+          options: [
+            { value: "REGULAR", label: t("groups.type_regular") },
+            { value: "HAFIZ", label: t("groups.type_hafiz") },
+          ],
         },
       ]}
       emptyHint={t("groups.empty_hint")}

@@ -51,12 +51,15 @@ export interface Subject {
   lab_hours: number;
 }
 
+export type GroupType = "REGULAR" | "HAFIZ";
+
 export interface Group {
   id: number;
   name: string;
   specialty: string;
   course_year: number;
   department_id: number;
+  group_type: GroupType;
 }
 
 export interface Semester {
@@ -212,4 +215,46 @@ export interface StudentNote {
   body: string;
   visibility: NoteVisibility;
   created_at: string;
+}
+
+export type HifzKind = "HIFZ" | "REPEAT";
+
+export interface HifzTarget {
+  id: number;
+  student_id: number;
+  kind: HifzKind;
+  juz_from: number | null;
+  juz_to: number | null;
+  page_from: number | null;
+  page_to: number | null;
+  start_date: string;
+  end_date: string;
+  note: string | null;
+}
+
+export interface HifzExam {
+  id: number;
+  student_id: number;
+  date: string;
+  title: string;
+  juz_from: number | null;
+  juz_to: number | null;
+  score: number | null;
+  comment: string | null;
+}
+
+export interface HifzRecordDetail {
+  score: number | null;
+  juz: number | null;
+  page_from: number | null;
+  page_to: number | null;
+  comment: string | null;
+}
+
+export interface HifzRosterStudent {
+  student_id: number;
+  full_name: string;
+  student_number: string | null;
+  hifz: HifzRecordDetail;
+  repeat: HifzRecordDetail;
 }

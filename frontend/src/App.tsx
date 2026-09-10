@@ -20,6 +20,7 @@ import SubjectsPage from "./pages/SubjectsPage";
 import TeachersPage from "./pages/TeachersPage";
 import TeacherMonitoringPage from "./pages/TeacherMonitoringPage";
 import TeacherClassPage from "./pages/teacher/TeacherClassPage";
+import HifzJournalPage from "./pages/teacher/HifzJournalPage";
 import TimeSlotsPage from "./pages/TimeSlotsPage";
 import UsersPage from "./pages/UsersPage";
 import { theme } from "./theme";
@@ -151,6 +152,14 @@ export default function App() {
                   element={
                     <RoleRoute roles={["TEACHER"]}>
                       <TeacherClassPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/hifz-journal"
+                  element={
+                    <RoleRoute roles={["TEACHER"]}>
+                      <HifzJournalPage />
                     </RoleRoute>
                   }
                 />

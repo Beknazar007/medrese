@@ -4,6 +4,10 @@ import type {
   Department,
   Faculty,
   Group,
+  HifzExam,
+  HifzKind,
+  HifzRosterStudent,
+  HifzTarget,
   LessonSession,
   LessonSessionDetail,
   Room,
@@ -138,6 +142,44 @@ export const monitoringApi = {
     params: { semester_id: number; date_from: string; date_to: string },
   ): Promise<TeacherSessionLogRow[]> =>
     (await api.get<TeacherSessionLogRow[]>(`/monitoring/teachers/${teacherId}/sessions`, { params })).data,
+};
+
+export const hifzApi = {
+  groups: async (): Promise<Group[]> => (await api.get<Group[]>("/hifz/groups")).data,
+  roster: async (group_id: number, date: string): Promise<HifzRosterStudent[]> =>
+    (await api.get<HifzRosterStudent[]>("/hifz/roster", { params: { group_id, date } })).data,
+  putRecords: async (
+    group_id: number,
+    date: string,
+    records: {
+      student_id: number;
+      kind: HifzKind;
+      score: number | null;
+      juz: number | null;
+      page_from: number | null;
+      page_to: number | null;
+      comment: string | null;
+    }[],
+  ): Promise<HifzRosterStudent[]> =>
+    (await api.put<HifzRosterStudent[]>("/hifz/records", { group_id, date, records })).data,
+  targets: async (studentId: number): Promise<HifzTarget[]> =>
+    (await api.get<HifzTarget[]>("/hifz/targets", { params: { student_id: studentId } })).data,
+  createTarget: async (payload: Omit<HifzTarget, "id">): Promise<HifzTarget> =>
+    (await api.post<HifzTarget>("/hifz/targets", payload)).data,
+  updateTarget: async (id: number, payload: Partial<Omit<HifzTarget, "id" | "student_id">>): Promise<HifzTarget> =>
+    (await api.patch<HifzTarget>(`/hifz/targets/${id}`, payload)).data,
+  removeTarget: async (id: number): Promise<void> => {
+    await api.delete(`/hifz/targets/${id}`);
+  },
+  exams: async (studentId: number): Promise<HifzExam[]> =>
+    (await api.get<HifzExam[]>("/hifz/exams", { params: { student_id: studentId } })).data,
+  createExam: async (payload: Omit<HifzExam, "id">): Promise<HifzExam> =>
+    (await api.post<HifzExam>("/hifz/exams", payload)).data,
+  updateExam: async (id: number, payload: Partial<Omit<HifzExam, "id" | "student_id">>): Promise<HifzExam> =>
+    (await api.patch<HifzExam>(`/hifz/exams/${id}`, payload)).data,
+  removeExam: async (id: number): Promise<void> => {
+    await api.delete(`/hifz/exams/${id}`);
+  },
 };
 
 export const notesApi = {

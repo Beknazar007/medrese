@@ -7,6 +7,7 @@ from app.api.v1 import (
     departments,
     faculties,
     groups,
+    hifz,
     journal,
     monitoring,
     notes,
@@ -38,3 +39,4 @@ api_router.include_router(students.router)
 api_router.include_router(journal.router)
 api_router.include_router(notes.router)
 api_router.include_router(monitoring.router)
+api_router.include_router(hifz.router)

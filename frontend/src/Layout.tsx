@@ -101,7 +101,10 @@ export default function Layout() {
 
   const scheduleItems: NavItem[] = [];
   if (user?.role === "TEACHER") {
-    scheduleItems.push({ to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> });
+    scheduleItems.push(
+      { to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> },
+      { to: "/hifz-journal", label: t("nav.hifz_journal"), icon: <MenuBookIcon /> },
+    );
   }
   scheduleItems.push({ to: "/schedule", label: t("nav.schedule"), icon: <EventNoteIcon /> });
   if (user?.role === "RECTOR") {

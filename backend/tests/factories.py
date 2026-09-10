@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.models.assignment import TeachingAssignment
 from app.models.department import Department
-from app.models.enums import DayOfWeek, HourType, UserRole
+from app.models.enums import DayOfWeek, GroupType, HourType, UserRole
 from app.models.faculty import Faculty
 from app.models.group import Group
 from app.models.room import Room
@@ -45,8 +45,10 @@ def make_subject(db: Session, department: Department, code: str = "MTH101") -> S
     return subject
 
 
-def make_group(db: Session, department: Department, name: str = "G-101") -> Group:
-    group = Group(name=name, specialty="Theology", course_year=1, department_id=department.id)
+def make_group(
+    db: Session, department: Department, name: str = "G-101", group_type: GroupType = GroupType.REGULAR
+) -> Group:
+    group = Group(name=name, specialty="Theology", course_year=1, department_id=department.id, group_type=group_type)
     db.add(group)
     db.flush()
     return group
