@@ -181,12 +181,14 @@ export interface TeacherMonitoringRow {
   expected_lessons: number;
   conducted_lessons: number;
   missed_lessons: number;
+  late_lessons: number;
 }
 
 export interface TeacherMonitoringSummary {
   expected_lessons: number;
   conducted_lessons: number;
   missed_lessons: number;
+  late_lessons: number;
   top_missed: TeacherMonitoringRow[];
 }
 
@@ -205,6 +207,7 @@ export interface TeacherSessionLogRow {
   conducted: boolean;
   checked_in_at: string | null;
   checked_out_at: string | null;
+  late: boolean;
 }
 
 export interface StudentNote {

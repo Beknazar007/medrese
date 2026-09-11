@@ -294,6 +294,7 @@
     "col_expected": "Ожидалось",
     "col_conducted": "Проведено",
     "col_missed": "Пропущено",
+    "col_late": "Опоздания",
     "empty_hint": "Нет запланированных занятий за этот период.",
     "log_title": "Занятия: {{name}}",
     "log_col_date": "Дата",
@@ -303,7 +304,8 @@
     "log_col_checkin": "Пришёл",
     "log_col_checkout": "Закончил",
     "status_conducted": "Проведено",
-    "status_missed": "Пропущено"
+    "status_missed": "Пропущено",
+    "status_late": "Опоздал"
   },
   "hifz": {
     "title": "Журнал хафиз",

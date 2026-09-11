@@ -1,6 +1,7 @@
 from collections import Counter
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,6 +11,23 @@ from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
+
+BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
+LATE_THRESHOLD_MINUTES = 15
+
+
+def _is_late(checked_in_at: datetime | None, session_date: date, start_time: time) -> bool:
+    """A teacher is "late" if they checked in more than LATE_THRESHOLD_MINUTES after the
+    scheduled period start, in Bishkek local time (Kyrgyzstan has no DST)."""
+    if checked_in_at is None:
+        return False
+    if checked_in_at.tzinfo is None:
+        # Columns are always written as UTC (datetime.now(timezone.utc)); SQLite drops the
+        # offset on round-trip through a raw column SELECT, so re-attach it here.
+        checked_in_at = checked_in_at.replace(tzinfo=timezone.utc)
+    expected_start = datetime.combine(session_date, start_time, tzinfo=BISHKEK_TZ)
+    checked_in_local = checked_in_at.astimezone(BISHKEK_TZ)
+    return (checked_in_local - expected_start) > timedelta(minutes=LATE_THRESHOLD_MINUTES)
 
 
 def _expected_dates(day_of_week: int, start: date, end: date) -> list[date]:
@@ -34,6 +52,7 @@ class TeacherMonitoringRow:
     expected_lessons: int
     conducted_lessons: int
     missed_lessons: int
+    late_lessons: int
 
 
 def teacher_monitoring(
@@ -62,10 +81,10 @@ def teacher_monitoring(
         return []
 
     entry_ids = [e.id for e in entries]
-    held_pairs = {
-        (row.schedule_entry_id, row.date)
+    held_rows = {
+        (row.schedule_entry_id, row.date): row.teacher_checked_in_at
         for row in db.execute(
-            select(LessonSession.schedule_entry_id, LessonSession.date).where(
+            select(LessonSession.schedule_entry_id, LessonSession.date, LessonSession.teacher_checked_in_at).where(
                 LessonSession.schedule_entry_id.in_(entry_ids),
                 LessonSession.date >= date_from,
                 LessonSession.date <= effective_to,
@@ -75,11 +94,13 @@ def teacher_monitoring(
 
     totals: dict[int, dict[str, int]] = {}
     for entry in entries:
-        bucket = totals.setdefault(entry.teacher_id, {"expected": 0, "conducted": 0})
+        bucket = totals.setdefault(entry.teacher_id, {"expected": 0, "conducted": 0, "late": 0})
         for d in _expected_dates(entry.day_of_week.value, date_from, effective_to):
             bucket["expected"] += 1
-            if (entry.id, d) in held_pairs:
+            if (entry.id, d) in held_rows:
                 bucket["conducted"] += 1
+                if _is_late(held_rows[(entry.id, d)], d, entry.time_slot.start_time):
+                    bucket["late"] += 1
 
     teachers = {t.id: t for t in db.scalars(select(TeacherProfile).where(TeacherProfile.id.in_(totals.keys()))).all()}
 
@@ -91,6 +112,7 @@ def teacher_monitoring(
             expected_lessons=counts["expected"],
             conducted_lessons=counts["conducted"],
             missed_lessons=counts["expected"] - counts["conducted"],
+            late_lessons=counts["late"],
         )
         for teacher_id, counts in totals.items()
         if teacher_id in teachers
@@ -104,6 +126,7 @@ class TeacherMonitoringSummary:
     expected_lessons: int
     conducted_lessons: int
     missed_lessons: int
+    late_lessons: int
     top_missed: list[TeacherMonitoringRow]
 
 
@@ -125,6 +148,7 @@ def teacher_monitoring_summary(
         expected_lessons=sum(r.expected_lessons for r in rows),
         conducted_lessons=sum(r.conducted_lessons for r in rows),
         missed_lessons=sum(r.missed_lessons for r in rows),
+        late_lessons=sum(r.late_lessons for r in rows),
         top_missed=[r for r in rows if r.missed_lessons > 0][:5],
     )
 
@@ -137,6 +161,7 @@ class TeacherSessionLogRow:
     conducted: bool
     checked_in_at: datetime | None
     checked_out_at: datetime | None
+    late: bool
 
 
 def teacher_session_log(
@@ -174,14 +199,16 @@ def teacher_session_log(
         group_name = entry.assignment.group.name
         for d in _expected_dates(entry.day_of_week.value, date_from, effective_to):
             session = sessions_by_pair.get((entry.id, d))
+            checked_in_at = session.teacher_checked_in_at if session else None
             rows.append(
                 TeacherSessionLogRow(
                     date=d,
                     subject_name=subject_name,
                     group_name=group_name,
                     conducted=session is not None,
-                    checked_in_at=session.teacher_checked_in_at if session else None,
+                    checked_in_at=checked_in_at,
                     checked_out_at=session.teacher_checked_out_at if session else None,
+                    late=_is_late(checked_in_at, d, entry.time_slot.start_time),
                 )
             )
     rows.sort(key=lambda r: r.date, reverse=True)

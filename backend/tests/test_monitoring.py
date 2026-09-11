@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -125,6 +125,53 @@ def test_teacher_session_log_marks_conducted_and_missed_dates_with_timestamps(db
     assert missed.conducted is False
     assert missed.checked_in_at is None
     assert missed.checked_out_at is None
+
+
+def test_teacher_session_log_flags_a_check_in_more_than_15_minutes_late(db: Session):
+    # Time slot starts at 08:00 Bishkek (UTC+6) = 02:00 UTC.
+    _, teacher, entry, semester = _setup(db)
+
+    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    on_time_session.teacher_checked_in_at = datetime(2026, 9, 7, 2, 10, tzinfo=timezone.utc)  # 08:10 local
+    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    late_session.teacher_checked_in_at = datetime(2026, 9, 14, 2, 20, tzinfo=timezone.utc)  # 08:20 local
+    db.flush()
+
+    rows = monitoring_service.teacher_session_log(
+        db,
+        teacher_id=teacher.id,
+        semester_id=semester.id,
+        date_from=date(2026, 9, 1),
+        date_to=date(2026, 9, 14),
+        today=date(2026, 9, 14),
+    )
+
+    on_time_row = next(r for r in rows if r.date == date(2026, 9, 7))
+    assert on_time_row.late is False
+    late_row = next(r for r in rows if r.date == date(2026, 9, 14))
+    assert late_row.late is True
+
+
+def test_teacher_monitoring_counts_late_lessons_per_teacher(db: Session):
+    _, teacher, entry, semester = _setup(db)
+
+    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    on_time_session.teacher_checked_in_at = datetime(2026, 9, 7, 2, 10, tzinfo=timezone.utc)
+    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    late_session.teacher_checked_in_at = datetime(2026, 9, 14, 2, 20, tzinfo=timezone.utc)
+    db.flush()
+
+    rows = monitoring_service.teacher_monitoring(
+        db,
+        semester_id=semester.id,
+        date_from=date(2026, 9, 1),
+        date_to=date(2026, 9, 14),
+        today=date(2026, 9, 14),
+    )
+
+    assert rows[0].teacher_id == teacher.id
+    assert rows[0].conducted_lessons == 2
+    assert rows[0].late_lessons == 1
 
 
 def test_teacher_monitoring_summary_totals_and_lists_top_missed(db: Session):

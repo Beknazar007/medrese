@@ -294,6 +294,7 @@
     "col_expected": "Expected",
     "col_conducted": "Conducted",
     "col_missed": "Missed",
+    "col_late": "Late",
     "empty_hint": "No lessons scheduled for this period.",
     "log_title": "Lessons: {{name}}",
     "log_col_date": "Date",
@@ -303,7 +304,8 @@
     "log_col_checkin": "Checked in",
     "log_col_checkout": "Checked out",
     "status_conducted": "Conducted",
-    "status_missed": "Missed"
+    "status_missed": "Missed",
+    "status_late": "Late"
   },
   "hifz": {
     "title": "Hafiz journal",

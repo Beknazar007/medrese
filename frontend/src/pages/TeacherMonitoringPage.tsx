@@ -115,6 +115,7 @@ export default function TeacherMonitoringPage() {
                 <TableCell align="right">{t("monitoring.col_expected")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_conducted")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_missed")}</TableCell>
+                <TableCell align="right">{t("monitoring.col_late")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -133,6 +134,13 @@ export default function TeacherMonitoringPage() {
                       <Chip size="small" color="error" label={row.missed_lessons} />
                     ) : (
                       row.missed_lessons
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    {row.late_lessons > 0 ? (
+                      <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={row.late_lessons} />
+                    ) : (
+                      row.late_lessons
                     )}
                   </TableCell>
                 </TableRow>
@@ -163,12 +171,15 @@ export default function TeacherMonitoringPage() {
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{row.date}</TableCell>
                     <TableCell>{row.subject_name}</TableCell>
                     <TableCell>{row.group_name}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
                       <Chip
                         size="small"
                         color={row.conducted ? "success" : "error"}
                         label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
                       />
+                      {row.late && (
+                        <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={t("monitoring.status_late")} />
+                      )}
                     </TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDateTime(row.checked_in_at)}</TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDateTime(row.checked_out_at)}</TableCell>

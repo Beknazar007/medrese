@@ -294,6 +294,7 @@
     "col_expected": "Пландалган",
     "col_conducted": "Өткөрүлгөн",
     "col_missed": "Калтырылган",
+    "col_late": "Кечиккен",
     "empty_hint": "Бул мезгилде пландалган сабак жок.",
     "log_title": "Сабактар: {{name}}",
     "log_col_date": "Күнү",
@@ -303,7 +304,8 @@
     "log_col_checkin": "Келген убактысы",
     "log_col_checkout": "Аяктаган убактысы",
     "status_conducted": "Өткөрүлгөн",
-    "status_missed": "Калтырылган"
+    "status_missed": "Калтырылган",
+    "status_late": "Кечикти"
   },
   "hifz": {
     "title": "Хафиз журналы",

@@ -211,6 +211,11 @@ export default function DashboardPage() {
                       value={teacherSummary.missed_lessons}
                       tone={teacherSummary.missed_lessons > 0 ? "warning" : "good"}
                     />
+                    <StatTile
+                      label={t("monitoring.col_late")}
+                      value={teacherSummary.late_lessons}
+                      tone={teacherSummary.late_lessons > 0 ? "warning" : "good"}
+                    />
                   </Box>
                   <Paper variant="outlined" sx={{ p: 2 }}>
                     <MonitoringBar
