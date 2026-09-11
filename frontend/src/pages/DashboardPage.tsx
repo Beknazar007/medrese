@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Button,
   Chip,
   MenuItem,
   Paper,
@@ -15,16 +16,26 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import DownloadIcon from "@mui/icons-material/Download";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { dashboardApi } from "../api/entities";
+import { dashboardApi, reportsApi } from "../api/entities";
 import AttendanceBar from "../components/AttendanceBar";
 import MonitoringBar from "../components/MonitoringBar";
 import StatTile from "../components/StatTile";
 import WorkloadBars from "../components/WorkloadBars";
-import { useDepartments, useSemesters } from "../hooks/useReferenceData";
+import { useDepartments, useGroups, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type RangePreset } from "../lib/dateRanges";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 const ATTENDANCE_LEGEND: { key: "present" | "late" | "excused" | "absent"; color: string }[] = [
   { key: "present", color: "#0ca30c" },
@@ -37,11 +48,24 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const { data: semesters } = useSemesters();
   const { data: departments } = useDepartments();
+  const { data: groups } = useGroups();
   const activeSemester = semesters?.find((s) => s.is_active);
   const [semesterId, setSemesterId] = useState<number | "">("");
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
   const [preset, setPreset] = useState<RangePreset>("week");
   const range = useMemo(() => computeRange(preset), [preset]);
+  const [reportGroupId, setReportGroupId] = useState<number | "">("");
+
+  const downloadReportMutation = useMutation({
+    mutationFn: () =>
+      reportsApi.weekly({
+        semester_id: Number(effectiveSemesterId),
+        date_from: range.from,
+        date_to: range.to,
+        ...(reportGroupId !== "" ? { group_id: reportGroupId } : {}),
+      }),
+    onSuccess: (blob) => downloadBlob(blob, `report_${range.from}_${range.to}.xlsx`),
+  });
 
   const { data: workload } = useQuery({
     queryKey: ["dashboard-workload", effectiveSemesterId],
@@ -194,6 +218,30 @@ export default function DashboardPage() {
               <ToggleButton value="month">{t("monitoring.range_month")}</ToggleButton>
               <ToggleButton value="year">{t("monitoring.range_year")}</ToggleButton>
             </ToggleButtonGroup>
+            <TextField
+              select
+              size="small"
+              label={t("common.group_filter")}
+              value={reportGroupId}
+              onChange={(e) => setReportGroupId(e.target.value === "" ? "" : Number(e.target.value))}
+              sx={{ minWidth: 180 }}
+            >
+              <MenuItem value="">{t("common.all_groups")}</MenuItem>
+              {(groups ?? []).map((g) => (
+                <MenuItem key={g.id} value={g.id}>
+                  {g.name}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DownloadIcon />}
+              disabled={downloadReportMutation.isPending}
+              onClick={() => downloadReportMutation.mutate()}
+            >
+              {t("dashboard.download_report")}
+            </Button>
           </Box>
 
           <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap", mb: 4 }}>

@@ -105,6 +105,21 @@ export const dashboardApi = {
     (await api.get<StudentAttendanceSummary>("/dashboard/student-attendance-summary", { params })).data,
 };
 
+export const reportsApi = {
+  weekly: async (params: {
+    semester_id: number;
+    date_from: string;
+    date_to: string;
+    group_id?: number;
+  }): Promise<Blob> =>
+    (
+      await api.get("/reports/weekly.xlsx", {
+        params,
+        responseType: "blob",
+      })
+    ).data,
+};
+
 export const studentsApi = {
   ...crud<Student>("/students"),
   get: async (id: number): Promise<Student> => (await api.get<Student>(`/students/${id}`)).data,

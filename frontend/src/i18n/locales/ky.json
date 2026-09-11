@@ -98,7 +98,8 @@
     "teacher_monitoring_title": "Мугалимдер",
     "student_stats_title": "Окуучулар",
     "top_missed_title": "Эң көп сабак калтыргандар",
-    "no_missed_hint": "Бул мезгилде калтырылган сабак жок."
+    "no_missed_hint": "Бул мезгилде калтырылган сабак жок.",
+    "download_report": "Отчетту жүктөп алуу"
   },
   "departments": {
     "title": "Кафедралар",

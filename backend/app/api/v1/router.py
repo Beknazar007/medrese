@@ -10,6 +10,7 @@ from app.api.v1 import (
     journal,
     monitoring,
     notes,
+    reports,
     rooms,
     schedule,
     semesters,
@@ -38,3 +39,4 @@ api_router.include_router(journal.router)
 api_router.include_router(notes.router)
 api_router.include_router(monitoring.router)
 api_router.include_router(hifz.router)
+api_router.include_router(reports.router)

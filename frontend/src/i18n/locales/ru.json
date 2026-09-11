@@ -98,7 +98,8 @@
     "teacher_monitoring_title": "Преподаватели",
     "student_stats_title": "Студенты",
     "top_missed_title": "Больше всего пропусков",
-    "no_missed_hint": "Пропущенных уроков нет за этот период."
+    "no_missed_hint": "Пропущенных уроков нет за этот период.",
+    "download_report": "Скачать отчёт"
   },
   "departments": {
     "title": "Кафедры",

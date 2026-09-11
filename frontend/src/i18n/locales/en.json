@@ -98,7 +98,8 @@
     "teacher_monitoring_title": "Teachers",
     "student_stats_title": "Students",
     "top_missed_title": "Most missed lessons",
-    "no_missed_hint": "No missed lessons for this period."
+    "no_missed_hint": "No missed lessons for this period.",
+    "download_report": "Download report"
   },
   "departments": {
     "title": "Departments",
