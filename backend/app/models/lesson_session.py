@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -23,6 +23,7 @@ class LessonSession(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     teacher_checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     teacher_checked_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_exam: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     schedule_entry: Mapped["ScheduleEntry"] = relationship()
     attendance_records: Mapped[list["AttendanceRecord"]] = relationship(

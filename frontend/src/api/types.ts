@@ -131,6 +131,7 @@ export interface LessonSession {
   date: string;
   teacher_checked_in_at: string | null;
   teacher_checked_out_at: string | null;
+  is_exam: boolean;
 }
 
 export interface RosterStudent {
@@ -170,6 +171,7 @@ export interface StudentHistoryRow {
   score: number | null;
   attendance_status: AttendanceStatus | null;
   attendance_comment: string | null;
+  is_exam: boolean;
 }
 
 export interface TeacherMonitoringRow {

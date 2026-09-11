@@ -239,6 +239,8 @@
     "col_grade": "Grade",
     "subject_held": "Held",
     "subject_missed": "Missed",
+    "subject_exam_count": "Exams",
+    "exam_label": "Exam",
     "notes_title": "Teacher comments"
   },
   "journal": {
@@ -279,7 +281,8 @@
     "checked_in_at": "Checked in",
     "checked_out_at": "Checked out",
     "check_out": "Finish lesson",
-    "checked_out": "Lesson marked as finished"
+    "checked_out": "Lesson marked as finished",
+    "exam_toggle": "This is an exam"
   },
   "monitoring": {
     "title": "Teacher monitoring",

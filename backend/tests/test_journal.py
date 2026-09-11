@@ -1,8 +1,10 @@
 from datetime import date
 
+import pytest
 from sqlalchemy.orm import Session
 
 from app.models.enums import AttendanceStatus, DayOfWeek
+from app.models.grade import GradeRecord
 from app.schemas.journal import AttendanceUpsert, GradeUpsert
 from app.services import journal as journal_service
 from tests.factories import (
@@ -81,6 +83,7 @@ def test_roster_includes_all_active_group_students_with_no_marks_yet(db: Session
 def test_upsert_attendance_then_grades_reflected_in_roster(db: Session):
     entry, _, student_a, student_b = _setup(db)
     session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    journal_service.set_exam_flag(session, True)
     db.flush()
 
     journal_service.upsert_attendance(
@@ -101,6 +104,24 @@ def test_upsert_attendance_then_grades_reflected_in_roster(db: Session):
     assert roster[student_a.id].score == 88
     assert roster[student_b.id].attendance_status == AttendanceStatus.ABSENT
     assert roster[student_b.id].score is None
+
+
+def test_upsert_grades_rejected_for_a_session_not_marked_as_an_exam(db: Session):
+    entry, _, student_a, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    assert session.is_exam is False
+
+    with pytest.raises(ValueError):
+        journal_service.upsert_grades(db, session=session, records=[GradeUpsert(student_id=student_a.id, score=75)])
+
+    journal_service.set_exam_flag(session, True)
+    db.flush()
+    journal_service.upsert_grades(db, session=session, records=[GradeUpsert(student_id=student_a.id, score=75)])
+    db.flush()
+
+    roster = {r.student_id: r for r in journal_service.roster_for_session(db, session)}
+    assert roster[student_a.id].score == 75
 
 
 def test_upsert_attendance_stores_and_updates_the_per_lesson_comment(db: Session):
@@ -149,6 +170,7 @@ def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     entry, assignment, student_a, student_b = _setup(db)
 
     session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
     journal_service.upsert_attendance(
@@ -157,6 +179,7 @@ def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     db.flush()
 
     session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    journal_service.set_exam_flag(session2, True)
     db.flush()
     journal_service.upsert_grades(db, session=session2, records=[GradeUpsert(student_id=student_a.id, score=90)])
     journal_service.upsert_attendance(
@@ -172,10 +195,31 @@ def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     assert rows[student_b.id].sessions_count == 2
 
 
+def test_student_performance_average_ignores_grades_left_on_non_exam_sessions(db: Session):
+    """Grades recorded before the exam-only rule existed stay in the database as history,
+    but a non-exam session's score must not pull the average away from the exam average."""
+    entry, assignment, student_a, _ = _setup(db)
+
+    non_exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    db.add(GradeRecord(session_id=non_exam_session.id, student_id=student_a.id, score=40))
+    db.flush()
+
+    exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    journal_service.set_exam_flag(exam_session, True)
+    db.flush()
+    journal_service.upsert_grades(db, session=exam_session, records=[GradeUpsert(student_id=student_a.id, score=90)])
+    db.flush()
+
+    rows = {r.student_id: r for r in journal_service.student_performance(db, assignment_id=assignment.id)}
+    assert rows[student_a.id].average_score == 90.0
+
+
 def test_student_history_includes_every_group_session_with_this_students_own_marks(db: Session):
     entry, assignment, student_a, student_b = _setup(db)
 
     session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
     journal_service.upsert_attendance(
@@ -200,10 +244,12 @@ def test_student_history_includes_every_group_session_with_this_students_own_mar
     assert graded_row.attendance_comment == "Жакшы катышты"
     assert graded_row.subject_id == assignment.subject_id
     assert graded_row.teacher_id == assignment.teacher_id
+    assert graded_row.is_exam is True
     ungraded_row = next(row for row in history if row.session_id == session2.id)
     assert ungraded_row.score is None
     assert ungraded_row.attendance_status is None
     assert ungraded_row.attendance_comment is None
+    assert ungraded_row.is_exam is False
 
     # A different student's marks never leak into this student's history.
     other_history = journal_service.student_history(

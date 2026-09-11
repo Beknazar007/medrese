@@ -39,6 +39,10 @@ def check_out_session(session: LessonSession) -> None:
     session.teacher_checked_out_at = datetime.now(timezone.utc)
 
 
+def set_exam_flag(session: LessonSession, is_exam: bool) -> None:
+    session.is_exam = is_exam
+
+
 def roster_for_session(db: Session, session: LessonSession) -> list[RosterStudentOut]:
     group_id = session.schedule_entry.assignment.group_id
     students = db.scalars(
@@ -84,6 +88,9 @@ def upsert_attendance(db: Session, *, session: LessonSession, records: list[Atte
 
 
 def upsert_grades(db: Session, *, session: LessonSession, records: list[GradeUpsert]) -> None:
+    if records and not session.is_exam:
+        raise ValueError("Grades can only be entered for a lesson marked as an exam")
+
     existing = {g.student_id: g for g in db.scalars(select(GradeRecord).where(GradeRecord.session_id == session.id))}
     for record in records:
         if record.student_id in existing:
@@ -94,7 +101,9 @@ def upsert_grades(db: Session, *, session: LessonSession, records: list[GradeUps
 
 def student_performance(db: Session, *, assignment_id: int) -> list[StudentPerformanceRow]:
     """Per-student average score and attendance breakdown across every LessonSession
-    that has ever been held for this teaching assignment."""
+    that has ever been held for this teaching assignment. The average only counts
+    grades from sessions marked as an exam — grades left over from before that
+    distinction existed are kept in the database but no longer factored in."""
     session_ids = list(
         db.scalars(
             select(LessonSession.id)
@@ -105,6 +114,14 @@ def student_performance(db: Session, *, assignment_id: int) -> list[StudentPerfo
     if not session_ids:
         return []
 
+    exam_session_ids = list(
+        db.scalars(
+            select(LessonSession.id)
+            .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
+            .where(ScheduleEntry.assignment_id == assignment_id, LessonSession.is_exam.is_(True))
+        )
+    )
+
     group_id = db.scalar(
         select(ScheduleEntry.group_id).join(LessonSession, LessonSession.schedule_entry_id == ScheduleEntry.id).limit(1)
     )
@@ -112,12 +129,16 @@ def student_performance(db: Session, *, assignment_id: int) -> list[StudentPerfo
 
     rows: list[StudentPerformanceRow] = []
     for student in students:
-        grades = list(
-            db.scalars(
-                select(GradeRecord.score).where(
-                    GradeRecord.student_id == student.id, GradeRecord.session_id.in_(session_ids)
+        grades = (
+            list(
+                db.scalars(
+                    select(GradeRecord.score).where(
+                        GradeRecord.student_id == student.id, GradeRecord.session_id.in_(exam_session_ids)
+                    )
                 )
             )
+            if exam_session_ids
+            else []
         )
         attendance = list(
             db.scalars(
@@ -162,6 +183,7 @@ def student_history(
             GradeRecord.score,
             AttendanceRecord.status,
             AttendanceRecord.comment,
+            LessonSession.is_exam,
         )
         .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
         .join(TeachingAssignment, TeachingAssignment.id == ScheduleEntry.assignment_id)
@@ -194,6 +216,7 @@ def student_history(
             score=row.score,
             attendance_status=row.status,
             attendance_comment=row.comment,
+            is_exam=row.is_exam,
         )
         for row in db.execute(stmt).all()
     ]

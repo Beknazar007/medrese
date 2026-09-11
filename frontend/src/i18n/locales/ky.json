@@ -239,6 +239,8 @@
     "col_grade": "Баа",
     "subject_held": "Өттү",
     "subject_missed": "Калтырды",
+    "subject_exam_count": "Сынак саны",
+    "exam_label": "Сынак",
     "notes_title": "Мугалимдердин комментарийлери"
   },
   "journal": {
@@ -279,7 +281,8 @@
     "checked_in_at": "Келген убактысы",
     "checked_out_at": "Аяктаган убактысы",
     "check_out": "Сабакты аяктоо",
-    "checked_out": "Сабак аякталды деп белгиленди"
+    "checked_out": "Сабак аякталды деп белгиленди",
+    "exam_toggle": "Бул — сынак"
   },
   "monitoring": {
     "title": "Мугалимдерди мониторинг кылуу",

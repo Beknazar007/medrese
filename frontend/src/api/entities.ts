@@ -126,6 +126,8 @@ export const journalApi = {
     (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/attendance`, { records })).data,
   putGrades: async (sessionId: number, records: { student_id: number; score: number }[]): Promise<LessonSessionDetail> =>
     (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/grades`, { records })).data,
+  setExamFlag: async (sessionId: number, is_exam: boolean): Promise<LessonSession> =>
+    (await api.put<LessonSession>(`/journal/sessions/${sessionId}/exam-flag`, { is_exam })).data,
   checkOut: async (sessionId: number): Promise<LessonSession> =>
     (await api.put<LessonSession>(`/journal/sessions/${sessionId}/check-out`)).data,
   performance: async (assignment_id: number): Promise<StudentPerformanceRow[]> =>

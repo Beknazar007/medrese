@@ -230,6 +230,7 @@ def student_attendance_summary(
             ScheduleEntry.semester_id == semester_id,
             LessonSession.date >= date_from,
             LessonSession.date <= effective_to,
+            LessonSession.is_exam.is_(True),
         )
     )
     if department_id is not None:

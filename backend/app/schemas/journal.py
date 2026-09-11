@@ -16,8 +16,13 @@ class LessonSessionOut(BaseModel):
     date: date
     teacher_checked_in_at: datetime | None
     teacher_checked_out_at: datetime | None
+    is_exam: bool
 
     model_config = {"from_attributes": True}
+
+
+class ExamFlagUpdate(BaseModel):
+    is_exam: bool
 
 
 class RosterStudentOut(BaseModel):
@@ -76,3 +81,4 @@ class StudentHistoryRow(BaseModel):
     score: int | None
     attendance_status: AttendanceStatus | None
     attendance_comment: str | None
+    is_exam: bool

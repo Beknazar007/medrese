@@ -13,6 +13,7 @@ from app.models.user import User
 from app.schemas.journal import (
     BulkAttendanceRequest,
     BulkGradeRequest,
+    ExamFlagUpdate,
     LessonSessionDetailOut,
     LessonSessionOut,
     SessionGetOrCreate,
@@ -122,10 +123,31 @@ def put_grades(
         raise HTTPException(status_code=404, detail="Session not found")
     _assert_can_access_entry(db, current_user, session.schedule_entry)
 
-    journal_service.upsert_grades(db, session=session, records=payload.records)
+    try:
+        journal_service.upsert_grades(db, session=session, records=payload.records)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     db.commit()
     roster = journal_service.roster_for_session(db, session)
     return LessonSessionDetailOut(session=LessonSessionOut.model_validate(session), roster=roster)
+
+
+@router.put("/sessions/{session_id}/exam-flag", response_model=LessonSessionOut)
+def put_exam_flag(
+    session_id: int,
+    payload: ExamFlagUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> LessonSession:
+    session = db.get(LessonSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    _assert_can_access_entry(db, current_user, session.schedule_entry)
+
+    journal_service.set_exam_flag(session, payload.is_exam)
+    db.commit()
+    db.refresh(session)
+    return session
 
 
 @router.put("/sessions/{session_id}/check-out", response_model=LessonSessionOut)

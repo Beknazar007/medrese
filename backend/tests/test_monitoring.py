@@ -176,6 +176,7 @@ def test_student_attendance_summary_counts_statuses_and_averages_grades(db: Sess
     student_b = make_student(db, group, full_name="Bakyt")
 
     session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_attendance(
         db,
@@ -188,6 +189,7 @@ def test_student_attendance_summary_counts_statuses_and_averages_grades(db: Sess
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
 
     session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    journal_service.set_exam_flag(session2, True)
     db.flush()
     journal_service.upsert_attendance(
         db, session=session2, records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.LATE)]

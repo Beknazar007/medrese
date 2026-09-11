@@ -43,6 +43,8 @@ interface SubjectGroup {
   rows: StudentHistoryRow[];
   held: number;
   missed: number;
+  examCount: number;
+  examAverage: number | null;
 }
 
 function groupBySubject(history: StudentHistoryRow[]): SubjectGroup[] {
@@ -50,7 +52,15 @@ function groupBySubject(history: StudentHistoryRow[]): SubjectGroup[] {
   for (const row of history) {
     let group = bySubject.get(row.subject_id);
     if (!group) {
-      group = { subject_id: row.subject_id, subject_name: row.subject_name, rows: [], held: 0, missed: 0 };
+      group = {
+        subject_id: row.subject_id,
+        subject_name: row.subject_name,
+        rows: [],
+        held: 0,
+        missed: 0,
+        examCount: 0,
+        examAverage: null,
+      };
       bySubject.set(row.subject_id, group);
     }
     group.rows.push(row);
@@ -59,6 +69,13 @@ function groupBySubject(history: StudentHistoryRow[]): SubjectGroup[] {
     } else if (row.attendance_status !== null) {
       group.held += 1;
     }
+  }
+  for (const group of bySubject.values()) {
+    const examScores = group.rows.filter((r) => r.is_exam && r.score !== null).map((r) => r.score as number);
+    group.examCount = examScores.length;
+    group.examAverage = examScores.length
+      ? Math.round((examScores.reduce((sum, s) => sum + s, 0) / examScores.length) * 10) / 10
+      : null;
   }
   return [...bySubject.values()].sort((a, b) => a.subject_name.localeCompare(b.subject_name));
 }
@@ -153,6 +170,8 @@ export default function StudentProfileDialog({
                     <Typography variant="body1">{group.subject_name}</Typography>
                     <Typography variant="body2" color="text.secondary">
                       {t("students.subject_held")}: {group.held} · {t("students.subject_missed")}: {group.missed}
+                      {group.examCount > 0 &&
+                        ` · ${t("students.subject_exam_count")}: ${group.examCount} · ${t("journal.col_average")}: ${group.examAverage}`}
                     </Typography>
                   </Box>
                 </AccordionSummary>
@@ -176,7 +195,12 @@ export default function StudentProfileDialog({
                           <TableRow key={row.session_id} hover>
                             <TableCell sx={{ whiteSpace: "nowrap" }}>{row.date}</TableCell>
                             <TableCell sx={{ whiteSpace: "nowrap" }}>{row.teacher_name}</TableCell>
-                            <TableCell sx={{ whiteSpace: "nowrap" }}>{t(`hour_type.${row.hour_type}`)}</TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                              {t(`hour_type.${row.hour_type}`)}
+                              {row.is_exam && (
+                                <Chip size="small" label={t("students.exam_label")} sx={{ ml: 0.75, height: 18, fontSize: 11 }} />
+                              )}
+                            </TableCell>
                             <TableCell align="right">{row.score ?? "—"}</TableCell>
                             <TableCell sx={{ whiteSpace: "nowrap" }}>
                               {row.attendance_status ? (

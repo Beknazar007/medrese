@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
@@ -113,6 +114,7 @@ export default function TeacherClassPage() {
   const [sessionTimes, setSessionTimes] = useState<{ checkedInAt: string | null; checkedOutAt: string | null } | null>(
     null,
   );
+  const [isExam, setIsExam] = useState(false);
   const [roster, setRoster] = useState<RosterStudent[]>([]);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [noteStudent, setNoteStudent] = useState<{ id: number; name: string } | null>(null);
@@ -146,6 +148,7 @@ export default function TeacherClassPage() {
         checkedInAt: detail.session.teacher_checked_in_at,
         checkedOutAt: detail.session.teacher_checked_out_at,
       });
+      setIsExam(detail.session.is_exam);
       setRoster(detail.roster);
       savedSnapshot.current = JSON.stringify(detail.roster);
     },
@@ -155,6 +158,12 @@ export default function TeacherClassPage() {
   function openSessionFor(entryId: number, date: string) {
     openSessionMutation.mutate({ entryId, date });
   }
+
+  const setExamFlagMutation = useMutation({
+    mutationFn: (nextIsExam: boolean) => journalApi.setExamFlag(sessionId!, nextIsExam),
+    onSuccess: (session) => setIsExam(session.is_exam),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+  });
 
   const checkOutMutation = useMutation({
     mutationFn: () => journalApi.checkOut(sessionId!),
@@ -175,6 +184,7 @@ export default function TeacherClassPage() {
     setSelectedEntryId(entryId);
     setSessionId(null);
     setSessionTimes(null);
+    setIsExam(false);
     setRoster([]);
     savedSnapshot.current = "[]";
   }
@@ -184,6 +194,7 @@ export default function TeacherClassPage() {
     setSelectedDate(date);
     setSessionId(null);
     setSessionTimes(null);
+    setIsExam(false);
     setRoster([]);
     savedSnapshot.current = "[]";
   }
@@ -202,9 +213,11 @@ export default function TeacherClassPage() {
       );
       return journalApi.putGrades(
         sessionId!,
-        roster
-          .filter((r) => r.score !== null && r.score !== undefined)
-          .map((r) => ({ student_id: r.student_id, score: r.score as number })),
+        isExam
+          ? roster
+              .filter((r) => r.score !== null && r.score !== undefined)
+              .map((r) => ({ student_id: r.student_id, score: r.score as number }))
+          : [],
       );
     },
     onSuccess: (detail) => {
@@ -312,6 +325,17 @@ export default function TeacherClassPage() {
                 {t("journal.check_out")}
               </Button>
             )}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={isExam}
+                  disabled={setExamFlagMutation.isPending}
+                  onChange={(e) => setExamFlagMutation.mutate(e.target.checked)}
+                />
+              }
+              label={t("journal.exam_toggle")}
+            />
           </Box>
 
           <Box sx={{ display: "flex", gap: 3, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
@@ -339,7 +363,7 @@ export default function TeacherClassPage() {
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_student")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_lesson_comment")}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_grade")}</TableCell>
+                  {isExam && <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_grade")}</TableCell>}
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                     {t("journal.col_note")}
                   </TableCell>
@@ -395,16 +419,18 @@ export default function TeacherClassPage() {
                         sx={{ minWidth: 140 }}
                       />
                     </TableCell>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        size="small"
-                        value={r.score ?? ""}
-                        onChange={(e) => setScore(r.student_id, e.target.value === "" ? null : Number(e.target.value))}
-                        slotProps={{ htmlInput: { min: 0, max: 100 } }}
-                        sx={{ width: 90 }}
-                      />
-                    </TableCell>
+                    {isExam && (
+                      <TableCell>
+                        <TextField
+                          type="number"
+                          size="small"
+                          value={r.score ?? ""}
+                          onChange={(e) => setScore(r.student_id, e.target.value === "" ? null : Number(e.target.value))}
+                          slotProps={{ htmlInput: { min: 0, max: 100 } }}
+                          sx={{ width: 90 }}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => setNoteStudent({ id: r.student_id, name: r.full_name })}>
                         <CommentIcon fontSize="small" />
