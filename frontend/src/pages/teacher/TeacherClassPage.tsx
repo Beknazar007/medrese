@@ -194,7 +194,11 @@ export default function TeacherClassPage() {
         sessionId!,
         roster
           .filter((r) => r.attendance_status !== null)
-          .map((r) => ({ student_id: r.student_id, status: r.attendance_status as AttendanceStatus })),
+          .map((r) => ({
+            student_id: r.student_id,
+            status: r.attendance_status as AttendanceStatus,
+            comment: r.attendance_comment,
+          })),
       );
       return journalApi.putGrades(
         sessionId!,
@@ -213,6 +217,12 @@ export default function TeacherClassPage() {
 
   function setAttendance(studentId: number, status: AttendanceStatus | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
+  }
+
+  function setAttendanceComment(studentId: number, comment: string) {
+    setRoster((prev) =>
+      prev.map((r) => (r.student_id === studentId ? { ...r, attendance_comment: comment === "" ? null : comment } : r)),
+    );
   }
 
   function setScore(studentId: number, score: number | null) {
@@ -328,6 +338,7 @@ export default function TeacherClassPage() {
                 <TableRow>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_student")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_lesson_comment")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_grade")}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                     {t("journal.col_note")}
@@ -375,6 +386,14 @@ export default function TeacherClassPage() {
                           </ToggleButton>
                         ))}
                       </ToggleButtonGroup>
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={r.attendance_comment ?? ""}
+                        onChange={(e) => setAttendanceComment(r.student_id, e.target.value)}
+                        sx={{ minWidth: 140 }}
+                      />
                     </TableCell>
                     <TableCell>
                       <TextField

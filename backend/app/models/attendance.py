@@ -1,4 +1,4 @@
-from sqlalchemy import Enum, ForeignKey, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -13,6 +13,7 @@ class AttendanceRecord(Base):
     session_id: Mapped[int] = mapped_column(ForeignKey("lesson_sessions.id"), nullable=False)
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), nullable=False)
     status: Mapped[AttendanceStatus] = mapped_column(Enum(AttendanceStatus, name="attendance_status"), nullable=False)
+    comment: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     session: Mapped["LessonSession"] = relationship(back_populates="attendance_records")
     student: Mapped["Student"] = relationship(back_populates="attendance_records")

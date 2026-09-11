@@ -76,6 +76,7 @@ export default function StudentsPage() {
           { name: "guardian_phone", label: t("students.guardian_phone"), type: "text" },
           { name: "enrollment_date", label: t("students.enrollment_date"), type: "date" },
           { name: "is_active", label: t("students.active"), type: "checkbox" },
+          { name: "bio", label: t("students.bio"), type: "text", multiline: true },
         ]}
         emptyHint={t("students.empty_hint")}
       />

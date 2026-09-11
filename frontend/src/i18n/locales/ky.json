@@ -227,6 +227,7 @@
     "guardian_name": "Ата-эненин аты",
     "guardian_phone": "Ата-эненин телефону",
     "enrollment_date": "Кабыл алынган күнү",
+    "bio": "Кыскача маалымат / өмүр баян",
     "active": "Активдүү",
     "empty_hint": "Азырынча студент жок. Биринчисин кошуңуз.",
     "history_title": "Сабактардын тарыхы",
@@ -236,6 +237,8 @@
     "col_teacher": "Мугалим",
     "col_type": "Сабактын түрү",
     "col_grade": "Баа",
+    "subject_held": "Өттү",
+    "subject_missed": "Калтырды",
     "notes_title": "Мугалимдердин комментарийлери"
   },
   "journal": {
@@ -249,6 +252,7 @@
     "col_attendance": "Катышуусу",
     "col_grade": "Баа (0-100)",
     "col_note": "Комментарий",
+    "col_lesson_comment": "Сабак боюнча комментарий",
     "save_attendance": "Катышууну сактоо",
     "save_grades": "Бааларды сактоо",
     "save_all": "Сактоо",

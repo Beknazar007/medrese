@@ -46,7 +46,7 @@ def roster_for_session(db: Session, session: LessonSession) -> list[RosterStuden
     ).all()
 
     attendance_by_student = {
-        a.student_id: a.status
+        a.student_id: a
         for a in db.scalars(select(AttendanceRecord).where(AttendanceRecord.session_id == session.id))
     }
     grades_by_student = {
@@ -58,7 +58,8 @@ def roster_for_session(db: Session, session: LessonSession) -> list[RosterStuden
             student_id=s.id,
             full_name=s.full_name,
             student_number=s.student_number,
-            attendance_status=attendance_by_student.get(s.id),
+            attendance_status=attendance_by_student[s.id].status if s.id in attendance_by_student else None,
+            attendance_comment=attendance_by_student[s.id].comment if s.id in attendance_by_student else None,
             score=grades_by_student.get(s.id),
         )
         for s in students
@@ -73,8 +74,13 @@ def upsert_attendance(db: Session, *, session: LessonSession, records: list[Atte
     for record in records:
         if record.student_id in existing:
             existing[record.student_id].status = record.status
+            existing[record.student_id].comment = record.comment
         else:
-            db.add(AttendanceRecord(session_id=session.id, student_id=record.student_id, status=record.status))
+            db.add(
+                AttendanceRecord(
+                    session_id=session.id, student_id=record.student_id, status=record.status, comment=record.comment
+                )
+            )
 
 
 def upsert_grades(db: Session, *, session: LessonSession, records: list[GradeUpsert]) -> None:
@@ -155,6 +161,7 @@ def student_history(
             TeachingAssignment.semester_id,
             GradeRecord.score,
             AttendanceRecord.status,
+            AttendanceRecord.comment,
         )
         .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
         .join(TeachingAssignment, TeachingAssignment.id == ScheduleEntry.assignment_id)
@@ -186,6 +193,7 @@ def student_history(
             semester_id=row.semester_id,
             score=row.score,
             attendance_status=row.status,
+            attendance_comment=row.comment,
         )
         for row in db.execute(stmt).all()
     ]

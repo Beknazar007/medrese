@@ -15,6 +15,7 @@ class StudentCreate(BaseModel):
     enrollment_date: date | None = None
     is_active: bool = True
     photo: str | None = None
+    bio: str | None = None
 
 
 class StudentUpdate(BaseModel):
@@ -29,6 +30,7 @@ class StudentUpdate(BaseModel):
     enrollment_date: date | None = None
     is_active: bool | None = None
     photo: str | None = None
+    bio: str | None = None
 
 
 class StudentOut(BaseModel):
@@ -44,5 +46,6 @@ class StudentOut(BaseModel):
     enrollment_date: date | None
     is_active: bool
     photo: str | None
+    bio: str | None
 
     model_config = {"from_attributes": True}

@@ -103,6 +103,28 @@ def test_upsert_attendance_then_grades_reflected_in_roster(db: Session):
     assert roster[student_b.id].score is None
 
 
+def test_upsert_attendance_stores_and_updates_the_per_lesson_comment(db: Session):
+    entry, _, student_a, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+
+    journal_service.upsert_attendance(
+        db,
+        session=session,
+        records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.LATE, comment="10 мүнөткө кечикти")],
+    )
+    db.flush()
+    roster = {r.student_id: r for r in journal_service.roster_for_session(db, session)}
+    assert roster[student_a.id].attendance_comment == "10 мүнөткө кечикти"
+
+    journal_service.upsert_attendance(
+        db, session=session, records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.LATE, comment=None)]
+    )
+    db.flush()
+    roster = {r.student_id: r for r in journal_service.roster_for_session(db, session)}
+    assert roster[student_a.id].attendance_comment is None
+
+
 def test_upsert_attendance_updates_existing_record_instead_of_duplicating(db: Session):
     entry, _, student_a, _ = _setup(db)
     session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
@@ -157,7 +179,11 @@ def test_student_history_includes_every_group_session_with_this_students_own_mar
     db.flush()
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
     journal_service.upsert_attendance(
-        db, session=session1, records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.PRESENT)]
+        db,
+        session=session1,
+        records=[
+            AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.PRESENT, comment="Жакшы катышты")
+        ],
     )
     db.flush()
 
@@ -171,11 +197,13 @@ def test_student_history_includes_every_group_session_with_this_students_own_mar
     graded_row = next(row for row in history if row.session_id == session1.id)
     assert graded_row.score == 80
     assert graded_row.attendance_status == AttendanceStatus.PRESENT
+    assert graded_row.attendance_comment == "Жакшы катышты"
     assert graded_row.subject_id == assignment.subject_id
     assert graded_row.teacher_id == assignment.teacher_id
     ungraded_row = next(row for row in history if row.session_id == session2.id)
     assert ungraded_row.score is None
     assert ungraded_row.attendance_status is None
+    assert ungraded_row.attendance_comment is None
 
     # A different student's marks never leak into this student's history.
     other_history = journal_service.student_history(

@@ -1,4 +1,8 @@
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Avatar,
   Box,
@@ -17,10 +21,11 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { notesApi, studentsApi } from "../api/entities";
-import type { AttendanceStatus } from "../api/types";
+import type { AttendanceStatus, StudentHistoryRow } from "../api/types";
 import { nameById, useGroups, useTeachers } from "../hooks/useReferenceData";
 
 // Same status-palette roles as AttendanceBar: present=good, late=warning, absent=critical,
@@ -31,6 +36,32 @@ const ATTENDANCE_COLOR: Record<AttendanceStatus, string> = {
   EXCUSED: "#2a78d6",
   ABSENT: "#d03b3b",
 };
+
+interface SubjectGroup {
+  subject_id: number;
+  subject_name: string;
+  rows: StudentHistoryRow[];
+  held: number;
+  missed: number;
+}
+
+function groupBySubject(history: StudentHistoryRow[]): SubjectGroup[] {
+  const bySubject = new Map<number, SubjectGroup>();
+  for (const row of history) {
+    let group = bySubject.get(row.subject_id);
+    if (!group) {
+      group = { subject_id: row.subject_id, subject_name: row.subject_name, rows: [], held: 0, missed: 0 };
+      bySubject.set(row.subject_id, group);
+    }
+    group.rows.push(row);
+    if (row.attendance_status === "ABSENT") {
+      group.missed += 1;
+    } else if (row.attendance_status !== null) {
+      group.held += 1;
+    }
+  }
+  return [...bySubject.values()].sort((a, b) => a.subject_name.localeCompare(b.subject_name));
+}
 
 export default function StudentProfileDialog({
   studentId,
@@ -55,6 +86,8 @@ export default function StudentProfileDialog({
     queryKey: ["students", studentId, "notes"],
     queryFn: () => notesApi.list(studentId),
   });
+
+  const subjectGroups = useMemo(() => groupBySubject(history ?? []), [history]);
 
   return (
     <Dialog open onClose={onClose} maxWidth="md" fullWidth>
@@ -98,49 +131,74 @@ export default function StudentProfileDialog({
           </Box>
         )}
 
+        {student?.bio && (
+          <Box>
+            <Typography variant="subtitle1">{t("students.bio")}</Typography>
+            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+              {student.bio}
+            </Typography>
+          </Box>
+        )}
+
         <Typography variant="subtitle1">{t("students.history_title")}</Typography>
 
         {history && history.length === 0 && <Alert severity="info">{t("students.history_empty")}</Alert>}
 
-        {history && history.length > 0 && (
-          <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_date")}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_subject")}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_teacher")}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_type")}</TableCell>
-                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                    {t("students.col_grade")}
-                  </TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {history.map((row) => (
-                  <TableRow key={row.session_id} hover>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{row.date}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{row.subject_name}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{row.teacher_name}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>{t(`hour_type.${row.hour_type}`)}</TableCell>
-                    <TableCell align="right">{row.score ?? "—"}</TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      {row.attendance_status ? (
-                        <Chip
-                          size="small"
-                          label={t(`journal.attendance_${row.attendance_status.toLowerCase()}`)}
-                          sx={{ bgcolor: ATTENDANCE_COLOR[row.attendance_status], color: "#fff" }}
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        {subjectGroups.length > 0 && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {subjectGroups.map((group) => (
+              <Accordion key={group.subject_id} disableGutters>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                    <Typography variant="body1">{group.subject_name}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t("students.subject_held")}: {group.held} · {t("students.subject_missed")}: {group.missed}
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 0 }}>
+                  <TableContainer component={Paper} sx={{ overflowX: "auto" }} elevation={0}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_date")}</TableCell>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_teacher")}</TableCell>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>{t("students.col_type")}</TableCell>
+                          <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                            {t("students.col_grade")}
+                          </TableCell>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
+                          <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_lesson_comment")}</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {group.rows.map((row) => (
+                          <TableRow key={row.session_id} hover>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>{row.date}</TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>{row.teacher_name}</TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>{t(`hour_type.${row.hour_type}`)}</TableCell>
+                            <TableCell align="right">{row.score ?? "—"}</TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                              {row.attendance_status ? (
+                                <Chip
+                                  size="small"
+                                  label={t(`journal.attendance_${row.attendance_status.toLowerCase()}`)}
+                                  sx={{ bgcolor: ATTENDANCE_COLOR[row.attendance_status], color: "#fff" }}
+                                />
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                            <TableCell>{row.attendance_comment ?? "—"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Box>
         )}
 
         <Typography variant="subtitle1">{t("students.notes_title")}</Typography>

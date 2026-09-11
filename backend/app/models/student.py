@@ -21,6 +21,7 @@ class Student(Base):
     enrollment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     photo: Mapped[str | None] = mapped_column(Text, nullable=True)  # base64 data URL, resized client-side
+    bio: Mapped[str | None] = mapped_column(String(2000), nullable=True)
 
     group: Mapped["Group"] = relationship(back_populates="students")
     attendance_records: Mapped[list["AttendanceRecord"]] = relationship(back_populates="student")

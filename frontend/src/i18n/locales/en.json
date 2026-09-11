@@ -227,6 +227,7 @@
     "guardian_name": "Guardian name",
     "guardian_phone": "Guardian phone",
     "enrollment_date": "Enrollment date",
+    "bio": "Bio / short info",
     "active": "Active",
     "empty_hint": "No students yet. Add the first one.",
     "history_title": "Lesson history",
@@ -236,6 +237,8 @@
     "col_teacher": "Teacher",
     "col_type": "Lesson type",
     "col_grade": "Grade",
+    "subject_held": "Held",
+    "subject_missed": "Missed",
     "notes_title": "Teacher comments"
   },
   "journal": {
@@ -249,6 +252,7 @@
     "col_attendance": "Attendance",
     "col_grade": "Grade (0-100)",
     "col_note": "Note",
+    "col_lesson_comment": "Lesson comment",
     "save_attendance": "Save attendance",
     "save_grades": "Save grades",
     "save_all": "Save",

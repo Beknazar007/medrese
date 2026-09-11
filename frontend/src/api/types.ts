@@ -119,6 +119,7 @@ export interface Student {
   enrollment_date: string | null;
   is_active: boolean;
   photo: string | null;
+  bio: string | null;
 }
 
 export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
@@ -137,6 +138,7 @@ export interface RosterStudent {
   full_name: string;
   student_number: string | null;
   attendance_status: AttendanceStatus | null;
+  attendance_comment: string | null;
   score: number | null;
 }
 
@@ -167,6 +169,7 @@ export interface StudentHistoryRow {
   semester_id: number;
   score: number | null;
   attendance_status: AttendanceStatus | null;
+  attendance_comment: string | null;
 }
 
 export interface TeacherMonitoringRow {

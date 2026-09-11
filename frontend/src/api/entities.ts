@@ -121,7 +121,7 @@ export const journalApi = {
     (await api.get<import("./types").LessonSession[]>("/journal/sessions", { params: { schedule_entry_id } })).data,
   putAttendance: async (
     sessionId: number,
-    records: { student_id: number; status: AttendanceStatus }[],
+    records: { student_id: number; status: AttendanceStatus; comment: string | null }[],
   ): Promise<LessonSessionDetail> =>
     (await api.put<LessonSessionDetail>(`/journal/sessions/${sessionId}/attendance`, { records })).data,
   putGrades: async (sessionId: number, records: { student_id: number; score: number }[]): Promise<LessonSessionDetail> =>

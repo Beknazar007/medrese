@@ -25,6 +25,7 @@ class RosterStudentOut(BaseModel):
     full_name: str
     student_number: str | None
     attendance_status: AttendanceStatus | None
+    attendance_comment: str | None
     score: int | None
 
 
@@ -36,6 +37,7 @@ class LessonSessionDetailOut(BaseModel):
 class AttendanceUpsert(BaseModel):
     student_id: int
     status: AttendanceStatus
+    comment: str | None = None
 
 
 class BulkAttendanceRequest(BaseModel):
@@ -73,3 +75,4 @@ class StudentHistoryRow(BaseModel):
     semester_id: int
     score: int | None
     attendance_status: AttendanceStatus | None
+    attendance_comment: str | None
