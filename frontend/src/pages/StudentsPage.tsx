@@ -1,4 +1,4 @@
-import { Avatar } from "@mui/material";
+import { Avatar, MenuItem, TextField } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { studentsApi } from "../api/entities";
@@ -14,6 +14,7 @@ export default function StudentsPage() {
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const { data: groups } = useGroups();
   const [profileStudentId, setProfileStudentId] = useState<number | null>(null);
+  const [filterGroupId, setFilterGroupId] = useState<number | "">("");
 
   const groupOptions = (groups ?? [])
     .filter((g) => user?.role === "RECTOR" || g.department_id === user?.headed_department_id)
@@ -24,11 +25,29 @@ export default function StudentsPage() {
       <EntityCrudPage<Student>
         title={t("students.title")}
         queryKey={["students"]}
+        listParams={filterGroupId ? { group_id: filterGroupId } : undefined}
         api={studentsApi}
         canCreate={canWrite}
         canEdit={canWrite}
         canDelete={canWrite}
         onRowClick={(row) => setProfileStudentId(row.id)}
+        extraToolbar={
+          <TextField
+            select
+            size="small"
+            label={t("common.group_filter")}
+            value={filterGroupId}
+            onChange={(e) => setFilterGroupId(e.target.value === "" ? "" : Number(e.target.value))}
+            sx={{ minWidth: 180 }}
+          >
+            <MenuItem value="">{t("common.all_groups")}</MenuItem>
+            {groupOptions.map((g) => (
+              <MenuItem key={g.value} value={g.value}>
+                {g.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        }
         columns={[
           {
             key: "photo",
