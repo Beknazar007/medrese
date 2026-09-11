@@ -10,7 +10,6 @@ import RoleRoute from "./RoleRoute";
 import AssignmentsPage from "./pages/AssignmentsPage";
 import DashboardPage from "./pages/DashboardPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
-import FacultiesPage from "./pages/FacultiesPage";
 import GroupsPage from "./pages/GroupsPage";
 import RoomsPage from "./pages/RoomsPage";
 import ScheduleGridPage from "./pages/ScheduleGridPage";
@@ -48,14 +47,6 @@ export default function App() {
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <DashboardPage />
-                    </RoleRoute>
-                  }
-                />
-                <Route
-                  path="/faculties"
-                  element={
-                    <RoleRoute roles={["RECTOR"]}>
-                      <FacultiesPage />
                     </RoleRoute>
                   }
                 />

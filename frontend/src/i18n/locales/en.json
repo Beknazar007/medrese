@@ -9,7 +9,6 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "faculties": "Faculties",
     "departments": "Departments",
     "admin_accounts": "Admin accounts",
     "teachers": "Teachers",
@@ -101,17 +100,11 @@
     "top_missed_title": "Most missed lessons",
     "no_missed_hint": "No missed lessons for this period."
   },
-  "faculties": {
-    "title": "Faculties",
-    "name": "Name",
-    "empty_hint": "No faculties yet. Rector can add one."
-  },
   "departments": {
     "title": "Departments",
     "name": "Name",
-    "faculty": "Faculty",
     "dean": "Dean",
-    "empty_hint": "No departments yet. Rector can add one (pick a faculty first)."
+    "empty_hint": "No departments yet. Rector can add one."
   },
   "users": {
     "title": "Admin accounts (Rector / Dean)",

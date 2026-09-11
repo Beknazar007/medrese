@@ -11,15 +11,9 @@ export interface CurrentUser {
   headed_department_id: number | null;
 }
 
-export interface Faculty {
-  id: number;
-  name: string;
-}
-
 export interface Department {
   id: number;
   name: string;
-  faculty_id: number;
   head_user_id: number | null;
 }
 

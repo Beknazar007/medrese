@@ -4,7 +4,6 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import PeopleIcon from "@mui/icons-material/People";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import ApartmentIcon from "@mui/icons-material/Apartment";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -70,9 +69,6 @@ export default function Layout() {
   }
 
   const orgItems: NavItem[] = [];
-  if (user?.role === "RECTOR") {
-    orgItems.push({ to: "/faculties", label: t("nav.faculties"), icon: <ApartmentIcon /> });
-  }
   if (user?.role === "RECTOR" || user?.role === "DEAN") {
     orgItems.push({ to: "/departments", label: t("nav.departments"), icon: <AccountTreeIcon /> });
   }

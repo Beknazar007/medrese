@@ -2,7 +2,6 @@ import { api } from "./client";
 import type {
   AttendanceStatus,
   Department,
-  Faculty,
   Group,
   HifzExam,
   HifzKind,
@@ -38,7 +37,6 @@ function crud<T, TCreate = Partial<T>, TUpdate = Partial<T>>(path: string) {
   };
 }
 
-export const facultiesApi = crud<Faculty>("/faculties");
 export const departmentsApi = crud<Department>("/departments");
 export const subjectsApi = crud<Subject>("/subjects");
 export const groupsApi = crud<Group>("/groups");

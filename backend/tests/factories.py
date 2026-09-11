@@ -6,7 +6,6 @@ from app.core.security import hash_password
 from app.models.assignment import TeachingAssignment
 from app.models.department import Department
 from app.models.enums import DayOfWeek, GroupType, HourType, UserRole
-from app.models.faculty import Faculty
 from app.models.group import Group
 from app.models.room import Room
 from app.models.schedule import ScheduleEntry
@@ -19,10 +18,7 @@ from app.models.user import User
 
 
 def make_department(db: Session, name: str = "Theology") -> Department:
-    faculty = Faculty(name=f"Faculty of {name}")
-    db.add(faculty)
-    db.flush()
-    department = Department(name=name, faculty_id=faculty.id)
+    department = Department(name=name)
     db.add(department)
     db.flush()
     return department

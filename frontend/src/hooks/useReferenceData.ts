@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   departmentsApi,
-  facultiesApi,
   groupsApi,
   roomsApi,
   semestersApi,
@@ -10,10 +9,6 @@ import {
   teachersApi,
   timeSlotsApi,
 } from "../api/entities";
-
-export function useFaculties() {
-  return useQuery({ queryKey: ["faculties"], queryFn: () => facultiesApi.list() });
-}
 
 export function useDepartments() {
   return useQuery({ queryKey: ["departments"], queryFn: () => departmentsApi.list() });

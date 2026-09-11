@@ -5,7 +5,6 @@ from app.api.v1 import (
     auth,
     dashboard,
     departments,
-    faculties,
     groups,
     hifz,
     journal,
@@ -24,7 +23,6 @@ from app.api.v1 import (
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
-api_router.include_router(faculties.router)
 api_router.include_router(departments.router)
 api_router.include_router(teachers.router)
 api_router.include_router(subjects.router)

@@ -2,7 +2,6 @@ from app.models.assignment import TeachingAssignment
 from app.models.attendance import AttendanceRecord
 from app.models.department import Department
 from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind, HourType, NoteVisibility, UserRole
-from app.models.faculty import Faculty
 from app.models.grade import GradeRecord
 from app.models.group import Group
 from app.models.hifz import HifzExam, HifzRecord, HifzTarget
@@ -28,7 +27,6 @@ __all__ = [
     "HourType",
     "NoteVisibility",
     "UserRole",
-    "Faculty",
     "GradeRecord",
     "Group",
     "HifzExam",

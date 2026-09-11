@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { departmentsApi, usersApi } from "../api/entities";
 import type { Department } from "../api/types";
 import EntityCrudPage from "../components/EntityCrudPage";
-import { nameById, useFaculties } from "../hooks/useReferenceData";
 import { useAuth } from "../context/AuthContext";
 
 interface DeanUser {
@@ -15,7 +14,6 @@ export default function DepartmentsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isRector = user?.role === "RECTOR";
-  const { data: faculties } = useFaculties();
 
   const { data: deans } = useQuery({
     queryKey: ["users", "DEAN"],
@@ -33,11 +31,6 @@ export default function DepartmentsPage() {
       columns={[
         { key: "name", label: t("departments.name") },
         {
-          key: "faculty",
-          label: t("departments.faculty"),
-          render: (row) => nameById(faculties, row.faculty_id, (f) => f.name),
-        },
-        {
           key: "head",
           label: t("departments.dean"),
           render: (row) =>
@@ -48,13 +41,6 @@ export default function DepartmentsPage() {
       ]}
       fields={[
         { name: "name", label: t("departments.name"), type: "text", required: true },
-        {
-          name: "faculty_id",
-          label: t("departments.faculty"),
-          type: "select",
-          required: true,
-          options: (faculties ?? []).map((f) => ({ value: f.id, label: f.name })),
-        },
         ...(isRector
           ? [
               {
