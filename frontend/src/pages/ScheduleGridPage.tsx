@@ -118,7 +118,7 @@ export default function ScheduleGridPage() {
       setSnackbar(t("schedule.added"));
       setDialog(null);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.add_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.add_failed"), t)),
   });
 
   const deleteMutation = useMutation({
@@ -128,7 +128,7 @@ export default function ScheduleGridPage() {
       setSnackbar(t("schedule.removed"));
       setDialog(null);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"), t)),
   });
 
   function openCell(day: DayOfWeek, timeSlotId: number, entry: ScheduleEntry | null) {

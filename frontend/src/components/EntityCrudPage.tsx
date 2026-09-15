@@ -161,7 +161,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       setSnackbar(t("common.created"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_create"))),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_create"), t)),
   });
 
   const updateMutation = useMutation({
@@ -171,7 +171,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       setSnackbar(t("common.saved"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_save"))),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_save"), t)),
   });
 
   const deleteMutation = useMutation({
@@ -180,7 +180,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       invalidate();
       setSnackbar(t("common.deleted"));
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"), t)),
     onSettled: () => setPendingDeleteId(null),
   });
 

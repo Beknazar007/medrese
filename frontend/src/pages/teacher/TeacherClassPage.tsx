@@ -152,7 +152,7 @@ export default function TeacherClassPage() {
       setRoster(detail.roster);
       savedSnapshot.current = JSON.stringify(detail.roster);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
   function openSessionFor(entryId: number, date: string) {
@@ -162,7 +162,7 @@ export default function TeacherClassPage() {
   const setExamFlagMutation = useMutation({
     mutationFn: (nextIsExam: boolean) => journalApi.setExamFlag(sessionId!, nextIsExam),
     onSuccess: (session) => setIsExam(session.is_exam),
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
   const checkOutMutation = useMutation({
@@ -171,7 +171,7 @@ export default function TeacherClassPage() {
       setSessionTimes({ checkedInAt: session.teacher_checked_in_at, checkedOutAt: session.teacher_checked_out_at });
       setSnackbar(t("journal.checked_out"));
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
   function confirmDiscardIfDirty(): boolean {
@@ -225,7 +225,7 @@ export default function TeacherClassPage() {
       savedSnapshot.current = JSON.stringify(detail.roster);
       setSnackbar(t("journal.saved"));
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
   function setAttendance(studentId: number, status: AttendanceStatus | null) {
@@ -539,7 +539,7 @@ function NotesDialog({
       setBody("");
       queryClient.invalidateQueries({ queryKey: ["notes", student.id] });
     },
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   return (

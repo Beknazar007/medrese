@@ -118,7 +118,7 @@ export default function HifzJournalPage() {
       savedSnapshot.current = JSON.stringify(updated);
       setSnackbar(t("hifz.saved"));
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"))),
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t)),
   });
 
   function updateRecord(studentId: number, kind: "hifz" | "repeat", patch: Partial<HifzRecordDetail>) {
@@ -362,7 +362,7 @@ function HifzTargetsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-targets", student.id] });
     },
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   const updateMutation = useMutation({
@@ -371,13 +371,13 @@ function HifzTargetsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-targets", student.id] });
     },
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hifzApi.removeTarget(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hifz-targets", student.id] }),
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   return (
@@ -501,7 +501,7 @@ function HifzExamsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-exams", student.id] });
     },
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   const updateMutation = useMutation({
@@ -510,13 +510,13 @@ function HifzExamsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-exams", student.id] });
     },
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => hifzApi.removeExam(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["hifz-exams", student.id] }),
-    onError: (err) => onError(apiErrorMessage(err, "Error")),
+    onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
   return (
