@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 
-app = FastAPI(title="Medrese — University Management System", version="0.1.0")
+app = FastAPI(title="Кутайба ибн Муслим Ислам институту — Башкаруу тутуму", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
