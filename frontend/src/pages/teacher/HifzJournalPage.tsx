@@ -25,15 +25,25 @@ import SchoolIcon from "@mui/icons-material/School";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { hifzApi } from "../../api/entities";
+import { assignmentsApi, hifzApi, scheduleApi } from "../../api/entities";
 import type { HifzExam, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
+import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function todayDayOfWeek(): number {
+  const js = new Date().getDay(); // 0 = Sunday
+  return js === 0 ? 7 : js;
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function hasAnyValue(d: HifzRecordDetail): boolean {
@@ -44,10 +54,46 @@ export default function HifzJournalPage() {
   const { t } = useTranslation();
   const confirm = useConfirm();
 
-  const { data: groups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups() });
+  const { data: hifzGroups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups() });
+  const { data: assignments } = useQuery({ queryKey: ["assignments", "mine"], queryFn: () => assignmentsApi.list() });
+  const { data: entries } = useQuery({ queryKey: ["schedule", "mine"], queryFn: () => scheduleApi.list() });
+  const { data: subjects } = useSubjects();
+  const { data: groups } = useGroups();
+  const { data: timeSlots } = useTimeSlots();
 
-  const [groupId, setGroupId] = useState<number | "">("");
+  const hifzGroupIdSet = useMemo(() => new Set((hifzGroups ?? []).map((g) => g.id)), [hifzGroups]);
+  const sortedSlots = useMemo(() => [...(timeSlots ?? [])].sort((a, b) => a.order - b.order), [timeSlots]);
+
+  const classOptions = useMemo(() => {
+    return [...(entries ?? [])]
+      .filter((entry) => hifzGroupIdSet.has(entry.group_id))
+      .sort((a, b) => {
+        if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+        const sa = sortedSlots.find((s) => s.id === a.time_slot_id)?.order ?? 0;
+        const sb = sortedSlots.find((s) => s.id === b.time_slot_id)?.order ?? 0;
+        return sa - sb;
+      })
+      .map((entry) => {
+        const assignment = assignments?.find((a) => a.id === entry.assignment_id);
+        const subjectName = assignment ? nameById(subjects, assignment.subject_id, (s) => s.name) : "";
+        const groupName = nameById(groups, entry.group_id, (g) => g.name);
+        const slot = sortedSlots.find((s) => s.id === entry.time_slot_id);
+        const dayLabel = t(`days.${entry.day_of_week}`);
+        return {
+          entryId: entry.id,
+          dayOfWeek: entry.day_of_week,
+          isToday: entry.day_of_week === todayDayOfWeek(),
+          label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
+        };
+      });
+  }, [entries, hifzGroupIdSet, assignments, subjects, groups, sortedSlots, t]);
+
+  const [selectedEntryId, setSelectedEntryId] = useState<number | "">("");
   const [selectedDate, setSelectedDate] = useState<string>(todayIso());
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sessionTimes, setSessionTimes] = useState<{ checkedInAt: string | null; checkedOutAt: string | null } | null>(
+    null,
+  );
   const [roster, setRoster] = useState<HifzRosterStudent[]>([]);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [targetsStudent, setTargetsStudent] = useState<{ id: number; name: string } | null>(null);
@@ -56,28 +102,63 @@ export default function HifzJournalPage() {
   const autoLoadedOnce = useRef(false);
 
   const isDirty = JSON.stringify(roster) !== savedSnapshot.current;
+  const selectedGroupId = entries?.find((e) => e.id === selectedEntryId)?.group_id;
 
-  const rosterQuery = useQuery({
-    queryKey: ["hifz-roster", groupId, selectedDate],
-    queryFn: () => hifzApi.roster(Number(groupId), selectedDate),
-    enabled: false,
+  // Comfort win: open today's hafiz class automatically, same as the regular journal.
+  useEffect(() => {
+    if (autoLoadedOnce.current || selectedEntryId !== "" || classOptions.length === 0) return;
+    const todaysClass = classOptions.find((c) => c.isToday);
+    if (todaysClass) {
+      autoLoadedOnce.current = true;
+      setSelectedEntryId(todaysClass.entryId);
+      openSessionFor(todaysClass.entryId, todayIso());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classOptions]);
+
+  const openSessionMutation = useMutation({
+    mutationFn: ({ entryId, date }: { entryId: number; date: string }) => hifzApi.getOrCreateSession(entryId, date),
+    onSuccess: (detail) => {
+      setSessionId(detail.session.id);
+      setSessionTimes({
+        checkedInAt: detail.session.teacher_checked_in_at,
+        checkedOutAt: detail.session.teacher_checked_out_at,
+      });
+      setRoster(detail.roster);
+      savedSnapshot.current = JSON.stringify(detail.roster);
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t)),
   });
 
-  // Comfort win: auto-select the teacher's only hafiz group (most teachers have exactly one).
-  useEffect(() => {
-    if (autoLoadedOnce.current || groupId !== "" || !groups || groups.length === 0) return;
-    autoLoadedOnce.current = true;
-    setGroupId(groups[0].id);
-  }, [groups, groupId]);
+  function openSessionFor(entryId: number, date: string) {
+    openSessionMutation.mutate({ entryId, date });
+  }
+
+  const checkOutMutation = useMutation({
+    mutationFn: () => hifzApi.checkOut(sessionId!),
+    onSuccess: (session) => {
+      setSessionTimes({ checkedInAt: session.teacher_checked_in_at, checkedOutAt: session.teacher_checked_out_at });
+      setSnackbar(t("journal.checked_out"));
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("common.error"), t)),
+  });
+
+  async function handleCheckOut() {
+    const ok = await confirm({ message: t("journal.checked_out_confirm"), confirmLabel: t("journal.check_out") });
+    if (!ok) return;
+    checkOutMutation.mutate();
+  }
 
   function confirmDiscardIfDirty(): boolean {
     if (!isDirty) return true;
     return window.confirm(t("hifz.unsaved_confirm"));
   }
 
-  function handleSelectGroup(id: number | "") {
+  function handleSelectClass(entryId: number | "") {
     if (!confirmDiscardIfDirty()) return;
-    setGroupId(id);
+    setSelectedEntryId(entryId);
+    setSessionId(null);
+    setSessionTimes(null);
     setRoster([]);
     savedSnapshot.current = "[]";
   }
@@ -85,17 +166,10 @@ export default function HifzJournalPage() {
   function handleSelectDate(date: string) {
     if (!confirmDiscardIfDirty()) return;
     setSelectedDate(date);
+    setSessionId(null);
+    setSessionTimes(null);
     setRoster([]);
     savedSnapshot.current = "[]";
-  }
-
-  async function loadRoster() {
-    if (!groupId) return;
-    const { data } = await rosterQuery.refetch();
-    if (data) {
-      setRoster(data);
-      savedSnapshot.current = JSON.stringify(data);
-    }
   }
 
   const saveAllMutation = useMutation({
@@ -113,7 +187,7 @@ export default function HifzJournalPage() {
         if (hasAnyValue(r.repeat) || hadValue(r.student_id, "repeat")) rows.push({ student_id: r.student_id, kind: "REPEAT", ...r.repeat });
         return rows;
       });
-      return hifzApi.putRecords(Number(groupId), selectedDate, records);
+      return hifzApi.putRecords(Number(selectedGroupId), selectedDate, records);
     },
     onSuccess: (updated) => {
       setRoster(updated);
@@ -147,14 +221,17 @@ export default function HifzJournalPage() {
         <TextField
           select
           size="small"
-          label={t("hifz.select_group")}
-          value={groupId}
-          onChange={(e) => handleSelectGroup(e.target.value ? Number(e.target.value) : "")}
-          sx={{ minWidth: 220 }}
+          label={t("hifz.select_class")}
+          value={selectedEntryId}
+          onChange={(e) => handleSelectClass(e.target.value ? Number(e.target.value) : "")}
+          sx={{ minWidth: 280 }}
         >
-          {(groups ?? []).map((g) => (
-            <MenuItem key={g.id} value={g.id}>
-              {g.name}
+          {classOptions.map((opt) => (
+            <MenuItem key={opt.entryId} value={opt.entryId}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                <span>{opt.label}</span>
+                {opt.isToday && <Chip label={t("journal.today")} size="small" color="primary" sx={{ height: 18, fontSize: 11 }} />}
+              </Box>
             </MenuItem>
           ))}
         </TextField>
@@ -166,15 +243,38 @@ export default function HifzJournalPage() {
           onChange={(e) => handleSelectDate(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
         />
-        <Button variant="contained" disabled={!groupId || rosterQuery.isFetching} onClick={loadRoster}>
+        <Button
+          variant="contained"
+          disabled={!selectedEntryId || openSessionMutation.isPending}
+          onClick={() => selectedEntryId && openSessionFor(Number(selectedEntryId), selectedDate)}
+        >
           {t("hifz.load")}
         </Button>
       </Box>
 
-      {groups && groups.length === 0 && <Alert severity="info">{t("hifz.no_groups")}</Alert>}
+      {hifzGroups && hifzGroups.length === 0 && <Alert severity="info">{t("hifz.no_groups")}</Alert>}
+      {hifzGroups && hifzGroups.length > 0 && classOptions.length === 0 && (
+        <Alert severity="info">{t("hifz.no_classes")}</Alert>
+      )}
 
-      {roster.length > 0 && (
+      {sessionId && roster.length > 0 && (
         <>
+          <Box sx={{ display: "flex", gap: 2, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              {t("journal.checked_in_at")}:{" "}
+              <strong>{sessionTimes?.checkedInAt ? formatTime(sessionTimes.checkedInAt) : "—"}</strong>
+            </Typography>
+            {sessionTimes?.checkedOutAt ? (
+              <Typography variant="body2" color="text.secondary">
+                {t("journal.checked_out_at")}: <strong>{formatTime(sessionTimes.checkedOutAt)}</strong>
+              </Typography>
+            ) : (
+              <Button size="small" variant="outlined" disabled={checkOutMutation.isPending} onClick={() => handleCheckOut()}>
+                {t("journal.check_out")}
+              </Button>
+            )}
+          </Box>
+
           <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 2 }}>
             <Table size="small" stickyHeader>
               <TableHead>

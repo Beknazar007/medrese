@@ -10,6 +10,8 @@ from app.db.session import get_db
 from app.models.enums import GroupType, UserRole
 from app.models.group import Group
 from app.models.hifz import HifzExam, HifzTarget
+from app.models.lesson_session import LessonSession
+from app.models.schedule import ScheduleEntry
 from app.models.student import Student
 from app.models.teacher import TeacherProfile
 from app.models.user import User
@@ -20,11 +22,14 @@ from app.schemas.hifz import (
     HifzExamUpdate,
     HifzRecordsPutRequest,
     HifzRosterStudentOut,
+    HifzSessionDetailOut,
     HifzTargetCreate,
     HifzTargetOut,
     HifzTargetUpdate,
 )
+from app.schemas.journal import LessonSessionOut, SessionGetOrCreate
 from app.services import hifz as hifz_service
+from app.services import journal as journal_service
 
 router = APIRouter(prefix="/hifz", tags=["hifz"])
 
@@ -58,6 +63,52 @@ def _assert_can_access_student(db: Session, current_user: User, student: Student
             raise HTTPException(status_code=403, detail="You do not teach this student's hafiz group")
     else:
         assert_department_access(current_user, student.group.department_id)
+
+
+def _assert_can_access_hifz_entry(db: Session, current_user: User, entry: ScheduleEntry) -> None:
+    if entry.assignment.group.group_type != GroupType.HAFIZ:
+        raise HTTPException(status_code=400, detail="This schedule entry is not a hafiz class")
+    if current_user.role == UserRole.TEACHER:
+        teacher = _get_own_teacher(db, current_user)
+        if entry.assignment.teacher_id != teacher.id:
+            raise HTTPException(status_code=403, detail="You do not teach this class")
+    else:
+        assert_department_access(current_user, entry.assignment.teacher.department_id)
+
+
+@router.post("/sessions", response_model=HifzSessionDetailOut)
+def get_or_create_hifz_session(
+    payload: SessionGetOrCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> HifzSessionDetailOut:
+    entry = db.get(ScheduleEntry, payload.schedule_entry_id)
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Schedule entry not found")
+    _assert_can_access_hifz_entry(db, current_user, entry)
+
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=payload.date)
+    db.commit()
+    db.refresh(session)
+    roster = hifz_service.roster_for_group_date(db, group_id=entry.group_id, on_date=payload.date)
+    return HifzSessionDetailOut(session=LessonSessionOut.model_validate(session), roster=roster)
+
+
+@router.put("/sessions/{session_id}/check-out", response_model=LessonSessionOut)
+def check_out_hifz_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> LessonSession:
+    session = db.get(LessonSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    _assert_can_access_hifz_entry(db, current_user, session.schedule_entry)
+
+    journal_service.check_out_session(session)
+    db.commit()
+    db.refresh(session)
+    return session
 
 
 @router.get("/groups", response_model=list[GroupOut])

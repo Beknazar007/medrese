@@ -7,13 +7,19 @@ from sqlalchemy.orm import Session
 from app.models.enums import GroupType, HifzKind
 from app.schemas.hifz import HifzRecordUpsert, HifzTargetCreate
 from app.services import hifz as hifz_service
+from app.services import journal as journal_service
+from app.services import monitoring as monitoring_service
 from tests.factories import (
     make_assignment,
     make_department,
     make_group,
+    make_room,
+    make_schedule_entry,
+    make_semester,
     make_student,
     make_subject,
     make_teacher,
+    make_time_slot,
 )
 
 
@@ -254,3 +260,42 @@ def test_exam_crud_is_independent_of_daily_records(db: Session):
 
     hifz_service.delete_exam(db, exam=updated)
     assert hifz_service.list_exams(db, student_id=student.id) == []
+
+
+def test_opening_a_scheduled_hafiz_class_creates_a_session_that_counts_in_monitoring(db: Session):
+    """A hafiz class placed on the timetable (exactly like a regular subject) must behave like
+    one for monitoring purposes: opening it for a date stamps a LessonSession, which is what
+    teacher_monitoring counts as "conducted" — this is the whole point of scheduling hafiz
+    classes instead of picking a free date with no timetable tie-in."""
+    department = make_department(db)
+    teacher = make_teacher(db, department)
+    subject = make_subject(db, department)
+    group = make_group(db, department, group_type=GroupType.HAFIZ)
+    semester = make_semester(db)
+    assignment = make_assignment(db, teacher, subject, group, semester)
+    room = make_room(db)
+    slot = make_time_slot(db)
+    entry = make_schedule_entry(db, assignment, room, slot)  # Monday
+    make_student(db, group, full_name="Aisha")
+
+    # Mondays in September 2026: 7, 14, 21, 28. Only the 7th is actually opened/conducted.
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    db.flush()
+    assert session.teacher_checked_in_at is not None
+
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7))
+    assert len(roster) == 1
+    assert roster[0].full_name == "Aisha"
+
+    rows = monitoring_service.teacher_monitoring(
+        db,
+        semester_id=semester.id,
+        date_from=date(2026, 9, 1),
+        date_to=date(2026, 9, 30),
+        today=date(2026, 9, 30),
+    )
+    assert len(rows) == 1
+    assert rows[0].teacher_id == teacher.id
+    assert rows[0].expected_lessons == 4
+    assert rows[0].conducted_lessons == 1
+    assert rows[0].missed_lessons == 3

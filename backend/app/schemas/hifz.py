@@ -3,6 +3,7 @@ from datetime import date as DateType
 from pydantic import BaseModel, Field, model_validator
 
 from app.models.enums import HifzKind
+from app.schemas.journal import LessonSessionOut
 
 
 def validate_hifz_ranges(
@@ -170,3 +171,8 @@ class HifzRosterStudentOut(BaseModel):
     student_number: str | None
     hifz: HifzRecordDetail
     repeat: HifzRecordDetail
+
+
+class HifzSessionDetailOut(BaseModel):
+    session: LessonSessionOut
+    roster: list[HifzRosterStudentOut]

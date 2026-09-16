@@ -260,3 +260,8 @@ export interface HifzRosterStudent {
   hifz: HifzRecordDetail;
   repeat: HifzRecordDetail;
 }
+
+export interface HifzSessionDetail {
+  session: LessonSession;
+  roster: HifzRosterStudent[];
+}

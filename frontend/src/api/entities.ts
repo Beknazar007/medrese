@@ -6,6 +6,7 @@ import type {
   HifzExam,
   HifzKind,
   HifzRosterStudent,
+  HifzSessionDetail,
   HifzTarget,
   LessonSession,
   LessonSessionDetail,
@@ -163,6 +164,10 @@ export const hifzApi = {
   groups: async (): Promise<Group[]> => (await api.get<Group[]>("/hifz/groups")).data,
   roster: async (group_id: number, date: string): Promise<HifzRosterStudent[]> =>
     (await api.get<HifzRosterStudent[]>("/hifz/roster", { params: { group_id, date } })).data,
+  getOrCreateSession: async (schedule_entry_id: number, date: string): Promise<HifzSessionDetail> =>
+    (await api.post<HifzSessionDetail>("/hifz/sessions", { schedule_entry_id, date })).data,
+  checkOut: async (sessionId: number): Promise<LessonSession> =>
+    (await api.put<LessonSession>(`/hifz/sessions/${sessionId}/check-out`)).data,
   putRecords: async (
     group_id: number,
     date: string,

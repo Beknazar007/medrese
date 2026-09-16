@@ -317,10 +317,11 @@
   },
   "hifz": {
     "title": "Hafiz journal",
-    "select_group": "Group",
     "select_date": "Date",
     "load": "Open",
     "no_groups": "You have no hafiz groups. Ask the rector/dean to assign you to one.",
+    "select_class": "Class",
+    "no_classes": "Your hafiz group isn't on the timetable yet. Ask the rector/dean to schedule it.",
     "col_student": "Student",
     "col_kind": "Kind",
     "col_score": "Score",
