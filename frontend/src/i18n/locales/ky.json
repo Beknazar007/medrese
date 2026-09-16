@@ -24,6 +24,7 @@
     "my_class": "Менин классым",
     "hifz_journal": "Хафиз журналы",
     "logout": "Чыгуу",
+    "logout_confirm": "Тутумдан чыгууну каалайсызбы?",
     "group_org": "Уюм",
     "group_academic": "Окуу процесси",
     "group_monitoring": "Мониторинг",
@@ -37,6 +38,8 @@
     "cancel": "Жокко чыгаруу",
     "actions": "Аракеттер",
     "confirm_delete": "Бул жазууну өчүрөсүзбү?",
+    "confirm_title": "Ырастоо",
+    "confirm_save": "Өзгөртүүлөрдү сактайсызбы?",
     "failed_to_load": "Маалымат жүктөлгөн жок",
     "no_records": "Азырынча жазуу жок",
     "created": "Кошулду",
@@ -286,6 +289,7 @@
     "checked_out_at": "Аяктаган убактысы",
     "check_out": "Сабакты аяктоо",
     "checked_out": "Сабак аякталды деп белгиленди",
+    "checked_out_confirm": "Сабакты аяктадыңыз деп белгилейбизби?",
     "exam_toggle": "Бул — сынак"
   },
   "monitoring": {

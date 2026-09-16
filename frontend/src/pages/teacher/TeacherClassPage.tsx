@@ -36,6 +36,7 @@ import { assignmentsApi, journalApi, notesApi, scheduleApi } from "../../api/ent
 import AttendanceBar from "../../components/AttendanceBar";
 import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
+import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
 
@@ -75,6 +76,7 @@ function formatTime(iso: string): string {
 
 export default function TeacherClassPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
 
   const { data: assignments } = useQuery({ queryKey: ["assignments", "mine"], queryFn: () => assignmentsApi.list() });
   const { data: entries } = useQuery({ queryKey: ["schedule", "mine"], queryFn: () => scheduleApi.list() });
@@ -228,6 +230,18 @@ export default function TeacherClassPage() {
     onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
+  async function handleSaveAll() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    saveAllMutation.mutate();
+  }
+
+  async function handleCheckOut() {
+    const ok = await confirm({ message: t("journal.checked_out_confirm"), confirmLabel: t("journal.check_out") });
+    if (!ok) return;
+    checkOutMutation.mutate();
+  }
+
   function setAttendance(studentId: number, status: AttendanceStatus | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
   }
@@ -321,7 +335,7 @@ export default function TeacherClassPage() {
                 {t("journal.checked_out_at")}: <strong>{formatTime(sessionTimes.checkedOutAt)}</strong>
               </Typography>
             ) : (
-              <Button size="small" variant="outlined" disabled={checkOutMutation.isPending} onClick={() => checkOutMutation.mutate()}>
+              <Button size="small" variant="outlined" disabled={checkOutMutation.isPending} onClick={() => handleCheckOut()}>
                 {t("journal.check_out")}
               </Button>
             )}
@@ -445,7 +459,7 @@ export default function TeacherClassPage() {
           <Button
             variant="contained"
             size="large"
-            onClick={() => saveAllMutation.mutate()}
+            onClick={() => handleSaveAll()}
             disabled={saveAllMutation.isPending || !isDirty}
           >
             {isDirty ? t("journal.save_all") : t("journal.saved")}
@@ -525,6 +539,7 @@ function NotesDialog({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const [body, setBody] = useState("");
   const [visibility, setVisibility] = useState<NoteVisibility>("PRIVATE");
 
@@ -541,6 +556,12 @@ function NotesDialog({
     },
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
+
+  async function handleAddNote() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    createMutation.mutate();
+  }
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
@@ -580,7 +601,7 @@ function NotesDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>{t("journal.close")}</Button>
-        <Button variant="contained" disabled={!body.trim() || createMutation.isPending} onClick={() => createMutation.mutate()}>
+        <Button variant="contained" disabled={!body.trim() || createMutation.isPending} onClick={() => handleAddNote()}>
           {t("journal.note_add")}
         </Button>
       </DialogActions>

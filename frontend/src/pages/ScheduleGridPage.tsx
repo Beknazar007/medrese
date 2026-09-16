@@ -31,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import { assignmentsApi, roomsApi, scheduleApi } from "../api/entities";
 import type { DayOfWeek, HourType, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../lib/errors";
 import { nameById, useDepartments, useGroups, useSemesters, useSubjects, useTeachers, useTimeSlots } from "../hooks/useReferenceData";
 
@@ -44,6 +45,7 @@ export default function ScheduleGridPage() {
   const { user } = useAuth();
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
 
   const DAYS: { value: DayOfWeek; label: string }[] = [1, 2, 3, 4, 5, 6, 7].map((d) => ({
     value: d as DayOfWeek,
@@ -174,6 +176,24 @@ export default function ScheduleGridPage() {
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"), t)),
   });
+
+  async function handleAddExisting() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    createMutation.mutate();
+  }
+
+  async function handleAddNew() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    createAssignmentAndScheduleMutation.mutate();
+  }
+
+  async function handleRemoveEntry(entryId: number) {
+    const ok = await confirm({ message: t("common.confirm_delete"), destructive: true, confirmLabel: t("common.remove") });
+    if (!ok) return;
+    deleteMutation.mutate(entryId);
+  }
 
   function openCell(day: DayOfWeek, timeSlotId: number, entry: ScheduleEntry | null) {
     setDialog({ day, timeSlotId, entry });
@@ -492,7 +512,7 @@ export default function ScheduleGridPage() {
         <DialogActions>
           <Button onClick={() => setDialog(null)}>{t("common.close")}</Button>
           {dialog?.entry && canWrite && (
-            <Button color="error" onClick={() => deleteMutation.mutate(dialog.entry!.id)}>
+            <Button color="error" onClick={() => handleRemoveEntry(dialog.entry!.id)}>
               {t("common.remove")}
             </Button>
           )}
@@ -500,7 +520,7 @@ export default function ScheduleGridPage() {
             <Button
               variant="contained"
               disabled={!assignmentId || !roomId || createMutation.isPending}
-              onClick={() => createMutation.mutate()}
+              onClick={() => handleAddExisting()}
             >
               {t("common.add")}
             </Button>
@@ -516,7 +536,7 @@ export default function ScheduleGridPage() {
                 !roomId ||
                 createAssignmentAndScheduleMutation.isPending
               }
-              onClick={() => createAssignmentAndScheduleMutation.mutate()}
+              onClick={() => handleAddNew()}
             >
               {t("common.add")}
             </Button>

@@ -24,6 +24,7 @@
     "my_class": "Мой класс",
     "hifz_journal": "Журнал хафиз",
     "logout": "Выйти",
+    "logout_confirm": "Выйти из системы?",
     "group_org": "Организация",
     "group_academic": "Учебный процесс",
     "group_monitoring": "Мониторинг",
@@ -37,6 +38,8 @@
     "cancel": "Отмена",
     "actions": "Действия",
     "confirm_delete": "Удалить эту запись?",
+    "confirm_title": "Подтверждение",
+    "confirm_save": "Сохранить изменения?",
     "failed_to_load": "Не удалось загрузить данные",
     "no_records": "Записей пока нет",
     "created": "Добавлено",
@@ -286,6 +289,7 @@
     "checked_out_at": "Закончил",
     "check_out": "Завершить урок",
     "checked_out": "Урок отмечен как завершённый",
+    "checked_out_confirm": "Отметить урок как завершённый?",
     "exam_toggle": "Это экзамен"
   },
   "monitoring": {

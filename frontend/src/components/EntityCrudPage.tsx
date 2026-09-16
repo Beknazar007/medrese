@@ -32,6 +32,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../lib/errors";
 
 export type FieldType = "text" | "number" | "select" | "date" | "time" | "checkbox" | "image";
@@ -114,6 +115,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const { data, isLoading, error } = useQuery({
     queryKey: [...queryKey, listParams],
     queryFn: () => api.list(listParams),
@@ -184,7 +186,9 @@ export default function EntityCrudPage<T extends { id: number }>({
     onSettled: () => setPendingDeleteId(null),
   });
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
     setFormError(null);
     const payload: Record<string, unknown> = {};
     for (const field of fields) {

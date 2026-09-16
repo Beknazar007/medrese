@@ -35,6 +35,7 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { useConfirm } from "./context/ConfirmContext";
 
 const DRAWER_WIDTH = 230;
 
@@ -53,11 +54,14 @@ export default function Layout() {
   const { t, i18n } = useTranslation();
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  function handleLogout() {
+  async function handleLogout() {
+    const ok = await confirm({ message: t("nav.logout_confirm"), confirmLabel: t("nav.logout") });
+    if (!ok) return;
     logout();
     navigate("/login");
   }

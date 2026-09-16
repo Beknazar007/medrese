@@ -24,6 +24,7 @@
     "my_class": "My class",
     "hifz_journal": "Hafiz journal",
     "logout": "Log out",
+    "logout_confirm": "Log out of the system?",
     "group_org": "Organization",
     "group_academic": "Academics",
     "group_monitoring": "Monitoring",
@@ -37,6 +38,8 @@
     "cancel": "Cancel",
     "actions": "Actions",
     "confirm_delete": "Delete this record?",
+    "confirm_title": "Confirm",
+    "confirm_save": "Save these changes?",
     "failed_to_load": "Failed to load data",
     "no_records": "No records yet",
     "created": "Created",
@@ -286,6 +289,7 @@
     "checked_out_at": "Checked out",
     "check_out": "Finish lesson",
     "checked_out": "Lesson marked as finished",
+    "checked_out_confirm": "Mark this lesson as finished?",
     "exam_toggle": "This is an exam"
   },
   "monitoring": {

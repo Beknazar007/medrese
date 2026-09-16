@@ -29,6 +29,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { hifzApi } from "../../api/entities";
 import type { HifzExam, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
+import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 
 function todayIso(): string {
@@ -41,6 +42,7 @@ function hasAnyValue(d: HifzRecordDetail): boolean {
 
 export default function HifzJournalPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
 
   const { data: groups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups() });
 
@@ -120,6 +122,12 @@ export default function HifzJournalPage() {
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t)),
   });
+
+  async function handleSaveAll() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    saveAllMutation.mutate();
+  }
 
   function updateRecord(studentId: number, kind: "hifz" | "repeat", patch: Partial<HifzRecordDetail>) {
     setRoster((prev) =>
@@ -281,7 +289,7 @@ export default function HifzJournalPage() {
           <Button
             variant="contained"
             size="large"
-            onClick={() => saveAllMutation.mutate()}
+            onClick={() => handleSaveAll()}
             disabled={saveAllMutation.isPending || !isDirty}
           >
             {isDirty ? t("hifz.save_all") : t("hifz.saved")}
@@ -308,6 +316,7 @@ function HifzTargetsDialog({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [kind, setKind] = useState<HifzKind>("HIFZ");
   const [juzFrom, setJuzFrom] = useState<string>("");
@@ -380,6 +389,19 @@ function HifzTargetsDialog({
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
+  async function handleSaveTarget() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    if (editingId) updateMutation.mutate();
+    else createMutation.mutate();
+  }
+
+  async function handleDeleteTarget(id: number) {
+    const ok = await confirm({ message: t("common.confirm_delete"), destructive: true, confirmLabel: t("common.remove") });
+    if (!ok) return;
+    deleteMutation.mutate(id);
+  }
+
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t("hifz.targets_title", { name: student.name })}</DialogTitle>
@@ -404,7 +426,7 @@ function HifzTargetsDialog({
             <IconButton size="small" onClick={() => startEdit(target)}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={() => deleteMutation.mutate(target.id)}>
+            <IconButton size="small" onClick={() => handleDeleteTarget(target.id)}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -435,7 +457,7 @@ function HifzTargetsDialog({
         <Button
           variant="contained"
           disabled={createMutation.isPending || updateMutation.isPending}
-          onClick={() => (editingId ? updateMutation.mutate() : createMutation.mutate())}
+          onClick={() => handleSaveTarget()}
         >
           {editingId ? t("hifz.target_save") : t("hifz.target_add")}
         </Button>
@@ -455,6 +477,7 @@ function HifzExamsDialog({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [date, setDate] = useState<string>(todayIso());
   const [title, setTitle] = useState<string>("");
@@ -519,6 +542,19 @@ function HifzExamsDialog({
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
+  async function handleSaveExam() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    if (editingId) updateMutation.mutate();
+    else createMutation.mutate();
+  }
+
+  async function handleDeleteExam(id: number) {
+    const ok = await confirm({ message: t("common.confirm_delete"), destructive: true, confirmLabel: t("common.remove") });
+    if (!ok) return;
+    deleteMutation.mutate(id);
+  }
+
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t("hifz.exams_title", { name: student.name })}</DialogTitle>
@@ -543,7 +579,7 @@ function HifzExamsDialog({
             <IconButton size="small" onClick={() => startEdit(exam)}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={() => deleteMutation.mutate(exam.id)}>
+            <IconButton size="small" onClick={() => handleDeleteExam(exam.id)}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -567,7 +603,7 @@ function HifzExamsDialog({
         <Button
           variant="contained"
           disabled={!title.trim() || createMutation.isPending || updateMutation.isPending}
-          onClick={() => (editingId ? updateMutation.mutate() : createMutation.mutate())}
+          onClick={() => handleSaveExam()}
         >
           {editingId ? t("hifz.exam_save") : t("hifz.exam_add")}
         </Button>

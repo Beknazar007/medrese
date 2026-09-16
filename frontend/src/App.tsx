@@ -3,6 +3,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { ConfirmProvider } from "./context/ConfirmContext";
 import Layout from "./Layout";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./ProtectedRoute";
@@ -32,6 +33,7 @@ export default function App() {
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <ConfirmProvider>
           <Router>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
@@ -159,6 +161,7 @@ export default function App() {
               </Route>
             </Routes>
           </Router>
+          </ConfirmProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
