@@ -82,4 +82,10 @@ def delete_assignment(
     assignment = _get_or_404(db, TeachingAssignment, assignment_id, "Assignment")
     assert_department_access(current_user, assignment.teacher.department_id)
     db.delete(assignment)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot delete an assignment that still has schedule entries"
+        ) from exc

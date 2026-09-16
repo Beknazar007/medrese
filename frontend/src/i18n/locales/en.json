@@ -389,6 +389,7 @@
     "room_not_found": "Room not found",
     "room_has_dependents": "Cannot delete a room that still has schedule entries",
     "teaching_assignment_not_found": "Teaching assignment not found",
+    "assignment_has_dependents": "Cannot delete an assignment that is still placed on the timetable — remove it from the schedule first",
     "slot_already_booked": "This slot is already booked",
     "semester_not_found": "Semester not found",
     "semester_has_dependents": "Cannot delete a semester that still has assignments or schedule entries",
