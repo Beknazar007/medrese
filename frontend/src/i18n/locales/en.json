@@ -211,6 +211,8 @@
     "field_department": "Department:",
     "pick_assignment": "Teaching assignment",
     "pick_assignment_hint": "Teacher + subject + group for this semester",
+    "mode_existing": "From an existing assignment",
+    "mode_new": "Create a new assignment",
     "pick_room": "Room",
     "added": "Added to timetable",
     "add_failed": "Could not add — check conflicts",

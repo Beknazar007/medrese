@@ -18,6 +18,8 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
   useTheme,
@@ -27,7 +29,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { assignmentsApi, roomsApi, scheduleApi } from "../api/entities";
-import type { DayOfWeek, ScheduleEntry } from "../api/types";
+import type { DayOfWeek, HourType, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import { apiErrorMessage } from "../lib/errors";
 import { nameById, useDepartments, useGroups, useSemesters, useSubjects, useTeachers, useTimeSlots } from "../hooks/useReferenceData";
@@ -104,6 +106,23 @@ export default function ScheduleGridPage() {
   );
   const [assignmentId, setAssignmentId] = useState<number | "">("");
   const [roomId, setRoomId] = useState<number | "">("");
+  const [createMode, setCreateMode] = useState<"existing" | "new">("existing");
+  const [newTeacherId, setNewTeacherId] = useState<number | "">("");
+  const [newSubjectId, setNewSubjectId] = useState<number | "">("");
+  const [newGroupId, setNewGroupId] = useState<number | "">("");
+  const [newHourType, setNewHourType] = useState<HourType | "">("");
+
+  const inScope = (departmentId: number) => user?.role === "RECTOR" || departmentId === user?.headed_department_id;
+  const newTeacherOptions = (teachers ?? []).filter((t2) => inScope(t2.department_id)).map((t2) => ({ value: t2.id, label: t2.full_name }));
+  const newSubjectOptions = (subjects ?? [])
+    .filter((s) => inScope(s.department_id))
+    .map((s) => ({ value: s.id, label: `${s.name} (${s.code})` }));
+  const newGroupOptions = (groups ?? []).filter((g) => inScope(g.department_id)).map((g) => ({ value: g.id, label: g.name }));
+  const HOUR_TYPES: { value: HourType; label: string }[] = [
+    { value: "LECTURE", label: t("hour_type.LECTURE") },
+    { value: "PRACTICE", label: t("hour_type.PRACTICE") },
+    { value: "LAB", label: t("hour_type.LAB") },
+  ];
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -115,6 +134,31 @@ export default function ScheduleGridPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      setSnackbar(t("schedule.added"));
+      setDialog(null);
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.add_failed"), t)),
+  });
+
+  const createAssignmentAndScheduleMutation = useMutation({
+    mutationFn: async () => {
+      const assignment = await assignmentsApi.create({
+        teacher_id: Number(newTeacherId),
+        subject_id: Number(newSubjectId),
+        group_id: Number(newGroupId),
+        semester_id: Number(effectiveSemesterId),
+        hour_type: newHourType as HourType,
+      });
+      return scheduleApi.create({
+        assignment_id: assignment.id,
+        room_id: Number(roomId),
+        time_slot_id: dialog!.timeSlotId,
+        day_of_week: dialog!.day,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
       setSnackbar(t("schedule.added"));
       setDialog(null);
     },
@@ -135,6 +179,11 @@ export default function ScheduleGridPage() {
     setDialog({ day, timeSlotId, entry });
     setAssignmentId("");
     setRoomId("");
+    setCreateMode("existing");
+    setNewTeacherId("");
+    setNewSubjectId("");
+    setNewGroupId("");
+    setNewHourType("");
   }
 
   function describeEntry(entry: ScheduleEntry) {
@@ -335,25 +384,94 @@ export default function ScheduleGridPage() {
             })()
           ) : (
             <>
-              {(() => {
-                const assignmentOptions = (assignments ?? []).map((a) => ({
-                  value: a.id,
-                  label: `${nameById(teachers, a.teacher_id, (t2) => t2.full_name)} — ${nameById(subjects, a.subject_id, (s) => s.name)} — ${nameById(groups, a.group_id, (g) => g.name)} (${t(`hour_type.${a.hour_type}`)})`,
-                }));
-                const selectedAssignment = assignmentOptions.find((opt) => opt.value === assignmentId) ?? null;
-                return (
-                  <Autocomplete
-                    options={assignmentOptions}
-                    value={selectedAssignment}
-                    isOptionEqualToValue={(opt, val) => opt.value === val.value}
-                    getOptionLabel={(opt) => opt.label}
-                    onChange={(_e, newValue) => setAssignmentId(newValue ? newValue.value : "")}
-                    renderInput={(params) => (
-                      <TextField {...params} label={t("schedule.pick_assignment")} required helperText={t("schedule.pick_assignment_hint")} />
-                    )}
-                  />
-                );
-              })()}
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={createMode}
+                onChange={(_e, value) => value && setCreateMode(value)}
+                sx={{ alignSelf: "flex-start" }}
+              >
+                <ToggleButton value="existing">{t("schedule.mode_existing")}</ToggleButton>
+                <ToggleButton value="new">{t("schedule.mode_new")}</ToggleButton>
+              </ToggleButtonGroup>
+
+              {createMode === "existing" ? (
+                (() => {
+                  const assignmentOptions = (assignments ?? []).map((a) => ({
+                    value: a.id,
+                    label: `${nameById(teachers, a.teacher_id, (t2) => t2.full_name)} — ${nameById(subjects, a.subject_id, (s) => s.name)} — ${nameById(groups, a.group_id, (g) => g.name)} (${t(`hour_type.${a.hour_type}`)})`,
+                  }));
+                  const selectedAssignment = assignmentOptions.find((opt) => opt.value === assignmentId) ?? null;
+                  return (
+                    <Autocomplete
+                      options={assignmentOptions}
+                      value={selectedAssignment}
+                      isOptionEqualToValue={(opt, val) => opt.value === val.value}
+                      getOptionLabel={(opt) => opt.label}
+                      onChange={(_e, newValue) => setAssignmentId(newValue ? newValue.value : "")}
+                      renderInput={(params) => (
+                        <TextField {...params} label={t("schedule.pick_assignment")} required helperText={t("schedule.pick_assignment_hint")} />
+                      )}
+                    />
+                  );
+                })()
+              ) : (
+                <>
+                  <TextField
+                    select
+                    label={t("assignments.field_teacher")}
+                    value={newTeacherId}
+                    onChange={(e) => setNewTeacherId(e.target.value === "" ? "" : Number(e.target.value))}
+                    required
+                  >
+                    {newTeacherOptions.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label={t("assignments.field_subject")}
+                    value={newSubjectId}
+                    onChange={(e) => setNewSubjectId(e.target.value === "" ? "" : Number(e.target.value))}
+                    required
+                  >
+                    {newSubjectOptions.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label={t("assignments.field_group")}
+                    value={newGroupId}
+                    onChange={(e) => setNewGroupId(e.target.value === "" ? "" : Number(e.target.value))}
+                    required
+                  >
+                    {newGroupOptions.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label={t("assignments.field_type")}
+                    value={newHourType}
+                    onChange={(e) => setNewHourType(e.target.value as HourType)}
+                    required
+                  >
+                    {HOUR_TYPES.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </>
+              )}
+
               {(() => {
                 const roomOptions = (rooms ?? []).map((r) => ({ value: r.id, label: `${r.name} (${r.building})` }));
                 const selectedRoom = roomOptions.find((opt) => opt.value === roomId) ?? null;
@@ -378,11 +496,27 @@ export default function ScheduleGridPage() {
               {t("common.remove")}
             </Button>
           )}
-          {!dialog?.entry && canWrite && (
+          {!dialog?.entry && canWrite && createMode === "existing" && (
             <Button
               variant="contained"
               disabled={!assignmentId || !roomId || createMutation.isPending}
               onClick={() => createMutation.mutate()}
+            >
+              {t("common.add")}
+            </Button>
+          )}
+          {!dialog?.entry && canWrite && createMode === "new" && (
+            <Button
+              variant="contained"
+              disabled={
+                !newTeacherId ||
+                !newSubjectId ||
+                !newGroupId ||
+                !newHourType ||
+                !roomId ||
+                createAssignmentAndScheduleMutation.isPending
+              }
+              onClick={() => createAssignmentAndScheduleMutation.mutate()}
             >
               {t("common.add")}
             </Button>
