@@ -36,6 +36,7 @@ const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "Cannot delete a room that still has schedule entries": "errors.room_has_dependents",
   "Teaching assignment not found": "errors.teaching_assignment_not_found",
   "Cannot delete an assignment that still has schedule entries": "errors.assignment_has_dependents",
+  "Cannot remove a schedule entry that already has lessons recorded against it": "errors.schedule_entry_has_dependents",
   "This slot is already booked": "errors.slot_already_booked",
   "Semester not found": "errors.semester_not_found",
   "Cannot delete a semester that still has assignments or schedule entries": "errors.semester_has_dependents",

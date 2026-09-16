@@ -99,4 +99,10 @@ def delete_schedule_entry(
         raise HTTPException(status_code=404, detail="Schedule entry not found")
     assert_department_access(current_user, entry.assignment.teacher.department_id)
     db.delete(entry)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot remove a schedule entry that already has lessons recorded against it"
+        ) from exc
