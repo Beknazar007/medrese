@@ -145,4 +145,10 @@ def delete_student(
         raise HTTPException(status_code=404, detail="Student not found")
     assert_department_access(current_user, student.group.department_id)
     db.delete(student)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot delete a student who still has attendance, grade, or note records"
+        ) from exc

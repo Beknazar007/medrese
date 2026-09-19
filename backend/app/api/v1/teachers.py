@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import (
@@ -134,4 +135,10 @@ def delete_teacher(
     db.delete(teacher)
     if user is not None:
         db.delete(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot delete a teacher who still has teaching assignments"
+        ) from exc

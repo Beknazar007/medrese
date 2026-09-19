@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import accessible_department_ids, assert_department_access, get_current_user, require_role
@@ -68,4 +69,10 @@ def delete_subject(
         raise HTTPException(status_code=404, detail="Subject not found")
     assert_department_access(current_user, subject.department_id)
     db.delete(subject)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot delete a subject that still has teaching assignments"
+        ) from exc

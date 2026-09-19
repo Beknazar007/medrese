@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import accessible_department_ids, assert_department_access, get_current_user, require_role
@@ -68,4 +69,10 @@ def delete_group(
         raise HTTPException(status_code=404, detail="Group not found")
     assert_department_access(current_user, group.department_id)
     db.delete(group)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Cannot delete a group that still has students or teaching assignments"
+        ) from exc

@@ -19,9 +19,15 @@ def list_users(
     db: Session = Depends(get_db),
     _=Depends(require_role(UserRole.RECTOR)),
 ) -> list[User]:
+    """This router manages admin (Rector/Dean) accounts only — teacher accounts are created
+    and managed via POST /teachers instead, see create_user below. With no explicit role
+    filter, exclude teachers so the admin-accounts list doesn't mix the two.
+    """
     stmt = select(User)
     if role is not None:
         stmt = stmt.where(User.role == role)
+    else:
+        stmt = stmt.where(User.role != UserRole.TEACHER)
     return list(db.scalars(stmt).all())
 
 
