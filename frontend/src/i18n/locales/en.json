@@ -221,7 +221,15 @@
     "added": "Added to timetable",
     "add_failed": "Could not add — check conflicts",
     "removed": "Removed",
-    "remove_failed": "Could not remove"
+    "remove_failed": "Could not remove",
+    "move": "Move",
+    "move_day": "Day",
+    "move_timeslot": "Period",
+    "move_save": "Save move",
+    "moved": "Moved",
+    "move_failed": "Could not move — check conflicts",
+    "force_remove_confirm": "This slot already has lessons held against it — removing it will permanently delete their attendance and grades too. This cannot be undone.",
+    "force_remove_confirm_label": "Delete anyway"
   },
   "students": {
     "title": "Students",

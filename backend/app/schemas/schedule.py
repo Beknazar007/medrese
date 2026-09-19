@@ -10,6 +10,12 @@ class ScheduleEntryCreate(BaseModel):
     day_of_week: DayOfWeek
 
 
+class ScheduleEntryUpdate(BaseModel):
+    room_id: int | None = None
+    time_slot_id: int | None = None
+    day_of_week: DayOfWeek | None = None
+
+
 class ScheduleEntryOut(BaseModel):
     id: int
     assignment_id: int

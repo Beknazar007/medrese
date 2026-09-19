@@ -64,8 +64,12 @@ export const scheduleApi = {
     time_slot_id: number;
     day_of_week: number;
   }): Promise<ScheduleEntry> => (await api.post<ScheduleEntry>("/schedule", payload)).data,
-  remove: async (id: number): Promise<void> => {
-    await api.delete(`/schedule/${id}`);
+  update: async (
+    id: number,
+    payload: { room_id?: number; time_slot_id?: number; day_of_week?: number },
+  ): Promise<ScheduleEntry> => (await api.patch<ScheduleEntry>(`/schedule/${id}`, payload)).data,
+  remove: async (id: number, force?: boolean): Promise<void> => {
+    await api.delete(`/schedule/${id}`, { params: force ? { force: true } : undefined });
   },
 };
 

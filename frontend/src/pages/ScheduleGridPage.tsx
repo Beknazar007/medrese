@@ -25,6 +25,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -113,6 +114,10 @@ export default function ScheduleGridPage() {
   const [newSubjectId, setNewSubjectId] = useState<number | "">("");
   const [newGroupId, setNewGroupId] = useState<number | "">("");
   const [newHourType, setNewHourType] = useState<HourType | "">("");
+  const [moveMode, setMoveMode] = useState(false);
+  const [moveDay, setMoveDay] = useState<DayOfWeek | "">("");
+  const [moveTimeSlotId, setMoveTimeSlotId] = useState<number | "">("");
+  const [moveRoomId, setMoveRoomId] = useState<number | "">("");
 
   const inScope = (departmentId: number) => user?.role === "RECTOR" || departmentId === user?.headed_department_id;
   const newTeacherOptions = (teachers ?? []).filter((t2) => inScope(t2.department_id)).map((t2) => ({ value: t2.id, label: t2.full_name }));
@@ -167,6 +172,16 @@ export default function ScheduleGridPage() {
     onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.add_failed"), t)),
   });
 
+  const forceDeleteMutation = useMutation({
+    mutationFn: (id: number) => scheduleApi.remove(id, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      setSnackbar(t("schedule.removed"));
+      setDialog(null);
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"), t)),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => scheduleApi.remove(id),
     onSuccess: () => {
@@ -174,7 +189,34 @@ export default function ScheduleGridPage() {
       setSnackbar(t("schedule.removed"));
       setDialog(null);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"), t)),
+    onError: async (err, entryId) => {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        const ok = await confirm({
+          message: t("schedule.force_remove_confirm"),
+          destructive: true,
+          confirmLabel: t("schedule.force_remove_confirm_label"),
+        });
+        if (ok) forceDeleteMutation.mutate(entryId);
+        return;
+      }
+      setSnackbar(apiErrorMessage(err, t("schedule.remove_failed"), t));
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      scheduleApi.update(dialog!.entry!.id, {
+        day_of_week: Number(moveDay),
+        time_slot_id: Number(moveTimeSlotId),
+        room_id: Number(moveRoomId),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule"] });
+      setSnackbar(t("schedule.moved"));
+      setDialog(null);
+      setMoveMode(false);
+    },
+    onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.move_failed"), t)),
   });
 
   async function handleAddExisting() {
@@ -195,6 +237,19 @@ export default function ScheduleGridPage() {
     deleteMutation.mutate(entryId);
   }
 
+  function startMove(entry: ScheduleEntry) {
+    setMoveDay(entry.day_of_week);
+    setMoveTimeSlotId(entry.time_slot_id);
+    setMoveRoomId(entry.room_id);
+    setMoveMode(true);
+  }
+
+  async function handleSaveMove() {
+    const ok = await confirm({ message: t("common.confirm_save") });
+    if (!ok) return;
+    updateMutation.mutate();
+  }
+
   function openCell(day: DayOfWeek, timeSlotId: number, entry: ScheduleEntry | null) {
     setDialog({ day, timeSlotId, entry });
     setAssignmentId("");
@@ -204,6 +259,7 @@ export default function ScheduleGridPage() {
     setNewSubjectId("");
     setNewGroupId("");
     setNewHourType("");
+    setMoveMode(false);
   }
 
   function describeEntry(entry: ScheduleEntry) {
@@ -376,7 +432,50 @@ export default function ScheduleGridPage() {
           {t("schedule.period_label")}
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-          {dialog?.entry ? (
+          {dialog?.entry && moveMode ? (
+            <>
+              <TextField
+                select
+                size="small"
+                label={t("schedule.move_day")}
+                value={moveDay}
+                onChange={(e) => setMoveDay(Number(e.target.value) as DayOfWeek)}
+              >
+                {DAYS.map((d) => (
+                  <MenuItem key={d.value} value={d.value}>
+                    {d.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                select
+                size="small"
+                label={t("schedule.move_timeslot")}
+                value={moveTimeSlotId}
+                onChange={(e) => setMoveTimeSlotId(Number(e.target.value))}
+              >
+                {sortedSlots.map((slot) => (
+                  <MenuItem key={slot.id} value={slot.id}>
+                    {slot.order} — {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {(() => {
+                const roomOptions = (rooms ?? []).map((r) => ({ value: r.id, label: `${r.name} (${r.building})` }));
+                const selectedRoom = roomOptions.find((opt) => opt.value === moveRoomId) ?? null;
+                return (
+                  <Autocomplete
+                    options={roomOptions}
+                    value={selectedRoom}
+                    isOptionEqualToValue={(opt, val) => opt.value === val.value}
+                    getOptionLabel={(opt) => opt.label}
+                    onChange={(_e, newValue) => setMoveRoomId(newValue ? newValue.value : "")}
+                    renderInput={(params) => <TextField {...params} label={t("schedule.pick_room")} required />}
+                  />
+                );
+              })()}
+            </>
+          ) : dialog?.entry ? (
             (() => {
               const info = describeEntry(dialog.entry);
               const dept = teachers?.find((t2) => t2.id === dialog.entry!.teacher_id)?.department_id;
@@ -510,11 +609,33 @@ export default function ScheduleGridPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialog(null)}>{t("common.close")}</Button>
-          {dialog?.entry && canWrite && (
-            <Button color="error" onClick={() => handleRemoveEntry(dialog.entry!.id)}>
-              {t("common.remove")}
-            </Button>
+          {dialog?.entry && moveMode ? (
+            <>
+              <Button onClick={() => setMoveMode(false)}>{t("common.cancel")}</Button>
+              <Button
+                variant="contained"
+                disabled={!moveDay || !moveTimeSlotId || !moveRoomId || updateMutation.isPending}
+                onClick={() => handleSaveMove()}
+              >
+                {t("schedule.move_save")}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => setDialog(null)}>{t("common.close")}</Button>
+              {dialog?.entry && canWrite && (
+                <>
+                  <Button onClick={() => startMove(dialog.entry!)}>{t("schedule.move")}</Button>
+                  <Button
+                    color="error"
+                    disabled={deleteMutation.isPending || forceDeleteMutation.isPending}
+                    onClick={() => handleRemoveEntry(dialog.entry!.id)}
+                  >
+                    {t("common.remove")}
+                  </Button>
+                </>
+              )}
+            </>
           )}
           {!dialog?.entry && canWrite && createMode === "existing" && (
             <Button
