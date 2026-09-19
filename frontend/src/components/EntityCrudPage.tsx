@@ -43,8 +43,10 @@ export interface FieldConfig {
   type: FieldType;
   options?: { value: string | number; label: string }[];
   required?: boolean;
+  requiredOnCreateOnly?: boolean; // e.g. password — mandatory when creating, optional when editing (blank = keep unchanged)
   multiline?: boolean; // for long free text (type "text")
   editableOnCreateOnly?: boolean; // e.g. username — shown only when creating
+  editHelperText?: string; // shown only while editing, e.g. "leave blank to keep the current password"
   hidden?: (values: Record<string, unknown>) => boolean;
 }
 
@@ -339,6 +341,7 @@ export default function EntityCrudPage<T extends { id: number }>({
             if (editingRow && field.editableOnCreateOnly) return null;
 
             const value = formValues[field.name] ?? "";
+            const isRequired = Boolean(field.required) && !(field.requiredOnCreateOnly && editingRow);
 
             if (field.type === "select") {
               const options = field.options ?? [];
@@ -351,7 +354,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                   isOptionEqualToValue={(opt, val) => opt.value === val.value}
                   getOptionLabel={(opt) => opt.label}
                   onChange={(_e, newValue) => setField(field.name, newValue ? newValue.value : "")}
-                  renderInput={(params) => <TextField {...params} label={field.label} required={field.required} />}
+                  renderInput={(params) => <TextField {...params} label={field.label} required={isRequired} />}
                   fullWidth
                 />
               );
@@ -404,12 +407,13 @@ export default function EntityCrudPage<T extends { id: number }>({
                 label={field.label}
                 type={field.type === "date" ? "date" : field.type === "time" ? "time" : field.type}
                 value={value}
-                required={field.required}
+                required={isRequired}
                 multiline={field.multiline}
                 minRows={field.multiline ? 3 : undefined}
                 onChange={(e) =>
                   setField(field.name, field.type === "number" ? Number(e.target.value) : e.target.value)
                 }
+                helperText={editingRow ? field.editHelperText : undefined}
                 slotProps={{ inputLabel: { shrink: field.type === "date" || field.type === "time" ? true : undefined } }}
                 fullWidth
               />

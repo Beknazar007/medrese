@@ -113,7 +113,19 @@ def update_teacher(
     if payload.department_id is not None:
         assert_department_access(current_user, payload.department_id)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    fields = payload.model_dump(exclude_unset=True)
+    new_username = fields.pop("username", None)
+    new_password = fields.pop("password", None)
+
+    user = db.get(User, teacher.user_id)
+    if new_username is not None and new_username != user.username:
+        if db.scalar(select(User).where(User.username == new_username, User.id != user.id)) is not None:
+            raise HTTPException(status_code=400, detail="Username already taken")
+        user.username = new_username
+    if new_password:
+        user.hashed_password = hash_password(new_password)
+
+    for field, value in fields.items():
         setattr(teacher, field, value)
     db.commit()
     db.refresh(teacher)

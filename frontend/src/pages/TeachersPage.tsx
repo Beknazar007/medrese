@@ -53,8 +53,15 @@ export default function TeachersPage() {
         ]}
         fields={[
           { name: "photo", label: t("teachers.photo"), type: "image" },
-          { name: "username", label: t("teachers.username_label"), type: "text", required: true, editableOnCreateOnly: true },
-          { name: "password", label: t("teachers.password_label"), type: "text", required: true, editableOnCreateOnly: true },
+          { name: "username", label: t("teachers.username_label"), type: "text", required: true },
+          {
+            name: "password",
+            label: t("teachers.password_label"),
+            type: "text",
+            required: true,
+            requiredOnCreateOnly: true,
+            editHelperText: t("teachers.password_edit_hint"),
+          },
           { name: "email", label: t("teachers.email"), type: "text", editableOnCreateOnly: true },
           { name: "full_name", label: t("teachers.full_name"), type: "text", required: true },
           { name: "department_id", label: t("teachers.department"), type: "select", required: true, options: departmentOptions },

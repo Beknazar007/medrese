@@ -130,6 +130,7 @@
     "hired": "Hired",
     "username_label": "Username (login)",
     "password_label": "Password",
+    "password_edit_hint": "Leave blank to keep the current password",
     "email": "Email",
     "bio": "Bio",
     "photo": "Photo",

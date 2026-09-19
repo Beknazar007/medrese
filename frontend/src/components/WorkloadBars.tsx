@@ -18,7 +18,7 @@ export default function WorkloadBars({ rows }: { rows: Row[] }) {
 
   return (
     <Box>
-      <Box sx={{ display: "flex", gap: 3, mb: 1.5, fontSize: 13, color: "text.secondary" }}>
+      <Box sx={{ display: "flex", gap: 3, mb: 1.5, fontSize: 13, color: "text.secondary", flexWrap: "wrap" }}>
         <LegendDot color={COLOR_PLACED} label={t("dashboard.legend_placed")} />
         <LegendDot color={COLOR_GAP} label={t("dashboard.legend_gap")} />
       </Box>

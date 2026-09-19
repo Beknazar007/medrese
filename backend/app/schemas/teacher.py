@@ -22,6 +22,8 @@ class TeacherCreate(BaseModel):
 
 
 class TeacherUpdate(BaseModel):
+    username: str | None = None
+    password: str | None = None
     full_name: str | None = None
     department_id: int | None = None
     academic_degree: str | None = None
