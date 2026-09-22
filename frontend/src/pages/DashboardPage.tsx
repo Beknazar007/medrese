@@ -12,8 +12,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -22,11 +20,12 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { dashboardApi, reportsApi } from "../api/entities";
 import AttendanceBar from "../components/AttendanceBar";
+import DateRangePicker from "../components/DateRangePicker";
 import MonitoringBar from "../components/MonitoringBar";
 import StatTile from "../components/StatTile";
 import WorkloadBars from "../components/WorkloadBars";
 import { useDepartments, useGroups, useSemesters } from "../hooks/useReferenceData";
-import { computeRange, type RangePreset } from "../lib/dateRanges";
+import { computeRange, type DateRange } from "../lib/dateRanges";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -52,8 +51,7 @@ export default function DashboardPage() {
   const activeSemester = semesters?.find((s) => s.is_active);
   const [semesterId, setSemesterId] = useState<number | "">("");
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
-  const [preset, setPreset] = useState<RangePreset>("week");
-  const range = useMemo(() => computeRange(preset), [preset]);
+  const [range, setRange] = useState<DateRange>(() => computeRange("week"));
   const [reportGroupId, setReportGroupId] = useState<number | "">("");
 
   const downloadReportMutation = useMutation({
@@ -212,12 +210,7 @@ export default function DashboardPage() {
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
             <Typography variant="h6">{t("dashboard.monitoring_title")}</Typography>
-            <ToggleButtonGroup size="small" exclusive value={preset} onChange={(_e, value) => value && setPreset(value)}>
-              <ToggleButton value="day">{t("monitoring.range_day")}</ToggleButton>
-              <ToggleButton value="week">{t("monitoring.range_week")}</ToggleButton>
-              <ToggleButton value="month">{t("monitoring.range_month")}</ToggleButton>
-              <ToggleButton value="year">{t("monitoring.range_year")}</ToggleButton>
-            </ToggleButtonGroup>
+            <DateRangePicker value={range} onChange={setRange} />
             <TextField
               select
               size="small"

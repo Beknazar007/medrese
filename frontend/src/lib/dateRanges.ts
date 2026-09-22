@@ -1,10 +1,15 @@
 export type RangePreset = "day" | "week" | "month" | "year";
 
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
 function toIso(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-export function computeRange(preset: RangePreset): { from: string; to: string } {
+export function computeRange(preset: RangePreset): DateRange {
   const today = new Date();
   if (preset === "day") return { from: toIso(today), to: toIso(today) };
 

@@ -308,6 +308,8 @@
     "range_week": "Week",
     "range_month": "Month",
     "range_year": "Year",
+    "range_from": "From",
+    "range_to": "To",
     "col_teacher": "Teacher",
     "col_expected": "Expected",
     "col_conducted": "Conducted",

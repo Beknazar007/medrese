@@ -16,17 +16,16 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monitoringApi } from "../api/entities";
 import type { TeacherMonitoringRow } from "../api/types";
+import DateRangePicker from "../components/DateRangePicker";
 import { nameById, useDepartments, useSemesters } from "../hooks/useReferenceData";
-import { computeRange, type RangePreset } from "../lib/dateRanges";
+import { computeRange, type DateRange } from "../lib/dateRanges";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
@@ -54,12 +53,11 @@ export default function TeacherMonitoringPage() {
   const { data: departments } = useDepartments();
 
   const [semesterId, setSemesterId] = useState<number | "">("");
-  const [preset, setPreset] = useState<RangePreset>("week");
+  const [range, setRange] = useState<DateRange>(() => computeRange("week"));
   const [drillDownTeacher, setDrillDownTeacher] = useState<TeacherMonitoringRow | null>(null);
 
   const activeSemester = semesters?.find((s) => s.is_active);
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
-  const range = useMemo(() => computeRange(preset), [preset]);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["monitoring", "teachers", effectiveSemesterId, range.from, range.to],
@@ -102,17 +100,7 @@ export default function TeacherMonitoringPage() {
             </MenuItem>
           ))}
         </TextField>
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={preset}
-          onChange={(_e, value) => value && setPreset(value)}
-        >
-          <ToggleButton value="day">{t("monitoring.range_day")}</ToggleButton>
-          <ToggleButton value="week">{t("monitoring.range_week")}</ToggleButton>
-          <ToggleButton value="month">{t("monitoring.range_month")}</ToggleButton>
-          <ToggleButton value="year">{t("monitoring.range_year")}</ToggleButton>
-        </ToggleButtonGroup>
+        <DateRangePicker value={range} onChange={setRange} />
       </Box>
 
       {!effectiveSemesterId && <Alert severity="info">{t("common.pick_semester")}</Alert>}

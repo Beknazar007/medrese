@@ -308,6 +308,8 @@
     "range_week": "Жума",
     "range_month": "Ай",
     "range_year": "Жыл",
+    "range_from": "Дата (баштап)",
+    "range_to": "Дата (чейин)",
     "col_teacher": "Мугалим",
     "col_expected": "Пландалган",
     "col_conducted": "Өткөрүлгөн",
