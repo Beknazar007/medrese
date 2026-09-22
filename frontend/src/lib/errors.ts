@@ -7,6 +7,7 @@ type Translate = (key: string) => string;
 // respect the active locale instead of always showing English.
 const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "Incorrect username or password": "errors.incorrect_credentials",
+  "Current password is incorrect": "errors.current_password_incorrect",
   "Could not validate credentials": "errors.could_not_validate_credentials",
   "You do not have access to this department": "errors.no_department_access",
   "head_user_id must belong to an existing Dean account": "errors.head_must_be_dean",

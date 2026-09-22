@@ -124,6 +124,7 @@ def update_teacher(
         user.username = new_username
     if new_password:
         user.hashed_password = hash_password(new_password)
+        user.must_change_password = True
 
     for field, value in fields.items():
         setattr(teacher, field, value)

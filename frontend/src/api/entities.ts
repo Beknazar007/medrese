@@ -73,6 +73,12 @@ export const scheduleApi = {
   },
 };
 
+export const authApi = {
+  changePassword: async (current_password: string, new_password: string): Promise<void> => {
+    await api.patch("/auth/change-password", { current_password, new_password });
+  },
+};
+
 export const usersApi = {
   list: async (role?: string) => (await api.get("/users", { params: role ? { role } : undefined })).data,
   create: async (payload: { username: string; password: string; email?: string; role: string }) =>

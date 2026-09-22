@@ -8,6 +8,7 @@ export interface CurrentUser {
   email: string | null;
   role: UserRole;
   is_active: boolean;
+  must_change_password: boolean;
   headed_department_id: number | null;
 }
 

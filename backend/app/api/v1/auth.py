@@ -3,10 +3,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import Token, UserOut
+from app.schemas.auth import ChangePasswordRequest, Token, UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -30,5 +30,19 @@ def me(current_user: User = Depends(get_current_user)) -> UserOut:
         email=current_user.email,
         role=current_user.role,
         is_active=current_user.is_active,
+        must_change_password=current_user.must_change_password,
         headed_department_id=headed.id if headed is not None else None,
     )
+
+
+@router.patch("/change-password", status_code=204)
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.hashed_password = hash_password(payload.new_password)
+    current_user.must_change_password = False
+    db.commit()

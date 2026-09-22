@@ -25,6 +25,7 @@
     "hifz_journal": "Журнал хафиз",
     "logout": "Выйти",
     "logout_confirm": "Выйти из системы?",
+    "change_password": "Сменить пароль",
     "group_org": "Организация",
     "group_academic": "Учебный процесс",
     "group_monitoring": "Мониторинг",
@@ -373,8 +374,24 @@
     "exam_edit": "Изменить экзамен",
     "exam_cancel": "Отмена"
   },
+  "password": {
+    "dialog_title": "Смена пароля",
+    "current": "Текущий пароль",
+    "new_password": "Новый пароль",
+    "confirm": "Повторите новый пароль",
+    "mismatch": "Пароли не совпадают",
+    "too_short": "Пароль должен быть не короче 6 символов",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "changed": "Пароль изменён",
+    "change_failed": "Не удалось изменить пароль",
+    "recommend_banner": "Рекомендуем сменить пароль на свой собственный.",
+    "recommend_action": "Сменить пароль",
+    "recommend_dismiss": "Позже"
+  },
   "errors": {
     "incorrect_credentials": "Неверное имя пользователя или пароль",
+    "current_password_incorrect": "Неверный текущий пароль",
     "could_not_validate_credentials": "Не удалось подтвердить учётные данные",
     "no_department_access": "У вас нет доступа к этой кафедре",
     "head_must_be_dean": "Руководителем кафедры должен быть существующий аккаунт декана",

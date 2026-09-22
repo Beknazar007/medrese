@@ -25,6 +25,7 @@
     "hifz_journal": "Hafiz journal",
     "logout": "Log out",
     "logout_confirm": "Log out of the system?",
+    "change_password": "Change password",
     "group_org": "Organization",
     "group_academic": "Academics",
     "group_monitoring": "Monitoring",
@@ -373,8 +374,24 @@
     "exam_edit": "Edit exam",
     "exam_cancel": "Cancel"
   },
+  "password": {
+    "dialog_title": "Change password",
+    "current": "Current password",
+    "new_password": "New password",
+    "confirm": "Confirm new password",
+    "mismatch": "Passwords do not match",
+    "too_short": "Password must be at least 6 characters",
+    "save": "Save",
+    "cancel": "Cancel",
+    "changed": "Password changed",
+    "change_failed": "Failed to change password",
+    "recommend_banner": "We recommend changing your password to one of your own choosing.",
+    "recommend_action": "Change password",
+    "recommend_dismiss": "Later"
+  },
   "errors": {
     "incorrect_credentials": "Incorrect username or password",
+    "current_password_incorrect": "Current password is incorrect",
     "could_not_validate_credentials": "Could not verify your credentials",
     "no_department_access": "You do not have access to this department",
     "head_must_be_dean": "The department head must be an existing Dean account",

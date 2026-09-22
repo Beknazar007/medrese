@@ -13,9 +13,12 @@ import ClassIcon from "@mui/icons-material/Class";
 import FactCheckIcon from "@mui/icons-material/FactCheck";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import {
+  Alert,
   AppBar,
   Box,
+  Button,
   Divider,
   Drawer,
   IconButton,
@@ -31,9 +34,10 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import ChangePasswordDialog from "./components/ChangePasswordDialog";
 import { useAuth } from "./context/AuthContext";
 import { useConfirm } from "./context/ConfirmContext";
 
@@ -58,6 +62,21 @@ export default function Layout() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    if (user?.id != null) {
+      setBannerDismissed(sessionStorage.getItem(`pwd_prompt_dismissed_${user.id}`) === "1");
+    }
+  }, [user?.id]);
+
+  function dismissBanner() {
+    if (user?.id != null) sessionStorage.setItem(`pwd_prompt_dismissed_${user.id}`, "1");
+    setBannerDismissed(true);
+  }
+
+  const showRecommendBanner = Boolean(user?.must_change_password) && !bannerDismissed;
 
   async function handleLogout() {
     const ok = await confirm({ message: t("nav.logout_confirm"), confirmLabel: t("nav.logout") });
@@ -188,6 +207,14 @@ export default function Layout() {
           </Typography>
           <IconButton
             color="inherit"
+            onClick={() => setChangePasswordOpen(true)}
+            aria-label={t("nav.change_password")}
+            title={t("nav.change_password")}
+          >
+            <VpnKeyIcon />
+          </IconButton>
+          <IconButton
+            color="inherit"
             onClick={handleLogout}
             sx={{ display: { xs: "inline-flex", sm: "none" } }}
             aria-label={t("nav.logout")}
@@ -239,8 +266,29 @@ export default function Layout() {
         }}
       >
         <Toolbar sx={{ pt: "env(safe-area-inset-top)" }} />
+        {showRecommendBanner && (
+          <Alert
+            severity="info"
+            sx={{ mb: 2 }}
+            action={
+              <Button color="inherit" size="small" onClick={dismissBanner}>
+                {t("password.recommend_dismiss")}
+              </Button>
+            }
+          >
+            {t("password.recommend_banner")}{" "}
+            <Button size="small" onClick={() => setChangePasswordOpen(true)}>
+              {t("password.recommend_action")}
+            </Button>
+          </Alert>
+        )}
         <Outlet />
       </Box>
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+        onChanged={dismissBanner}
+      />
     </Box>
   );
 }

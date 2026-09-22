@@ -16,6 +16,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole, name="user_role"), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    must_change_password: Mapped[bool] = mapped_column(default=True, server_default="false", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     teacher_profile: Mapped["TeacherProfile | None"] = relationship(

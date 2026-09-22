@@ -14,6 +14,12 @@ class UserOut(BaseModel):
     email: str | None
     role: UserRole
     is_active: bool
+    must_change_password: bool
     headed_department_id: int | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
