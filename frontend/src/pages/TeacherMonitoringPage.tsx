@@ -33,6 +33,21 @@ function formatDateTime(iso: string | null): string {
   return new Date(iso).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+const SCORE_GOOD = "#0ca30c";
+const SCORE_WARNING = "#fab219";
+const SCORE_CRITICAL = "#d03b3b";
+
+function performanceScore(row: TeacherMonitoringRow): number | null {
+  if (row.expected_lessons <= 0) return null;
+  return Math.max(0, Math.round(((row.conducted_lessons - row.late_lessons) / row.expected_lessons) * 100));
+}
+
+function scoreColor(score: number): string {
+  if (score >= 90) return SCORE_GOOD;
+  if (score >= 70) return SCORE_WARNING;
+  return SCORE_CRITICAL;
+}
+
 export default function TeacherMonitoringPage() {
   const { t } = useTranslation();
   const { data: semesters } = useSemesters();
@@ -116,6 +131,7 @@ export default function TeacherMonitoringPage() {
                 <TableCell align="right">{t("monitoring.col_conducted")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_missed")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_late")}</TableCell>
+                <TableCell align="right">{t("monitoring.col_score")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -142,6 +158,16 @@ export default function TeacherMonitoringPage() {
                     ) : (
                       row.late_lessons
                     )}
+                  </TableCell>
+                  <TableCell align="right">
+                    {(() => {
+                      const score = performanceScore(row);
+                      return score === null ? (
+                        "—"
+                      ) : (
+                        <Chip size="small" sx={{ bgcolor: scoreColor(score), color: "#fff" }} label={`${score}%`} />
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               ))}

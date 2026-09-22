@@ -313,6 +313,7 @@
     "col_conducted": "Өткөрүлгөн",
     "col_missed": "Калтырылган",
     "col_late": "Кечиккен",
+    "col_score": "Көрсөткүч",
     "empty_hint": "Бул мезгилде пландалган сабак жок.",
     "log_title": "Сабактар: {{name}}",
     "log_col_date": "Күнү",

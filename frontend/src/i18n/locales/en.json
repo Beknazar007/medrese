@@ -313,6 +313,7 @@
     "col_conducted": "Conducted",
     "col_missed": "Missed",
     "col_late": "Late",
+    "col_score": "Performance",
     "empty_hint": "No lessons scheduled for this period.",
     "log_title": "Lessons: {{name}}",
     "log_col_date": "Date",
