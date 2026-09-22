@@ -156,7 +156,10 @@ export default function Layout() {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, pt: "env(safe-area-inset-top)" }}
+      >
         <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           {isMobile && (
             <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 1 }}>
@@ -235,7 +238,7 @@ export default function Layout() {
           overflowX: "hidden",
         }}
       >
-        <Toolbar />
+        <Toolbar sx={{ pt: "env(safe-area-inset-top)" }} />
         <Outlet />
       </Box>
     </Box>

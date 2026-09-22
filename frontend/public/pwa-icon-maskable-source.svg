@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" fill="#2f5fb3"/>
+  <g transform="translate(24,24) scale(0.72) translate(-24,-24)">
+    <!-- minarets -->
+    <rect x="8" y="19" width="4" height="13" fill="#ffffff"/>
+    <rect x="36" y="19" width="4" height="13" fill="#ffffff"/>
+    <circle cx="10" cy="15.5" r="2.4" fill="#ffffff"/>
+    <circle cx="38" cy="15.5" r="2.4" fill="#ffffff"/>
+    <!-- base -->
+    <rect x="9" y="30" width="30" height="12" fill="#ffffff"/>
+    <!-- door arch -->
+    <path d="M21 42 V35 a3 3 0 0 1 6 0 V42 Z" fill="#2f5fb3"/>
+    <!-- central dome -->
+    <path d="M15.5 30 a8.5 8.5 0 0 1 17 0 Z" fill="#ffffff"/>
+    <!-- crescent finial -->
+    <circle cx="24" cy="15" r="3.2" fill="#ffffff"/>
+    <circle cx="25.6" cy="13.8" r="2.7" fill="#2f5fb3"/>
+  </g>
+</svg>
