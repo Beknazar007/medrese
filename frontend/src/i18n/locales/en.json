@@ -300,7 +300,8 @@
     "check_out": "Finish lesson",
     "checked_out": "Lesson marked as finished",
     "checked_out_confirm": "Mark this lesson as finished?",
-    "exam_toggle": "This is an exam"
+    "exam_toggle": "This is an exam",
+    "no_students_hint": "This group has no students yet. The lesson is marked as conducted — once students are added, attendance and grades can be recorded here."
   },
   "monitoring": {
     "title": "Teacher monitoring",

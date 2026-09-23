@@ -323,7 +323,7 @@ export default function TeacherClassPage() {
 
       {classOptions.length === 0 && <Alert severity="info">{t("journal.no_classes")}</Alert>}
 
-      {sessionId && roster.length > 0 && (
+      {sessionId && (
         <>
           <Box sx={{ display: "flex", gap: 2, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <Typography variant="body2" color="text.secondary">
@@ -352,6 +352,10 @@ export default function TeacherClassPage() {
             />
           </Box>
 
+          {roster.length === 0 && <Alert severity="info" sx={{ mb: 2 }}>{t("journal.no_students_hint")}</Alert>}
+
+          {roster.length > 0 && (
+            <>
           <Box sx={{ display: "flex", gap: 3, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
               {t("journal.mark_all_present")}
@@ -464,6 +468,8 @@ export default function TeacherClassPage() {
           >
             {isDirty ? t("journal.save_all") : t("journal.saved")}
           </Button>
+            </>
+          )}
         </>
       )}
 
