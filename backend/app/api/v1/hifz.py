@@ -87,7 +87,10 @@ def get_or_create_hifz_session(
         raise HTTPException(status_code=404, detail="Schedule entry not found")
     _assert_can_access_hifz_entry(db, current_user, entry)
 
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=payload.date)
+    try:
+        session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=payload.date)
+    except journal_service.SessionDateNotOpenable as exc:
+        raise HTTPException(status_code=400, detail="A lesson can only be opened on its scheduled date") from exc
     db.commit()
     db.refresh(session)
     roster = hifz_service.roster_for_group_date(db, group_id=entry.group_id, on_date=payload.date)

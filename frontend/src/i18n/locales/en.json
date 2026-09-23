@@ -396,6 +396,7 @@
   "errors": {
     "incorrect_credentials": "Incorrect username or password",
     "current_password_incorrect": "Current password is incorrect",
+    "session_wrong_date": "A lesson can only be opened on its scheduled date",
     "could_not_validate_credentials": "Could not verify your credentials",
     "no_department_access": "You do not have access to this department",
     "head_must_be_dean": "The department head must be an existing Dean account",

@@ -8,6 +8,7 @@ type Translate = (key: string) => string;
 const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "Incorrect username or password": "errors.incorrect_credentials",
   "Current password is incorrect": "errors.current_password_incorrect",
+  "A lesson can only be opened on its scheduled date": "errors.session_wrong_date",
   "Could not validate credentials": "errors.could_not_validate_credentials",
   "You do not have access to this department": "errors.no_department_access",
   "head_user_id must belong to an existing Dean account": "errors.head_must_be_dean",

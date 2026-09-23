@@ -396,6 +396,7 @@
   "errors": {
     "incorrect_credentials": "Неверное имя пользователя или пароль",
     "current_password_incorrect": "Неверный текущий пароль",
+    "session_wrong_date": "Урок можно открыть только в день, на который он запланирован",
     "could_not_validate_credentials": "Не удалось подтвердить учётные данные",
     "no_department_access": "У вас нет доступа к этой кафедре",
     "head_must_be_dean": "Руководителем кафедры должен быть существующий аккаунт декана",

@@ -279,7 +279,7 @@ def test_opening_a_scheduled_hafiz_class_creates_a_session_that_counts_in_monito
     make_student(db, group, full_name="Aisha")
 
     # Mondays in September 2026: 7, 14, 21, 28. Only the 7th is actually opened/conducted.
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
     assert session.teacher_checked_in_at is not None
 

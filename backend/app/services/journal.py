@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -13,8 +14,19 @@ from app.models.subject import Subject
 from app.models.teacher import TeacherProfile
 from app.schemas.journal import AttendanceUpsert, GradeUpsert, RosterStudentOut, StudentHistoryRow, StudentPerformanceRow
 
+BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
 
-def get_or_create_session(db: Session, *, schedule_entry: ScheduleEntry, on_date: date) -> LessonSession:
+
+class SessionDateNotOpenable(Exception):
+    """Raised when trying to open a brand-new lesson session for a date other than today
+    (Bishkek) — a lesson can only be started on its own day, not backdated or opened ahead
+    of time. An already-recorded session for a past date can still be fetched/edited; this
+    only guards *creation*."""
+
+
+def get_or_create_session(
+    db: Session, *, schedule_entry: ScheduleEntry, on_date: date, today: date | None = None
+) -> LessonSession:
     """Also doubles as the teacher's check-in: the first time this lesson's date is opened,
     teacher_checked_in_at is stamped — re-opening the same date later doesn't move it.
     """
@@ -26,6 +38,10 @@ def get_or_create_session(db: Session, *, schedule_entry: ScheduleEntry, on_date
     )
     if session is not None:
         return session
+
+    effective_today = today if today is not None else datetime.now(BISHKEK_TZ).date()
+    if on_date != effective_today:
+        raise SessionDateNotOpenable()
 
     session = LessonSession(
         schedule_entry_id=schedule_entry.id, date=on_date, teacher_checked_in_at=datetime.now(timezone.utc)

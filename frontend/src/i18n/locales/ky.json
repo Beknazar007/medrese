@@ -396,6 +396,7 @@
   "errors": {
     "incorrect_credentials": "Колдонуучунун аты же сырсөз туура эмес",
     "current_password_incorrect": "Учурдагы сырсөз туура эмес",
+    "session_wrong_date": "Сабакты ал пландаштырылган күнү гана ачууга болот",
     "could_not_validate_credentials": "Каттоо маалыматтарын текшере алган жокпуз",
     "no_department_access": "Сизде бул кафедрага мүмкүнчүлүк жок",
     "head_must_be_dean": "Кафедра башчысы катталган декан аккаунту болушу керек",

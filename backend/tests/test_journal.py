@@ -39,9 +39,9 @@ def _setup(db: Session):
 def test_get_or_create_session_is_idempotent(db: Session):
     entry, _, _, _ = _setup(db)
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
 
     assert session1.id == session2.id
 
@@ -49,19 +49,45 @@ def test_get_or_create_session_is_idempotent(db: Session):
 def test_get_or_create_session_stamps_check_in_only_once(db: Session):
     entry, _, _, _ = _setup(db)
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
     assert session1.teacher_checked_in_at is not None
     first_stamp = session1.teacher_checked_in_at
 
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     assert session2.id == session1.id
     assert session2.teacher_checked_in_at == first_stamp
 
 
+def test_get_or_create_session_rejects_backdated_date(db: Session):
+    entry, _, _, _ = _setup(db)
+
+    with pytest.raises(journal_service.SessionDateNotOpenable):
+        journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 8))
+
+
+def test_get_or_create_session_rejects_future_date(db: Session):
+    entry, _, _, _ = _setup(db)
+
+    with pytest.raises(journal_service.SessionDateNotOpenable):
+        journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 8), today=date(2026, 9, 7))
+
+
+def test_get_or_create_session_still_returns_an_already_recorded_past_session(db: Session):
+    entry, _, _, _ = _setup(db)
+
+    original = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+
+    # Days later, the teacher (or a rector/dean reviewing history) can still open the same
+    # already-recorded date — only *creating a new* session is restricted to today.
+    fetched = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 20))
+    assert fetched.id == original.id
+
+
 def test_check_out_session_stamps_checkout_time(db: Session):
     entry, _, _, _ = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
     assert session.teacher_checked_out_at is None
 
@@ -71,7 +97,7 @@ def test_check_out_session_stamps_checkout_time(db: Session):
 
 def test_roster_includes_all_active_group_students_with_no_marks_yet(db: Session):
     entry, _, student_a, student_b = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
 
     roster = journal_service.roster_for_session(db, session)
@@ -82,7 +108,7 @@ def test_roster_includes_all_active_group_students_with_no_marks_yet(db: Session
 
 def test_upsert_attendance_then_grades_reflected_in_roster(db: Session):
     entry, _, student_a, student_b = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     journal_service.set_exam_flag(session, True)
     db.flush()
 
@@ -108,7 +134,7 @@ def test_upsert_attendance_then_grades_reflected_in_roster(db: Session):
 
 def test_upsert_grades_rejected_for_a_session_not_marked_as_an_exam(db: Session):
     entry, _, student_a, _ = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
     assert session.is_exam is False
 
@@ -126,7 +152,7 @@ def test_upsert_grades_rejected_for_a_session_not_marked_as_an_exam(db: Session)
 
 def test_upsert_attendance_stores_and_updates_the_per_lesson_comment(db: Session):
     entry, _, student_a, _ = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
 
     journal_service.upsert_attendance(
@@ -148,7 +174,7 @@ def test_upsert_attendance_stores_and_updates_the_per_lesson_comment(db: Session
 
 def test_upsert_attendance_updates_existing_record_instead_of_duplicating(db: Session):
     entry, _, student_a, _ = _setup(db)
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
 
     journal_service.upsert_attendance(
@@ -169,7 +195,7 @@ def test_upsert_attendance_updates_existing_record_instead_of_duplicating(db: Se
 def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     entry, assignment, student_a, student_b = _setup(db)
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
@@ -178,7 +204,7 @@ def test_student_performance_averages_scores_and_counts_attendance(db: Session):
     )
     db.flush()
 
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
     journal_service.set_exam_flag(session2, True)
     db.flush()
     journal_service.upsert_grades(db, session=session2, records=[GradeUpsert(student_id=student_a.id, score=90)])
@@ -200,12 +226,12 @@ def test_student_performance_average_ignores_grades_left_on_non_exam_sessions(db
     but a non-exam session's score must not pull the average away from the exam average."""
     entry, assignment, student_a, _ = _setup(db)
 
-    non_exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    non_exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
     db.add(GradeRecord(session_id=non_exam_session.id, student_id=student_a.id, score=40))
     db.flush()
 
-    exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    exam_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
     journal_service.set_exam_flag(exam_session, True)
     db.flush()
     journal_service.upsert_grades(db, session=exam_session, records=[GradeUpsert(student_id=student_a.id, score=90)])
@@ -218,7 +244,7 @@ def test_student_performance_average_ignores_grades_left_on_non_exam_sessions(db
 def test_student_history_includes_every_group_session_with_this_students_own_marks(db: Session):
     entry, assignment, student_a, student_b = _setup(db)
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
@@ -231,7 +257,7 @@ def test_student_history_includes_every_group_session_with_this_students_own_mar
     )
     db.flush()
 
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
     db.flush()
 
     history = journal_service.student_history(
@@ -270,7 +296,7 @@ def test_student_history_teacher_filter_excludes_other_teachers_lessons(db: Sess
     room = make_room(db)
     slot_a = make_time_slot(db, order=1)
     entry_a = make_schedule_entry(db, assignment_a, room, slot_a, day_of_week=DayOfWeek.MONDAY)
-    session_a = journal_service.get_or_create_session(db, schedule_entry=entry_a, on_date=date(2026, 9, 7))
+    session_a = journal_service.get_or_create_session(db, schedule_entry=entry_a, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
     db.flush()
 
     teacher_b = make_teacher(db, department, username="teacher_b")
@@ -278,7 +304,7 @@ def test_student_history_teacher_filter_excludes_other_teachers_lessons(db: Sess
     assignment_b = make_assignment(db, teacher_b, subject_b, group, semester)
     slot_b = make_time_slot(db, order=2)
     entry_b = make_schedule_entry(db, assignment_b, room, slot_b, day_of_week=DayOfWeek.MONDAY)
-    journal_service.get_or_create_session(db, schedule_entry=entry_b, on_date=date(2026, 9, 8))
+    journal_service.get_or_create_session(db, schedule_entry=entry_b, on_date=date(2026, 9, 8), today=date(2026, 9, 8))
     db.flush()
 
     history = journal_service.student_history(
