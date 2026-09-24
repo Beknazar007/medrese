@@ -127,6 +127,27 @@ def test_teacher_session_log_marks_conducted_and_missed_dates_with_timestamps(db
     assert missed.checked_out_at is None
 
 
+def test_teacher_session_log_auto_closes_a_session_the_teacher_never_checked_out_of(db: Session):
+    _, teacher, entry, semester = _setup(db)
+
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+
+    # The teacher checked in but never clicked "finish" — real wall-clock "now" is long past
+    # this 2026 fixture date's scheduled end, so viewing the log should close it for them.
+    rows = monitoring_service.teacher_session_log(
+        db,
+        teacher_id=teacher.id,
+        semester_id=semester.id,
+        date_from=date(2026, 9, 1),
+        date_to=date(2026, 9, 14),
+        today=date(2026, 9, 14),
+    )
+
+    held = next(r for r in rows if r.date == date(2026, 9, 7))
+    assert held.checked_out_at is not None
+
+
 def test_teacher_session_log_flags_a_check_in_more_than_15_minutes_late(db: Session):
     # Time slot starts at 08:00 Bishkek (UTC+6) = 02:00 UTC.
     _, teacher, entry, semester = _setup(db)

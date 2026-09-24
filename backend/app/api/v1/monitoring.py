@@ -45,4 +45,6 @@ def get_teacher_session_log(
             raise HTTPException(status_code=404, detail="Teacher not found")
         assert_department_access(current_user, teacher.department_id)
 
-    return teacher_session_log(db, teacher_id=teacher_id, semester_id=semester_id, date_from=date_from, date_to=date_to)
+    rows = teacher_session_log(db, teacher_id=teacher_id, semester_id=semester_id, date_from=date_from, date_to=date_to)
+    db.commit()  # persists any lessons that teacher_session_log just auto-closed
+    return rows

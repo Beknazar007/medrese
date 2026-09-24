@@ -24,6 +24,21 @@ class SessionDateNotOpenable(Exception):
     only guards *creation*."""
 
 
+def auto_close_if_ended(session: LessonSession, *, now: datetime | None = None) -> bool:
+    """If the teacher checked in but never clicked "finish", and the lesson's scheduled
+    period has already ended, close it automatically at that scheduled end time — a teacher
+    shouldn't have to remember to check out every single day. Returns True if it just closed
+    the session (the caller is responsible for committing)."""
+    if session.teacher_checked_in_at is None or session.teacher_checked_out_at is not None:
+        return False
+    scheduled_end = datetime.combine(session.date, session.schedule_entry.time_slot.end_time, tzinfo=BISHKEK_TZ)
+    current = now if now is not None else datetime.now(BISHKEK_TZ)
+    if current <= scheduled_end:
+        return False
+    session.teacher_checked_out_at = scheduled_end.astimezone(timezone.utc)
+    return True
+
+
 def get_or_create_session(
     db: Session, *, schedule_entry: ScheduleEntry, on_date: date, today: date | None = None
 ) -> LessonSession:
@@ -37,6 +52,7 @@ def get_or_create_session(
         )
     )
     if session is not None:
+        auto_close_if_ended(session)
         return session
 
     effective_today = today if today is not None else datetime.now(BISHKEK_TZ).date()

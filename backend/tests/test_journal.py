@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy.orm import Session
@@ -83,6 +84,61 @@ def test_get_or_create_session_still_returns_an_already_recorded_past_session(db
     # already-recorded date — only *creating a new* session is restricted to today.
     fetched = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 20))
     assert fetched.id == original.id
+
+
+BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
+
+
+def test_auto_close_if_ended_leaves_an_ongoing_lesson_open(db: Session):
+    # default time slot from make_time_slot is 08:00-08:50
+    entry, _, _, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+
+    closed = journal_service.auto_close_if_ended(session, now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
+
+    assert closed is False
+    assert session.teacher_checked_out_at is None
+
+
+def test_auto_close_if_ended_closes_a_lesson_past_its_scheduled_end(db: Session):
+    entry, _, _, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+
+    closed = journal_service.auto_close_if_ended(session, now=datetime(2026, 9, 7, 9, 0, tzinfo=BISHKEK_TZ))
+
+    assert closed is True
+    assert session.teacher_checked_out_at is not None
+    assert session.teacher_checked_out_at.astimezone(BISHKEK_TZ) == datetime(2026, 9, 7, 8, 50, tzinfo=BISHKEK_TZ)
+
+
+def test_auto_close_if_ended_does_not_override_a_manual_check_out(db: Session):
+    entry, _, _, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+    journal_service.check_out_session(session)
+    manual_stamp = session.teacher_checked_out_at
+
+    closed = journal_service.auto_close_if_ended(session, now=datetime(2026, 9, 7, 9, 0, tzinfo=BISHKEK_TZ))
+
+    assert closed is False
+    assert session.teacher_checked_out_at == manual_stamp
+
+
+def test_get_or_create_session_auto_closes_a_stale_session_on_reopen(db: Session):
+    entry, _, _, _ = _setup(db)
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    db.flush()
+
+    # A rector/dean (or the teacher) reopening the same date later — real wall-clock "now" is
+    # long past this 2026 fixture date's scheduled end — should see it get closed
+    # automatically instead of staying open forever.
+    reopened = journal_service.get_or_create_session(
+        db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7)
+    )
+
+    assert reopened.teacher_checked_out_at is not None
 
 
 def test_check_out_session_stamps_checkout_time(db: Session):

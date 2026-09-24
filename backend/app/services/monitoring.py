@@ -11,6 +11,7 @@ from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
+from app.services.journal import auto_close_if_ended
 
 BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
 LATE_THRESHOLD_MINUTES = 15
@@ -199,6 +200,8 @@ def teacher_session_log(
         group_name = entry.assignment.group.name
         for d in _expected_dates(entry.day_of_week.value, date_from, effective_to):
             session = sessions_by_pair.get((entry.id, d))
+            if session is not None:
+                auto_close_if_ended(session)
             checked_in_at = session.teacher_checked_in_at if session else None
             rows.append(
                 TeacherSessionLogRow(
