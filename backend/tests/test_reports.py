@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from openpyxl import load_workbook
 from sqlalchemy.orm import Session
@@ -21,6 +22,8 @@ from tests.factories import (
     make_time_slot,
 )
 
+BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
+
 
 def _setup(db: Session):
     department = make_department(db)
@@ -40,7 +43,7 @@ def test_weekly_report_has_one_sheet_per_group_with_attendance_and_exam_average(
     student_a = make_student(db, group, full_name="Aisha")
     student_b = make_student(db, group, full_name="Bakyt")
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_attendance(
@@ -53,7 +56,7 @@ def test_weekly_report_has_one_sheet_per_group_with_attendance_and_exam_average(
     )
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
 
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14), now=datetime(2026, 9, 14, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
     journal_service.upsert_attendance(
         db, session=session2, records=[AttendanceUpsert(student_id=student_a.id, status=AttendanceStatus.PRESENT)]

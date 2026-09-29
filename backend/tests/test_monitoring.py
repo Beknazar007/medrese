@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,8 @@ from tests.factories import (
     make_time_slot,
 )
 
+BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
+
 
 def _setup(db: Session):
     department = make_department(db)
@@ -37,8 +40,8 @@ def test_teacher_monitoring_counts_expected_conducted_and_missed(db: Session):
     _, teacher, entry, semester = _setup(db)
 
     # Mondays in September 2026: 7, 14, 21, 28. Teacher held class on the 7th and 21st only.
-    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
-    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 21), today=date(2026, 9, 21))
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 21), today=date(2026, 9, 21), now=datetime(2026, 9, 21, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
 
     rows = monitoring_service.teacher_monitoring(
@@ -102,7 +105,7 @@ def test_teacher_monitoring_filters_by_department(db: Session):
 def test_teacher_session_log_marks_conducted_and_missed_dates_with_timestamps(db: Session):
     _, teacher, entry, semester = _setup(db)
 
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     journal_service.check_out_session(session)
     db.flush()
 
@@ -130,7 +133,7 @@ def test_teacher_session_log_marks_conducted_and_missed_dates_with_timestamps(db
 def test_teacher_session_log_auto_closes_a_session_the_teacher_never_checked_out_of(db: Session):
     _, teacher, entry, semester = _setup(db)
 
-    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
 
     # The teacher checked in but never clicked "finish" — real wall-clock "now" is long past
@@ -152,9 +155,9 @@ def test_teacher_session_log_flags_a_check_in_more_than_15_minutes_late(db: Sess
     # Time slot starts at 08:00 Bishkek (UTC+6) = 02:00 UTC.
     _, teacher, entry, semester = _setup(db)
 
-    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     on_time_session.teacher_checked_in_at = datetime(2026, 9, 7, 2, 10, tzinfo=timezone.utc)  # 08:10 local
-    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
+    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14), now=datetime(2026, 9, 14, 8, 30, tzinfo=BISHKEK_TZ))
     late_session.teacher_checked_in_at = datetime(2026, 9, 14, 2, 20, tzinfo=timezone.utc)  # 08:20 local
     db.flush()
 
@@ -176,9 +179,9 @@ def test_teacher_session_log_flags_a_check_in_more_than_15_minutes_late(db: Sess
 def test_teacher_monitoring_counts_late_lessons_per_teacher(db: Session):
     _, teacher, entry, semester = _setup(db)
 
-    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    on_time_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     on_time_session.teacher_checked_in_at = datetime(2026, 9, 7, 2, 10, tzinfo=timezone.utc)
-    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
+    late_session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14), now=datetime(2026, 9, 14, 8, 30, tzinfo=BISHKEK_TZ))
     late_session.teacher_checked_in_at = datetime(2026, 9, 14, 2, 20, tzinfo=timezone.utc)
     db.flush()
 
@@ -199,7 +202,7 @@ def test_teacher_monitoring_summary_totals_and_lists_top_missed(db: Session):
     _, teacher, entry, semester = _setup(db)
 
     # Mondays: 7, 14, 21, 28. Held on the 7th only — 3 missed.
-    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
 
     summary = monitoring_service.teacher_monitoring_summary(
@@ -222,7 +225,7 @@ def test_teacher_monitoring_summary_excludes_teachers_with_no_missed_lessons(db:
     _, teacher, entry, semester = _setup(db)
 
     for d in (date(2026, 9, 7), date(2026, 9, 14), date(2026, 9, 21), date(2026, 9, 28)):
-        journal_service.get_or_create_session(db, schedule_entry=entry, on_date=d, today=d)
+        journal_service.get_or_create_session(db, schedule_entry=entry, on_date=d, today=d, now=datetime(d.year, d.month, d.day, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
 
     summary = monitoring_service.teacher_monitoring_summary(
@@ -243,7 +246,7 @@ def test_student_attendance_summary_counts_statuses_and_averages_grades(db: Sess
     student_a = make_student(db, group, full_name="Aisha")
     student_b = make_student(db, group, full_name="Bakyt")
 
-    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    session1 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     journal_service.set_exam_flag(session1, True)
     db.flush()
     journal_service.upsert_attendance(
@@ -256,7 +259,7 @@ def test_student_attendance_summary_counts_statuses_and_averages_grades(db: Sess
     )
     journal_service.upsert_grades(db, session=session1, records=[GradeUpsert(student_id=student_a.id, score=80)])
 
-    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14))
+    session2 = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 14), today=date(2026, 9, 14), now=datetime(2026, 9, 14, 8, 30, tzinfo=BISHKEK_TZ))
     journal_service.set_exam_flag(session2, True)
     db.flush()
     journal_service.upsert_attendance(
@@ -286,7 +289,7 @@ def test_student_attendance_summary_filters_by_department(db: Session):
     group = entry.assignment.group
     student = make_student(db, group)
 
-    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
     db.flush()
     journal_service.upsert_attendance(
         db, session=session, records=[AttendanceUpsert(student_id=student.id, status=AttendanceStatus.PRESENT)]

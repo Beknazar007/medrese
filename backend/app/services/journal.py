@@ -18,10 +18,11 @@ BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
 
 
 class SessionDateNotOpenable(Exception):
-    """Raised when trying to open a brand-new lesson session for a date other than today
-    (Bishkek) — a lesson can only be started on its own day, not backdated or opened ahead
-    of time. An already-recorded session for a past date can still be fetched/edited; this
-    only guards *creation*."""
+    """Raised when trying to open a brand-new lesson session outside its own scheduled
+    window — a different date (Bishkek) than today, or today but before the period's start
+    time or after its end time. A lesson can only be started while it's actually running, not
+    backdated, opened ahead of time, or started hours late. An already-recorded session can
+    still be fetched/edited at any time; this only guards *creation*."""
 
 
 def auto_close_if_ended(session: LessonSession, *, now: datetime | None = None) -> bool:
@@ -47,7 +48,12 @@ def auto_close_if_ended(session: LessonSession, *, now: datetime | None = None) 
 
 
 def get_or_create_session(
-    db: Session, *, schedule_entry: ScheduleEntry, on_date: date, today: date | None = None
+    db: Session,
+    *,
+    schedule_entry: ScheduleEntry,
+    on_date: date,
+    today: date | None = None,
+    now: datetime | None = None,
 ) -> LessonSession:
     """Also doubles as the teacher's check-in: the first time this lesson's date is opened,
     teacher_checked_in_at is stamped — re-opening the same date later doesn't move it.
@@ -62,8 +68,15 @@ def get_or_create_session(
         auto_close_if_ended(session)
         return session
 
-    effective_today = today if today is not None else datetime.now(BISHKEK_TZ).date()
+    current = now if now is not None else datetime.now(BISHKEK_TZ)
+    effective_today = today if today is not None else current.date()
     if on_date != effective_today:
+        raise SessionDateNotOpenable()
+
+    time_slot = schedule_entry.time_slot
+    window_start = datetime.combine(on_date, time_slot.start_time, tzinfo=BISHKEK_TZ)
+    window_end = datetime.combine(on_date, time_slot.end_time, tzinfo=BISHKEK_TZ)
+    if current < window_start or current > window_end:
         raise SessionDateNotOpenable()
 
     session = LessonSession(

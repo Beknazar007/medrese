@@ -54,7 +54,7 @@ def get_or_create_session(
     try:
         session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=payload.date)
     except journal_service.SessionDateNotOpenable as exc:
-        raise HTTPException(status_code=400, detail="A lesson can only be opened on its scheduled date") from exc
+        raise HTTPException(status_code=400, detail="A lesson can only be opened during its scheduled date and time") from exc
     db.commit()
     db.refresh(session)
     roster = journal_service.roster_for_session(db, session)
