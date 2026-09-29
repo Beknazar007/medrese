@@ -35,7 +35,14 @@ def auto_close_if_ended(session: LessonSession, *, now: datetime | None = None) 
     current = now if now is not None else datetime.now(BISHKEK_TZ)
     if current <= scheduled_end:
         return False
-    session.teacher_checked_out_at = scheduled_end.astimezone(timezone.utc)
+    # A very late check-in (after the period's nominal end) can itself be past scheduled_end —
+    # closing at scheduled_end then would land before checked_in_at. Never close earlier than
+    # the teacher actually checked in.
+    checked_in_at = session.teacher_checked_in_at
+    if checked_in_at.tzinfo is None:
+        checked_in_at = checked_in_at.replace(tzinfo=timezone.utc)
+    closed_at = max(scheduled_end, checked_in_at.astimezone(BISHKEK_TZ))
+    session.teacher_checked_out_at = closed_at.astimezone(timezone.utc)
     return True
 
 

@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -104,6 +104,8 @@ def test_auto_close_if_ended_leaves_an_ongoing_lesson_open(db: Session):
 def test_auto_close_if_ended_closes_a_lesson_past_its_scheduled_end(db: Session):
     entry, _, _, _ = _setup(db)
     session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    # on-time check-in, well before the 08:50 scheduled end
+    session.teacher_checked_in_at = datetime(2026, 9, 7, 2, 5, tzinfo=timezone.utc)  # 08:05 local
     db.flush()
 
     closed = journal_service.auto_close_if_ended(session, now=datetime(2026, 9, 7, 9, 0, tzinfo=BISHKEK_TZ))
@@ -111,6 +113,20 @@ def test_auto_close_if_ended_closes_a_lesson_past_its_scheduled_end(db: Session)
     assert closed is True
     assert session.teacher_checked_out_at is not None
     assert session.teacher_checked_out_at.astimezone(BISHKEK_TZ) == datetime(2026, 9, 7, 8, 50, tzinfo=BISHKEK_TZ)
+
+
+def test_auto_close_if_ended_never_closes_before_a_very_late_check_in(db: Session):
+    # Teacher opens a 08:00-08:50 class hours after it nominally ended — closing at the
+    # scheduled end (08:50) would land BEFORE the check-in itself, which is nonsensical.
+    entry, _, _, _ = _setup(db)
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7))
+    session.teacher_checked_in_at = datetime(2026, 9, 7, 13, 36, tzinfo=timezone.utc)  # 19:36 local
+    db.flush()
+
+    closed = journal_service.auto_close_if_ended(session, now=datetime(2026, 9, 7, 19, 40, tzinfo=BISHKEK_TZ))
+
+    assert closed is True
+    assert session.teacher_checked_out_at >= session.teacher_checked_in_at
 
 
 def test_auto_close_if_ended_does_not_override_a_manual_check_out(db: Session):
