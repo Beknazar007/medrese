@@ -20,9 +20,13 @@ from app.schemas.hifz import (
     HifzExamCreate,
     HifzExamOut,
     HifzExamUpdate,
+    HifzJournalOut,
+    HifzRecordOut,
+    HifzRecordPut,
     HifzRecordsPutRequest,
     HifzRosterStudentOut,
     HifzSessionDetailOut,
+    HifzTargetBulkCreate,
     HifzTargetCreate,
     HifzTargetOut,
     HifzTargetUpdate,
@@ -63,6 +67,24 @@ def _assert_can_access_student(db: Session, current_user: User, student: Student
             raise HTTPException(status_code=403, detail="You do not teach this student's hafiz group")
     else:
         assert_department_access(current_user, student.group.department_id)
+
+
+def _accessible_group_ids(db: Session, current_user: User) -> list[int]:
+    if current_user.role == UserRole.TEACHER:
+        return hifz_service.accessible_hifz_group_ids(
+            db, teacher_id=_get_own_teacher(db, current_user).id, department_ids=None
+        )
+    dept_ids = accessible_department_ids(current_user)
+    return hifz_service.accessible_hifz_group_ids(
+        db, teacher_id=None, department_ids=None if dept_ids is None else list(dept_ids)
+    )
+
+
+def _get_student_or_404(db: Session, student_id: int) -> Student:
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
 
 
 def _assert_can_access_hifz_entry(db: Session, current_user: User, entry: ScheduleEntry) -> None:
@@ -202,24 +224,86 @@ def put_records(
     return hifz_service.roster_for_group_date(db, group_id=payload.group_id, on_date=payload.date)
 
 
-@router.get("/targets", response_model=list[HifzTargetOut])
-def list_targets(
-    student_id: int,
+@router.get("/journal", response_model=HifzJournalOut)
+def get_journal(
+    date_from: date,
+    date_to: date,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> list[HifzTarget]:
-    student = db.get(Student, student_id)
-    if student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
+) -> HifzJournalOut:
+    """Students × days gradebook for every hafiz group the user can see. Rector/dean read it;
+    only the group's own teacher edits (can_edit)."""
+    if date_to < date_from:
+        raise HTTPException(status_code=400, detail="The end of the period is before its start")
+    if (date_to - date_from).days > 400:
+        raise HTTPException(status_code=400, detail="The period cannot be longer than 400 days")
+    return hifz_service.journal(
+        db,
+        group_ids=_accessible_group_ids(db, current_user),
+        date_from=date_from,
+        date_to=date_to,
+        can_edit=current_user.role == UserRole.TEACHER,
+    )
+
+
+@router.put("/record", response_model=HifzRecordOut | None)
+def put_record(
+    payload: HifzRecordPut,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> HifzRecordOut | None:
+    """One gradebook cell, for any day — unlike attendance, hifz marks aren't tied to the
+    lesson's time window. Returns null when an all-empty payload deleted the record."""
+    student = _get_student_or_404(db, payload.student_id)
     _assert_can_access_student(db, current_user, student)
-    return hifz_service.list_targets(db, student_id=student_id)
+    record = hifz_service.put_record(db, payload=payload)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="This roster was just updated elsewhere — reload and retry") from exc
+    if record is None:
+        return None
+    db.refresh(record)
+    return HifzRecordOut.model_validate(record)
+
+
+@router.get("/targets", response_model=list[HifzTargetOut])
+def list_targets(
+    student_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[HifzTargetOut]:
+    """One student's targets, or (no student_id) every target across the user's hafiz groups."""
+    if student_id is not None:
+        student = _get_student_or_404(db, student_id)
+        _assert_can_access_student(db, current_user, student)
+        student_ids = [student_id]
+    else:
+        group_ids = _accessible_group_ids(db, current_user)
+        student_ids = list(db.scalars(select(Student.id).where(Student.group_id.in_(group_ids))).all())
+    return hifz_service.with_progress(db, hifz_service.list_targets(db, student_ids=student_ids))
+
+
+@router.post("/targets/bulk", response_model=list[HifzTargetOut], status_code=201)
+def create_targets_bulk(
+    payload: HifzTargetBulkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> list[HifzTargetOut]:
+    students = db.scalars(select(Student).where(Student.id.in_(payload.student_ids))).all()
+    if len(students) != len(payload.student_ids):
+        raise HTTPException(status_code=404, detail="Student not found")
+    for student in students:
+        _assert_can_access_student(db, current_user, student)
+    return hifz_service.with_progress(db, hifz_service.create_targets_bulk(db, payload=payload))
 
 
 @router.post("/targets", response_model=HifzTargetOut, status_code=201)
 def create_target(
     payload: HifzTargetCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> HifzTarget:
     student = db.get(Student, payload.student_id)
     if student is None:
@@ -233,7 +317,7 @@ def update_target(
     target_id: int,
     payload: HifzTargetUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> HifzTarget:
     target = db.get(HifzTarget, target_id)
     if target is None:
@@ -250,7 +334,7 @@ def update_target(
 def delete_target(
     target_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> None:
     target = db.get(HifzTarget, target_id)
     if target is None:
@@ -277,7 +361,7 @@ def list_exams(
 def create_exam(
     payload: HifzExamCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> HifzExam:
     student = db.get(Student, payload.student_id)
     if student is None:
@@ -291,7 +375,7 @@ def update_exam(
     exam_id: int,
     payload: HifzExamUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> HifzExam:
     exam = db.get(HifzExam, exam_id)
     if exam is None:
@@ -308,7 +392,7 @@ def update_exam(
 def delete_exam(
     exam_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
 ) -> None:
     exam = db.get(HifzExam, exam_id)
     if exam is None:

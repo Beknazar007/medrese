@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.models.enums import AttendanceStatus, GroupType, HifzKind
-from app.schemas.hifz import HifzRecordUpsert, HifzTargetCreate
+from app.schemas.hifz import HifzRecordPut, HifzRecordUpsert, HifzTargetBulkCreate, HifzTargetCreate
 from app.schemas.journal import AttendanceUpsert
 from app.schemas.journal import AttendanceUpsert
 from app.services import hifz as hifz_service
@@ -364,3 +364,76 @@ def test_hifz_roster_shows_attendance_marked_for_the_lesson(db: Session):
     # Without a session (e.g. just browsing records) attendance is simply not reported.
     roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7))
     assert all(r.attendance_status is None for r in roster)
+
+
+def test_put_record_upserts_one_cell_and_an_empty_payload_deletes_it(db: Session):
+    _, _, _, group, student = _setup_hafiz(db)
+    day = date(2026, 9, 7)
+
+    hifz_service.put_record(db, payload=HifzRecordPut(student_id=student.id, date=day, kind=HifzKind.HIFZ, score=80, page_from=3))
+    db.flush()
+    hifz_service.put_record(db, payload=HifzRecordPut(student_id=student.id, date=day, kind=HifzKind.HIFZ, score=90, page_from=3))
+    db.flush()
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=day)
+    assert roster[0].hifz.score == 90
+    assert roster[0].hifz.page_to == 3  # empty "to" means a single page
+
+    assert hifz_service.put_record(db, payload=HifzRecordPut(student_id=student.id, date=day, kind=HifzKind.HIFZ, comment="  ")) is None
+    db.flush()
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=day)
+    assert roster[0].hifz.score is None
+
+
+def test_upsert_records_deletes_a_cell_cleared_back_to_empty(db: Session):
+    _, _, _, group, student = _setup_hafiz(db)
+    day = date(2026, 9, 7)
+    hifz_service.upsert_records(db, group_id=group.id, on_date=day, records=[HifzRecordUpsert(student_id=student.id, kind=HifzKind.HIFZ, score=70)])
+    db.flush()
+    hifz_service.upsert_records(db, group_id=group.id, on_date=day, records=[HifzRecordUpsert(student_id=student.id, kind=HifzKind.HIFZ)])
+    db.flush()
+    journal = hifz_service.journal(db, group_ids=[group.id], date_from=day, date_to=day, can_edit=True)
+    assert journal.records == []
+
+
+def test_bulk_target_gives_each_student_their_own_row_with_separate_progress(db: Session):
+    department, _, _, group, aisha = _setup_hafiz(db)
+    bakyt = make_student(db, group, full_name="Bakyt")
+    payload = HifzTargetBulkCreate(
+        student_ids=[aisha.id, bakyt.id, aisha.id],
+        kind=HifzKind.HIFZ,
+        juz_from=5,
+        start_date=date(2026, 9, 1),
+        end_date=date(2026, 9, 14),
+    )
+    assert payload.juz_to == 5  # empty "to" means a single juz
+    targets = hifz_service.create_targets_bulk(db, payload=payload)
+    assert sorted(t.student_id for t in targets) == sorted([aisha.id, bakyt.id])
+
+    for day, score in [(date(2026, 9, 2), 80), (date(2026, 9, 3), 90), (date(2026, 9, 20), 10)]:
+        hifz_service.put_record(db, payload=HifzRecordPut(student_id=aisha.id, date=day, kind=HifzKind.HIFZ, score=score))
+    # A repeat score inside the period doesn't count toward a hifz target.
+    hifz_service.put_record(db, payload=HifzRecordPut(student_id=aisha.id, date=date(2026, 9, 2), kind=HifzKind.REPEAT, score=0))
+    db.flush()
+
+    progress = {t.student_id: t for t in hifz_service.with_progress(db, targets)}
+    assert progress[aisha.id].avg_score == 85.0
+    assert progress[aisha.id].graded_days == 2
+    assert progress[bakyt.id].avg_score is None
+    assert progress[bakyt.id].graded_days == 0
+
+
+def test_journal_returns_only_the_period_and_targets_overlapping_it(db: Session):
+    department, _, _, group, student = _setup_hafiz(db)
+    other_group = make_group(db, department, group_type=GroupType.HAFIZ, name="Other")
+    outsider = make_student(db, other_group, full_name="Outsider")
+    for sid in (student.id, outsider.id):
+        hifz_service.put_record(db, payload=HifzRecordPut(student_id=sid, date=date(2026, 9, 7), kind=HifzKind.HIFZ, score=75))
+    hifz_service.put_record(db, payload=HifzRecordPut(student_id=student.id, date=date(2026, 8, 1), kind=HifzKind.HIFZ, score=75))
+    hifz_service.create_targets_bulk(db, payload=HifzTargetBulkCreate(student_ids=[student.id], kind=HifzKind.REPEAT, juz_from=1, juz_to=4, start_date=date(2026, 9, 1), end_date=date(2026, 9, 30)))
+    hifz_service.create_targets_bulk(db, payload=HifzTargetBulkCreate(student_ids=[student.id], kind=HifzKind.HIFZ, juz_from=1, start_date=date(2026, 6, 1), end_date=date(2026, 6, 30)))
+
+    journal = hifz_service.journal(db, group_ids=[group.id], date_from=date(2026, 9, 1), date_to=date(2026, 9, 30), can_edit=False)
+    assert [s.full_name for s in journal.students] == ["Aisha"]
+    assert [(r.student_id, r.date) for r in journal.records] == [(student.id, date(2026, 9, 7))]
+    assert [t.kind for t in journal.targets] == [HifzKind.REPEAT]
+    assert journal.can_edit is False

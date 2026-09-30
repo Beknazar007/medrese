@@ -28,6 +28,8 @@ const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "You do not teach this student's hafiz group": "errors.not_your_students_hafiz_group",
   "This group is not a hafiz group": "errors.group_not_hafiz",
   "This is a hafiz class — open it in the hifz journal": "errors.hafiz_class_use_hifz_journal",
+  "The end of the period is before its start": "errors.period_end_before_start",
+  "The period cannot be longer than 400 days": "errors.period_too_long",
   "This roster was just updated elsewhere — reload and retry": "errors.roster_conflict",
   "Student not found": "errors.student_not_found",
   "Target not found": "errors.target_not_found",

@@ -151,7 +151,7 @@ export default function App() {
                 <Route
                   path="/hifz-journal"
                   element={
-                    <RoleRoute roles={["TEACHER"]}>
+                    <RoleRoute roles={["TEACHER", "RECTOR", "DEAN"]}>
                       <HifzJournalPage />
                     </RoleRoute>
                   }

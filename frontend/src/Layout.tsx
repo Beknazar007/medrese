@@ -129,6 +129,8 @@ export default function Layout() {
   const monitoringItems: NavItem[] = [];
   if (user?.role === "RECTOR" || user?.role === "DEAN") {
     monitoringItems.push({ to: "/monitoring", label: t("nav.monitoring"), icon: <FactCheckIcon /> });
+    // Read-only for rector/dean: the students × days gradebook and assignments.
+    monitoringItems.push({ to: "/hifz-journal", label: t("nav.hifz_journal"), icon: <MenuBookIcon /> });
   }
   if (monitoringItems.length) navGroups.push({ label: t("nav.group_monitoring"), items: monitoringItems });
 

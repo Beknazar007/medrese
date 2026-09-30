@@ -50,6 +50,39 @@ class HifzTargetCreate(BaseModel):
         return self
 
 
+class HifzTargetBulkCreate(BaseModel):
+    """Issue the same target to many students at once — each gets their own row, so progress
+    is tracked per student and editing one never touches the others."""
+
+    student_ids: list[int] = Field(min_length=1, max_length=200)
+    kind: HifzKind
+    juz_from: int = Field(ge=1, le=30)
+    juz_to: int | None = Field(None, ge=1, le=30)
+    page_from: int | None = Field(None, ge=1, le=604)
+    page_to: int | None = Field(None, ge=1, le=604)
+    start_date: DateType
+    end_date: DateType
+    note: str | None = None
+
+    @model_validator(mode="after")
+    def _check(self) -> "HifzTargetBulkCreate":
+        # An empty "to" means a single juz/page.
+        if self.juz_to is None:
+            self.juz_to = self.juz_from
+        if self.page_to is None:
+            self.page_to = self.page_from
+        self.student_ids = list(dict.fromkeys(self.student_ids))
+        validate_hifz_ranges(
+            start_date=self.start_date,
+            end_date=self.end_date,
+            juz_from=self.juz_from,
+            juz_to=self.juz_to,
+            page_from=self.page_from,
+            page_to=self.page_to,
+        )
+        return self
+
+
 class HifzTargetUpdate(BaseModel):
     kind: HifzKind | None = None
     juz_from: int | None = Field(None, ge=1, le=30)
@@ -84,6 +117,9 @@ class HifzTargetOut(BaseModel):
     start_date: DateType
     end_date: DateType
     note: str | None
+    # Progress within the target's own period: same student + kind, any day with a score.
+    avg_score: float | None = None
+    graded_days: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -149,6 +185,48 @@ class HifzRecordUpsert(BaseModel):
             start_date=None, end_date=None, juz_from=None, juz_to=None, page_from=self.page_from, page_to=self.page_to
         )
         return self
+
+
+class HifzRecordPut(HifzRecordUpsert):
+    """One gradebook cell (student × day × kind). All fields empty deletes the record."""
+
+    date: DateType
+
+
+class HifzRecordOut(BaseModel):
+    id: int
+    student_id: int
+    date: DateType
+    kind: HifzKind
+    score: int | None
+    juz: int | None
+    page_from: int | None
+    page_to: int | None
+    comment: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class HifzJournalStudentOut(BaseModel):
+    id: int
+    full_name: str
+    group_id: int
+
+
+class HifzJournalGroupOut(BaseModel):
+    id: int
+    name: str
+
+
+class HifzJournalOut(BaseModel):
+    date_from: DateType
+    date_to: DateType
+    can_edit: bool
+    groups: list[HifzJournalGroupOut]
+    students: list[HifzJournalStudentOut]
+    records: list[HifzRecordOut]
+    exams: list[HifzExamOut]
+    targets: list[HifzTargetOut]
 
 
 class HifzRecordsPutRequest(BaseModel):

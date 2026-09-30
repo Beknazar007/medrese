@@ -233,6 +233,9 @@ export interface HifzTarget {
   start_date: string;
   end_date: string;
   note: string | null;
+  // Progress inside the target's own period (server-computed; absent on create payloads).
+  avg_score?: number | null;
+  graded_days?: number;
 }
 
 export interface HifzExam {
@@ -267,4 +270,27 @@ export interface HifzRosterStudent {
 export interface HifzSessionDetail {
   session: LessonSession;
   roster: HifzRosterStudent[];
+}
+
+export interface HifzRecord {
+  id: number;
+  student_id: number;
+  date: string;
+  kind: HifzKind;
+  score: number | null;
+  juz: number | null;
+  page_from: number | null;
+  page_to: number | null;
+  comment: string | null;
+}
+
+export interface HifzJournal {
+  date_from: string;
+  date_to: string;
+  can_edit: boolean;
+  groups: { id: number; name: string }[];
+  students: { id: number; full_name: string; group_id: number }[];
+  records: HifzRecord[];
+  exams: HifzExam[];
+  targets: HifzTarget[];
 }

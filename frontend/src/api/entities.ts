@@ -4,7 +4,9 @@ import type {
   Department,
   Group,
   HifzExam,
+  HifzJournal,
   HifzKind,
+  HifzRecord,
   HifzRosterStudent,
   HifzSessionDetail,
   HifzTarget,
@@ -197,6 +199,23 @@ export const hifzApi = {
     }[],
   ): Promise<HifzRosterStudent[]> =>
     (await api.put<HifzRosterStudent[]>("/hifz/records", { group_id, date, records })).data,
+  journal: async (date_from: string, date_to: string): Promise<HifzJournal> =>
+    (await api.get<HifzJournal>("/hifz/journal", { params: { date_from, date_to } })).data,
+  // All-empty fields delete the cell's record (the response is then null).
+  putRecord: async (payload: {
+    student_id: number;
+    date: string;
+    kind: HifzKind;
+    score?: number | null;
+    juz?: number | null;
+    page_from?: number | null;
+    page_to?: number | null;
+    comment?: string | null;
+  }): Promise<HifzRecord | null> => (await api.put<HifzRecord | null>("/hifz/record", payload)).data,
+  allTargets: async (): Promise<HifzTarget[]> => (await api.get<HifzTarget[]>("/hifz/targets")).data,
+  createTargetsBulk: async (
+    payload: Omit<HifzTarget, "id" | "student_id" | "juz_from"> & { student_ids: number[]; juz_from: number },
+  ): Promise<HifzTarget[]> => (await api.post<HifzTarget[]>("/hifz/targets/bulk", payload)).data,
   targets: async (studentId: number): Promise<HifzTarget[]> =>
     (await api.get<HifzTarget[]>("/hifz/targets", { params: { student_id: studentId } })).data,
   createTarget: async (payload: Omit<HifzTarget, "id">): Promise<HifzTarget> =>
