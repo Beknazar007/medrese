@@ -17,6 +17,8 @@ import {
   TableRow,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -49,6 +51,8 @@ function scoreColor(score: number): string {
 
 export default function TeacherMonitoringPage() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { data: semesters } = useSemesters();
   const { data: departments } = useDepartments();
 
@@ -109,7 +113,47 @@ export default function TeacherMonitoringPage() {
         <Alert severity="info">{t("monitoring.empty_hint")}</Alert>
       )}
 
-      {effectiveSemesterId && (rows ?? []).length > 0 && (
+      {/* Phones: a card per teacher with the numbers as small labelled tiles. */}
+      {isMobile && effectiveSemesterId && (rows ?? []).length > 0 && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {(rows ?? []).map((row) => {
+            const score = performanceScore(row);
+            const stats: { label: string; value: number | string; color?: string }[] = [
+              { label: t("monitoring.col_expected"), value: row.expected_lessons },
+              { label: t("monitoring.col_conducted"), value: row.conducted_lessons },
+              { label: t("monitoring.col_missed"), value: row.missed_lessons, color: row.missed_lessons > 0 ? "error.main" : undefined },
+              { label: t("monitoring.col_late"), value: row.late_lessons, color: row.late_lessons > 0 ? "#d98e00" : undefined },
+            ];
+            return (
+              <Paper key={row.teacher_id} variant="outlined" sx={{ p: 1.5, cursor: "pointer" }} onClick={() => setDrillDownTeacher(row)}>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {row.full_name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {nameById(departments, row.department_id, (d) => d.name)}
+                    </Typography>
+                  </Box>
+                  {score !== null && <Chip size="small" sx={{ bgcolor: scoreColor(score), color: "#fff" }} label={`${score}%`} />}
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75, mt: 1 }}>
+                  {stats.map((st) => (
+                    <Box key={st.label} sx={{ bgcolor: "action.hover", borderRadius: 1, px: 0.75, py: 0.5, minWidth: 0 }}>
+                      <Box sx={{ fontSize: 10.5, color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {st.label}
+                      </Box>
+                      <Box sx={{ fontWeight: 600, color: st.color }}>{st.value}</Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Paper>
+            );
+          })}
+        </Box>
+      )}
+
+      {!isMobile && effectiveSemesterId && (rows ?? []).length > 0 && (
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
@@ -164,9 +208,38 @@ export default function TeacherMonitoringPage() {
         </TableContainer>
       )}
 
-      <Dialog open={Boolean(drillDownTeacher)} onClose={() => setDrillDownTeacher(null)} maxWidth="md" fullWidth>
+      <Dialog open={Boolean(drillDownTeacher)} onClose={() => setDrillDownTeacher(null)} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>{t("monitoring.log_title", { name: drillDownTeacher?.full_name })}</DialogTitle>
         <DialogContent>
+          {isMobile && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {(sessionLog ?? []).map((row) => (
+                <Paper key={`${row.date}-${row.subject_name}`} variant="outlined" sx={{ p: 1.25 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {row.date}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                      <Chip
+                        size="small"
+                        color={row.conducted ? "success" : "error"}
+                        label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
+                      />
+                      {row.late && <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={t("monitoring.status_late")} />}
+                    </Box>
+                  </Box>
+                  <Typography variant="body2">
+                    {row.subject_name} · {row.group_name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {t("monitoring.log_col_checkin")}: {formatDateTime(row.checked_in_at)} · {t("monitoring.log_col_checkout")}:{" "}
+                    {formatDateTime(row.checked_out_at)}
+                  </Typography>
+                </Paper>
+              ))}
+            </Box>
+          )}
+          {!isMobile && (
           <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
             <Table size="small">
               <TableHead>
@@ -202,6 +275,7 @@ export default function TeacherMonitoringPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDrillDownTeacher(null)}>{t("common.close")}</Button>

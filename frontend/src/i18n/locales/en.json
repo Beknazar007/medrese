@@ -230,7 +230,8 @@
     "moved": "Moved",
     "move_failed": "Could not move — check conflicts",
     "force_remove_confirm": "This slot already has lessons held against it — removing it will permanently delete their attendance and grades too. This cannot be undone.",
-    "force_remove_confirm_label": "Delete anyway"
+    "force_remove_confirm_label": "Delete anyway",
+    "no_lessons_day": "No lessons this day"
   },
   "students": {
     "title": "Students",
@@ -301,7 +302,8 @@
     "checked_out": "Lesson marked as finished",
     "checked_out_confirm": "Mark this lesson as finished?",
     "exam_toggle": "This is an exam",
-    "no_students_hint": "This group has no students yet. The lesson is marked as conducted — once students are added, attendance and grades can be recorded here."
+    "no_students_hint": "This group has no students yet. The lesson is marked as conducted — once students are added, attendance and grades can be recorded here.",
+    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. It can only be opened and attendance taken during that time."
   },
   "monitoring": {
     "title": "Teacher monitoring",

@@ -29,6 +29,7 @@ import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { assignmentsApi, hifzApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import AttendanceBar from "../../components/AttendanceBar";
 import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
@@ -53,6 +54,7 @@ function formatTime(iso: string): string {
 
 export default function TeacherClassPage() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const confirm = useConfirm();
 
   const { data: assignments } = useQuery({ queryKey: ["assignments", "mine"], queryFn: () => assignmentsApi.list() });
@@ -86,6 +88,8 @@ export default function TeacherClassPage() {
         return {
           entryId: entry.id,
           assignmentId: entry.assignment_id,
+          groupName,
+          timeRange: slot ? `${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}` : "",
           dayOfWeek: entry.day_of_week,
           isToday: entry.day_of_week === todayDayOfWeek(),
           label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
@@ -105,6 +109,9 @@ export default function TeacherClassPage() {
   const [noteStudent, setNoteStudent] = useState<{ id: number; name: string } | null>(null);
   const [profileStudentId, setProfileStudentId] = useState<number | null>(null);
   const [showPerformance, setShowPerformance] = useState(false);
+  // Why the chosen lesson couldn't be opened (e.g. its time is over) — shown persistently,
+  // otherwise the teacher is left looking at an empty page.
+  const [openError, setOpenError] = useState<string | null>(null);
   const savedSnapshot = useRef<string>("[]");
   const autoLoadedOnce = useRef(false);
 
@@ -128,6 +135,7 @@ export default function TeacherClassPage() {
   const openSessionMutation = useMutation({
     mutationFn: ({ entryId, date }: { entryId: number; date: string }) => journalApi.getOrCreateSession(entryId, date),
     onSuccess: (detail) => {
+      setOpenError(null);
       setSessionId(detail.session.id);
       setSessionTimes({
         checkedInAt: detail.session.teacher_checked_in_at,
@@ -137,7 +145,7 @@ export default function TeacherClassPage() {
       setRoster(detail.roster);
       savedSnapshot.current = JSON.stringify(detail.roster);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
+    onError: (err) => setOpenError(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
   function openSessionFor(entryId: number, date: string) {
@@ -167,6 +175,7 @@ export default function TeacherClassPage() {
   function handleSelectClass(entryId: number | "") {
     if (!confirmDiscardIfDirty()) return;
     setSelectedEntryId(entryId);
+    setOpenError(null);
     setSessionId(null);
     setSessionTimes(null);
     setIsExam(false);
@@ -177,6 +186,7 @@ export default function TeacherClassPage() {
   function handleSelectDate(date: string) {
     if (!confirmDiscardIfDirty()) return;
     setSelectedDate(date);
+    setOpenError(null);
     setSessionId(null);
     setSessionTimes(null);
     setIsExam(false);
@@ -229,12 +239,6 @@ export default function TeacherClassPage() {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
   }
 
-  function setAttendanceComment(studentId: number, comment: string) {
-    setRoster((prev) =>
-      prev.map((r) => (r.student_id === studentId ? { ...r, attendance_comment: comment === "" ? null : comment } : r)),
-    );
-  }
-
   function setScore(studentId: number, score: number | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, score } : r)));
   }
@@ -264,7 +268,7 @@ export default function TeacherClassPage() {
           label={t("journal.select_class")}
           value={selectedEntryId}
           onChange={(e) => handleSelectClass(e.target.value ? Number(e.target.value) : "")}
-          sx={{ minWidth: 280 }}
+          sx={{ minWidth: { sm: 280 }, width: { xs: "100%", sm: "auto" } }}
         >
           {classOptions.map((opt) => (
             <MenuItem key={opt.entryId} value={opt.entryId}>
@@ -298,6 +302,18 @@ export default function TeacherClassPage() {
       </Box>
 
       {classOptions.length === 0 && <Alert severity="info">{t("journal.no_classes")}</Alert>}
+
+      {(() => {
+        const opt = classOptions.find((c) => c.entryId === selectedEntryId);
+        if (!openError || !opt || sessionId) return null;
+        return (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <b>{openError}</b>
+            <br />
+            {t("journal.lesson_time_hint", { day: t(`days.${opt.dayOfWeek}`), time: opt.timeRange, group: opt.groupName })}
+          </Alert>
+        );
+      })()}
 
       {sessionId && (
         <>
@@ -356,7 +372,6 @@ export default function TeacherClassPage() {
                 <TableRow>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_student")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_lesson_comment")}</TableCell>
                   {isExam && <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_grade")}</TableCell>}
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                     {t("journal.col_note")}
@@ -377,14 +392,6 @@ export default function TeacherClassPage() {
                     </TableCell>
                     <TableCell>
                       <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        value={r.attendance_comment ?? ""}
-                        onChange={(e) => setAttendanceComment(r.student_id, e.target.value)}
-                        sx={{ minWidth: 140 }}
-                      />
                     </TableCell>
                     {isExam && (
                       <TableCell>
@@ -430,7 +437,7 @@ export default function TeacherClassPage() {
         <StudentProfileDialog studentId={profileStudentId} onClose={() => setProfileStudentId(null)} />
       )}
 
-      <Dialog open={showPerformance} onClose={() => setShowPerformance(false)} maxWidth="md" fullWidth>
+      <Dialog open={showPerformance} onClose={() => setShowPerformance(false)} maxWidth="md" fullWidth fullScreen={isMobile}>
         <DialogTitle>{t("journal.performance_title")}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: "flex", gap: 2.5, mb: 1.5, flexWrap: "wrap", fontSize: 12.5, color: "text.secondary" }}>
@@ -493,6 +500,7 @@ function NotesDialog({
   onError: (msg: string) => void;
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const [body, setBody] = useState("");
@@ -519,7 +527,7 @@ function NotesDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>{t("journal.notes_for", { name: student.name })}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {(notes ?? []).length === 0 && (

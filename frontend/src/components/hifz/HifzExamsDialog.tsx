@@ -14,6 +14,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { hifzApi } from "../../api/entities";
 import type { HifzExam } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -37,6 +38,7 @@ export default function HifzExamsDialog({
   period?: { from: string; to: string };
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -135,7 +137,7 @@ export default function HifzExamsDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>{t("hifz.exams_title", { name: student.name })}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {(exams ?? []).length === 0 && (

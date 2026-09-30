@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "../hooks/useIsMobile";
 import type { Teacher } from "../api/types";
 import { nameById, useDepartments } from "../hooks/useReferenceData";
 
@@ -29,10 +30,11 @@ function Field({ label, value }: { label: string; value: string | number | null 
 
 export default function TeacherProfileDialog({ teacher, onClose }: { teacher: Teacher; onClose: () => void }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const { data: departments } = useDepartments();
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>{teacher.full_name}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

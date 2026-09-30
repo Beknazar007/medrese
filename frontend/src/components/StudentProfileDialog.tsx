@@ -24,6 +24,7 @@ import {
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { notesApi, studentsApi } from "../api/entities";
 import type { AttendanceStatus, StudentHistoryRow } from "../api/types";
 import { nameById, useGroups, useTeachers } from "../hooks/useReferenceData";
@@ -88,6 +89,7 @@ export default function StudentProfileDialog({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const { data: groups } = useGroups();
   const { data: teachers } = useTeachers();
 
@@ -107,7 +109,7 @@ export default function StudentProfileDialog({
   const subjectGroups = useMemo(() => groupBySubject(history ?? []), [history]);
 
   return (
-    <Dialog open onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="md" fullWidth fullScreen={isMobile}>
       <DialogTitle>{student?.full_name ?? "…"}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {student && (

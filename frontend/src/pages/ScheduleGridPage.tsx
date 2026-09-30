@@ -43,6 +43,8 @@ export default function ScheduleGridPage() {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  // A 7-day grid doesn't fit below ~900px (phones, portrait tablets): show one day at a time there.
+  const isCompact = useMediaQuery(theme.breakpoints.down("md"));
   const { user } = useAuth();
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const queryClient = useQueryClient();
@@ -64,6 +66,8 @@ export default function ScheduleGridPage() {
   const [semesterId, setSemesterId] = useState<number | "">("");
   const [groupId, setGroupId] = useState<number | "">("");
   const [snackbar, setSnackbar] = useState<string | null>(null);
+  // Phones show one day at a time, starting on today.
+  const [mobileDay, setMobileDay] = useState<DayOfWeek>(() => (((new Date().getDay() + 6) % 7) + 1) as DayOfWeek);
 
   const activeSemester = semesters?.find((s) => s.is_active);
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
@@ -273,6 +277,47 @@ export default function ScheduleGridPage() {
 
   const sortedSlots = [...(timeSlots ?? [])].sort((a, b) => a.order - b.order);
 
+  function renderEntry(entry: ScheduleEntry, day: DayOfWeek, slotId: number) {
+    const info = describeEntry(entry);
+    const color = showAllGroups ? groupColorById.get(entry.group_id) : undefined;
+    return (
+      <Box
+        key={entry.id}
+        onClick={(e) => {
+          e.stopPropagation();
+          openCell(day, slotId, entry);
+        }}
+        sx={{
+          textAlign: "left",
+          cursor: "pointer",
+          borderRadius: 1,
+          px: 0.75,
+          py: 0.5,
+          borderLeft: color ? `3px solid ${color}` : undefined,
+          bgcolor: color ? alpha(color, 0.1) : undefined,
+          "&:hover": { bgcolor: color ? alpha(color, 0.18) : "action.selected" },
+        }}
+      >
+        <Typography variant="body2">{info.subjectName}</Typography>
+        {user?.role !== "TEACHER" && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            {info.teacherName}
+          </Typography>
+        )}
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
+          {showAllGroups && (
+            <Chip
+              size="small"
+              label={info.groupName}
+              sx={color ? { bgcolor: color, color: "#fff" } : undefined}
+            />
+          )}
+          <Chip size="small" variant="outlined" label={info.roomName} />
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
@@ -285,7 +330,7 @@ export default function ScheduleGridPage() {
           label={t("common.select_semester")}
           value={semesterId}
           onChange={(e) => setSemesterId(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
+          sx={{ minWidth: 200, flex: { xs: 1, sm: "none" } }}
         >
           <MenuItem value="">
             {activeSemester ? `${t("common.active_prefix")} ${activeSemester.name}` : t("common.pick_semester")}
@@ -303,7 +348,7 @@ export default function ScheduleGridPage() {
             label={t("common.group_filter")}
             value={groupId}
             onChange={(e) => setGroupId(e.target.value === "" ? "" : Number(e.target.value))}
-            sx={{ minWidth: 180 }}
+            sx={{ minWidth: 180, flex: { xs: 1, sm: "none" } }}
           >
             <MenuItem value="">{t("common.all_groups")}</MenuItem>
             {(groups ?? [])
@@ -323,7 +368,57 @@ export default function ScheduleGridPage() {
         <Alert severity="warning">{t("schedule.no_timeslots")}</Alert>
       )}
 
-      {(effectiveSemesterId || user?.role === "TEACHER") && sortedSlots.length > 0 && (
+      {isCompact && (effectiveSemesterId || user?.role === "TEACHER") && sortedSlots.length > 0 && (
+        <Box>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={mobileDay}
+            onChange={(_e, v: DayOfWeek | null) => v && setMobileDay(v)}
+            sx={{ display: "flex", mb: 1.5, "& .MuiToggleButton-root": { flex: 1, px: 0, fontSize: 12 } }}
+          >
+            {DAYS.map((d) => (
+              <ToggleButton key={d.value} value={d.value}>
+                {d.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          <Paper variant="outlined">
+            {sortedSlots.map((slot, i) => {
+              const cellEntries = entriesByCell.get(`${mobileDay}-${slot.id}`) ?? [];
+              if (!cellEntries.length && !canWrite) return null;
+              return (
+                <Box
+                  key={slot.id}
+                  sx={{ display: "flex", gap: 1.5, p: 1.25, borderTop: i ? 1 : 0, borderColor: "divider", alignItems: "flex-start" }}
+                >
+                  <Box sx={{ width: 64, flexShrink: 0 }}>
+                    <strong>{slot.order}</strong>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                      {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 0.75 }}>
+                    {cellEntries.map((entry) => renderEntry(entry, mobileDay, slot.id))}
+                    {canWrite && (
+                      <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => openCell(mobileDay, slot.id, null)}>
+                        {t("schedule.add_hint")}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })}
+            {!canWrite && sortedSlots.every((slot) => !(entriesByCell.get(`${mobileDay}-${slot.id}`) ?? []).length) && (
+              <Typography color="text.secondary" sx={{ p: 2, textAlign: "center" }}>
+                {t("schedule.no_lessons_day")}
+              </Typography>
+            )}
+          </Paper>
+        </Box>
+      )}
+
+      {!isCompact && (effectiveSemesterId || user?.role === "TEACHER") && sortedSlots.length > 0 && (
         <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
@@ -365,46 +460,7 @@ export default function ScheduleGridPage() {
                         }}
                       >
                         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, alignItems: "stretch" }}>
-                          {cellEntries.map((entry) => {
-                            const info = describeEntry(entry);
-                            const color = showAllGroups ? groupColorById.get(entry.group_id) : undefined;
-                            return (
-                              <Box
-                                key={entry.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openCell(d.value, slot.id, entry);
-                                }}
-                                sx={{
-                                  textAlign: "left",
-                                  cursor: "pointer",
-                                  borderRadius: 1,
-                                  px: 0.75,
-                                  py: 0.5,
-                                  borderLeft: color ? `3px solid ${color}` : undefined,
-                                  bgcolor: color ? alpha(color, 0.1) : undefined,
-                                  "&:hover": { bgcolor: color ? alpha(color, 0.18) : "action.selected" },
-                                }}
-                              >
-                                <Typography variant="body2">{info.subjectName}</Typography>
-                                {user?.role !== "TEACHER" && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                    {info.teacherName}
-                                  </Typography>
-                                )}
-                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
-                                  {showAllGroups && (
-                                    <Chip
-                                      size="small"
-                                      label={info.groupName}
-                                      sx={color ? { bgcolor: color, color: "#fff" } : undefined}
-                                    />
-                                  )}
-                                  <Chip size="small" variant="outlined" label={info.roomName} />
-                                </Box>
-                              </Box>
-                            );
-                          })}
+                          {cellEntries.map((entry) => renderEntry(entry, d.value, slot.id))}
                           {canWrite && (
                             <Typography
                               variant="caption"

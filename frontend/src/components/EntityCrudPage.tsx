@@ -270,7 +270,60 @@ export default function EntityCrudPage<T extends { id: number }>({
             </Alert>
           )}
 
-          {filteredData && filteredData.length > 0 && (
+          {/* Phones: one card per row — a wide table would hide most columns off-screen. */}
+          {isMobile && filteredData && filteredData.length > 0 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {filteredData.map((row) => {
+                const rowIsClickable = onRowClick ? true : canEdit && Boolean(api.update);
+                const handleRowClick = onRowClick ? () => onRowClick(row) : () => openEdit(row);
+                const cell = (col: ColumnConfig<T>) =>
+                  col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? "—");
+                const unlabeled = columns.filter((c) => !c.label);
+                const [titleCol, ...restCols] = columns.filter((c) => c.label);
+                return (
+                  <Paper
+                    key={row.id}
+                    variant="outlined"
+                    onClick={rowIsClickable ? handleRowClick : undefined}
+                    sx={{ p: 1.5, display: "flex", gap: 1.5, alignItems: "flex-start", cursor: rowIsClickable ? "pointer" : undefined }}
+                  >
+                    {unlabeled.map((col) => (
+                      <Box key={col.key} sx={{ flexShrink: 0 }}>
+                        {cell(col)}
+                      </Box>
+                    ))}
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      {titleCol && <Box sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{cell(titleCol)}</Box>}
+                      {restCols.map((col) => (
+                        <Box key={col.key} sx={{ fontSize: 13, color: "text.secondary", mt: 0.25, overflowWrap: "anywhere" }}>
+                          {col.label}:{" "}
+                          <Box component="span" sx={{ color: "text.primary" }}>
+                            {cell(col)}
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                    {(canEdit || canDelete) && (
+                      <Box sx={{ display: "flex", flexShrink: 0 }}>
+                        {canEdit && api.update && (
+                          <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        {canDelete && api.remove && (
+                          <IconButton size="small" onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                    )}
+                  </Paper>
+                );
+              })}
+            </Box>
+          )}
+
+          {!isMobile && filteredData && filteredData.length > 0 && (
             <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
               <Table size="small">
                 <TableHead>

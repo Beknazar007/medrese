@@ -30,6 +30,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { assignmentsApi, hifzApi, scheduleApi } from "../../api/entities";
 import type { AttendanceStatus, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
 import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
@@ -298,12 +299,6 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
   }
 
-  function setAttendanceComment(studentId: number, comment: string) {
-    setRoster((prev) =>
-      prev.map((r) => (r.student_id === studentId ? { ...r, attendance_comment: comment === "" ? null : comment } : r)),
-    );
-  }
-
   function markAllPresent() {
     setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
   }
@@ -321,7 +316,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
           label={t("hifz.select_class")}
           value={selectedEntryId}
           onChange={(e) => handleSelectClass(e.target.value ? Number(e.target.value) : "")}
-          sx={{ minWidth: 280 }}
+          sx={{ minWidth: { sm: 280 }, width: { xs: "100%", sm: "auto" } }}
         >
           {classOptions.map((opt) => (
             <MenuItem key={opt.entryId} value={opt.entryId}>
@@ -355,15 +350,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
       )}
 
       {openError && selectedOption && !sessionId && (
-        <Alert
-          severity="warning"
-          sx={{ mb: 2 }}
-          action={
-            <Button color="inherit" size="small" onClick={() => onOpenJournal(selectedOption.groupId)}>
-              {t("hifz.open_group_journal")}
-            </Button>
-          }
-        >
+        <Alert severity="warning" sx={{ mb: 2 }}>
           <b>{openError}</b>
           <br />
           {t("hifz.lesson_time_hint", {
@@ -371,6 +358,11 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
             time: selectedOption.timeRange,
             group: selectedOption.groupName,
           })}
+          <Box sx={{ mt: 1 }}>
+            <Button variant="outlined" color="inherit" size="small" onClick={() => onOpenJournal(selectedOption.groupId)}>
+              {t("hifz.open_group_journal")}
+            </Button>
+          </Box>
         </Alert>
       )}
 
@@ -450,13 +442,6 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             </TableCell>
                             <TableCell rowSpan={2} sx={{ verticalAlign: "top" }}>
                               <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
-                              <TextField
-                                size="small"
-                                placeholder={t("journal.col_lesson_comment")}
-                                value={r.attendance_comment ?? ""}
-                                onChange={(e) => setAttendanceComment(r.student_id, e.target.value)}
-                                sx={{ display: "block", mt: 1, minWidth: 140 }}
-                              />
                             </TableCell>
                           </>
                         )}
@@ -580,6 +565,7 @@ function HifzTargetsDialog({
   onError: (msg: string) => void;
 }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -668,7 +654,7 @@ function HifzTargetsDialog({
   }
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle>{t("hifz.targets_title", { name: student.name })}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {(targets ?? []).length === 0 && (
