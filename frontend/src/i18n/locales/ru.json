@@ -434,7 +434,9 @@
     "target_note_hint": "например, по 1 странице в день",
     "card_status_active": "Активно",
     "card_status_upcoming": "Предстоит",
-    "card_status_done": "Завершено"
+    "card_status_done": "Завершено",
+    "open_group_journal": "Открыть журнал группы",
+    "lesson_time_hint": "Урок с группой «{{group}}» по расписанию: {{day}} {{time}}. Отметить приход и посещаемость можно только в это время. Оценки хифза за любой день ставятся во вкладке «Журнал»."
   },
   "password": {
     "dialog_title": "Смена пароля",

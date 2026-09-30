@@ -434,7 +434,9 @@
     "target_note_hint": "e.g. one page a day",
     "card_status_active": "Active",
     "card_status_upcoming": "Upcoming",
-    "card_status_done": "Finished"
+    "card_status_done": "Finished",
+    "open_group_journal": "Open group journal",
+    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. Check-in and attendance can only be recorded then. Hifz marks for any day go in the Journal tab."
   },
   "password": {
     "dialog_title": "Change password",

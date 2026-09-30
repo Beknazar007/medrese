@@ -40,7 +40,7 @@ import { useAuth } from "../../context/AuthContext";
 import HifzAssignments from "../../components/hifz/HifzAssignments";
 import HifzExamsDialog from "../../components/hifz/HifzExamsDialog";
 import HifzGradebook, { type GradebookView } from "../../components/hifz/HifzGradebook";
-import { todayIso as localTodayIso } from "../../components/hifz/hifzUtils";
+import { todayIso as localTodayIso, weekRange } from "../../components/hifz/hifzUtils";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -85,7 +85,14 @@ export default function HifzJournalPage() {
         <Tab value="journal" label={t("hifz.tab_journal")} />
         <Tab value="assignments" label={t("hifz.tab_assignments")} />
       </Tabs>
-      {tab === "lesson" && <HifzLessonTab />}
+      {tab === "lesson" && (
+        <HifzLessonTab
+          onOpenJournal={(groupId) => {
+            setView({ preset: "week", ...weekRange(), groupId, focusStudentId: null });
+            setTab("journal");
+          }}
+        />
+      )}
       {tab === "journal" && <HifzGradebook view={view} onViewChange={setView} />}
       {tab === "assignments" && (
         <HifzAssignments
@@ -105,7 +112,7 @@ export default function HifzJournalPage() {
   );
 }
 
-function HifzLessonTab() {
+function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => void }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
 
@@ -136,6 +143,9 @@ function HifzLessonTab() {
         const dayLabel = t(`days.${entry.day_of_week}`);
         return {
           entryId: entry.id,
+          groupId: entry.group_id,
+          groupName,
+          timeRange: slot ? `${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}` : "",
           dayOfWeek: entry.day_of_week,
           isToday: entry.day_of_week === todayDayOfWeek(),
           label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
@@ -153,6 +163,9 @@ function HifzLessonTab() {
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [targetsStudent, setTargetsStudent] = useState<{ id: number; name: string } | null>(null);
   const [examsStudent, setExamsStudent] = useState<{ id: number; name: string } | null>(null);
+  // Why the chosen lesson couldn't be opened (e.g. its time is over) — shown persistently,
+  // otherwise the teacher just sees an empty page and thinks the group is gone.
+  const [openError, setOpenError] = useState<string | null>(null);
   const savedSnapshot = useRef<string>("[]");
   const autoLoadedOnce = useRef(false);
 
@@ -174,6 +187,7 @@ function HifzLessonTab() {
   const openSessionMutation = useMutation({
     mutationFn: ({ entryId, date }: { entryId: number; date: string }) => hifzApi.getOrCreateSession(entryId, date),
     onSuccess: (detail) => {
+      setOpenError(null);
       setSessionId(detail.session.id);
       setSessionTimes({
         checkedInAt: detail.session.teacher_checked_in_at,
@@ -182,8 +196,10 @@ function HifzLessonTab() {
       setRoster(detail.roster);
       savedSnapshot.current = JSON.stringify(detail.roster);
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t)),
+    onError: (err) => setOpenError(apiErrorMessage(err, t("hifz.save_failed"), t)),
   });
+
+  const selectedOption = classOptions.find((c) => c.entryId === selectedEntryId);
 
   function openSessionFor(entryId: number, date: string) {
     openSessionMutation.mutate({ entryId, date });
@@ -212,6 +228,7 @@ function HifzLessonTab() {
   function handleSelectClass(entryId: number | "") {
     if (!confirmDiscardIfDirty()) return;
     setSelectedEntryId(entryId);
+    setOpenError(null);
     setSessionId(null);
     setSessionTimes(null);
     setRoster([]);
@@ -221,6 +238,7 @@ function HifzLessonTab() {
   function handleSelectDate(date: string) {
     if (!confirmDiscardIfDirty()) return;
     setSelectedDate(date);
+    setOpenError(null);
     setSessionId(null);
     setSessionTimes(null);
     setRoster([]);
@@ -334,6 +352,26 @@ function HifzLessonTab() {
       {hifzGroups && hifzGroups.length === 0 && <Alert severity="info">{t("hifz.no_groups")}</Alert>}
       {hifzGroups && hifzGroups.length > 0 && classOptions.length === 0 && (
         <Alert severity="info">{t("hifz.no_classes")}</Alert>
+      )}
+
+      {openError && selectedOption && !sessionId && (
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => onOpenJournal(selectedOption.groupId)}>
+              {t("hifz.open_group_journal")}
+            </Button>
+          }
+        >
+          <b>{openError}</b>
+          <br />
+          {t("hifz.lesson_time_hint", {
+            day: t(`days.${selectedOption.dayOfWeek}`),
+            time: selectedOption.timeRange,
+            group: selectedOption.groupName,
+          })}
+        </Alert>
       )}
 
       {sessionId && (

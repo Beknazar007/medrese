@@ -434,7 +434,9 @@
     "target_note_hint": "мисалы, күнүнө 1 бет",
     "card_status_active": "Активдүү",
     "card_status_upcoming": "Алдыда",
-    "card_status_done": "Аяктады"
+    "card_status_done": "Аяктады",
+    "open_group_journal": "Топтун журналын ачуу",
+    "lesson_time_hint": "«{{group}}» тобу менен сабак жадыбал боюнча: {{day}} {{time}}. Келүүнү жана катышууну ушул убакта гана белгилесе болот. Хифз бааларын каалаган күнгө «Журнал» өтмөгүнөн коюңуз."
   },
   "password": {
     "dialog_title": "Сырсөздү алмаштыруу",
