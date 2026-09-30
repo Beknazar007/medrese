@@ -415,6 +415,7 @@
     "student_not_hafiz_group": "This student is not in a hafiz group",
     "not_your_students_hafiz_group": "You do not teach this student's hafiz group",
     "group_not_hafiz": "This group is not a hafiz group",
+    "hafiz_class_use_hifz_journal": "This is a hafiz class — open it in the hifz journal",
     "roster_conflict": "This roster was just updated elsewhere — reload and retry",
     "student_not_found": "Student not found",
     "target_not_found": "Target not found",

@@ -260,6 +260,8 @@ export interface HifzRosterStudent {
   student_number: string | null;
   hifz: HifzRecordDetail;
   repeat: HifzRecordDetail;
+  attendance_status: AttendanceStatus | null;
+  attendance_comment: string | null;
 }
 
 export interface HifzSessionDetail {

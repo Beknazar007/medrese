@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.assignment import TeachingAssignment
+from app.models.attendance import AttendanceRecord
 from app.models.enums import GroupType
 from app.models.group import Group
 from app.models.hifz import HifzExam, HifzRecord, HifzTarget
@@ -34,7 +35,12 @@ def teacher_hifz_group_ids(db: Session, *, teacher_id: int) -> list[int]:
     return list(db.scalars(stmt).all())
 
 
-def roster_for_group_date(db: Session, *, group_id: int, on_date: date) -> list[HifzRosterStudentOut]:
+def roster_for_group_date(
+    db: Session, *, group_id: int, on_date: date, session_id: int | None = None
+) -> list[HifzRosterStudentOut]:
+    """Pass session_id to also fill in each student's attendance for that lesson — the same
+    AttendanceRecord rows the regular journal uses, so hafiz attendance counts everywhere.
+    """
     students = db.scalars(
         select(Student).where(Student.group_id == group_id, Student.is_active.is_(True)).order_by(Student.full_name)
     ).all()
@@ -43,6 +49,11 @@ def roster_for_group_date(db: Session, *, group_id: int, on_date: date) -> list[
         select(HifzRecord).where(HifzRecord.student_id.in_([s.id for s in students]), HifzRecord.date == on_date)
     ).all()
     by_student_kind = {(r.student_id, r.kind.value): r for r in records}
+    attendance_by_student = (
+        {a.student_id: a for a in db.scalars(select(AttendanceRecord).where(AttendanceRecord.session_id == session_id))}
+        if session_id is not None
+        else {}
+    )
 
     def _detail(student_id: int, kind: str) -> HifzRecordDetail:
         r = by_student_kind.get((student_id, kind))
@@ -57,6 +68,8 @@ def roster_for_group_date(db: Session, *, group_id: int, on_date: date) -> list[
             student_number=s.student_number,
             hifz=_detail(s.id, "HIFZ"),
             repeat=_detail(s.id, "REPEAT"),
+            attendance_status=attendance_by_student[s.id].status if s.id in attendance_by_student else None,
+            attendance_comment=attendance_by_student[s.id].comment if s.id in attendance_by_student else None,
         )
         for s in students
     ]

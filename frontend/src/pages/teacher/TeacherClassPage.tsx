@@ -22,9 +22,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
   Typography,
 } from "@mui/material";
 import CommentIcon from "@mui/icons-material/Comment";
@@ -32,34 +29,14 @@ import DoneAllIcon from "@mui/icons-material/DoneAll";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { assignmentsApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
+import { assignmentsApi, hifzApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import AttendanceBar from "../../components/AttendanceBar";
+import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
 import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
-
-const ATTENDANCE_OPTIONS: AttendanceStatus[] = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
-
-const ATTENDANCE_SHORT: Record<AttendanceStatus, string> = {
-  PRESENT: "К",
-  ABSENT: "Ж",
-  LATE: "О",
-  EXCUSED: "С",
-};
-
-const ATTENDANCE_COLOR: Record<AttendanceStatus, string> = {
-  PRESENT: "#2e7d32",
-  ABSENT: "#c62828",
-  LATE: "#e08600",
-  EXCUSED: "#1565c0",
-};
-
-const ROW_TINT: Partial<Record<AttendanceStatus, string>> = {
-  ABSENT: "rgba(198,40,40,.06)",
-  LATE: "rgba(224,134,0,.08)",
-};
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -84,10 +61,16 @@ export default function TeacherClassPage() {
   const { data: groups } = useGroups();
   const { data: timeSlots } = useTimeSlots();
 
+  const { data: hifzGroups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups() });
+
   const sortedSlots = useMemo(() => [...(timeSlots ?? [])].sort((a, b) => a.order - b.order), [timeSlots]);
+  const hifzGroupIdSet = useMemo(() => new Set((hifzGroups ?? []).map((g) => g.id)), [hifzGroups]);
 
   const classOptions = useMemo(() => {
+    // Hafiz classes are run from the hifz journal, never from here.
+    if (!hifzGroups) return [];
     return [...(entries ?? [])]
+      .filter((entry) => !hifzGroupIdSet.has(entry.group_id))
       .sort((a, b) => {
         if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
         const sa = sortedSlots.find((s) => s.id === a.time_slot_id)?.order ?? 0;
@@ -108,7 +91,7 @@ export default function TeacherClassPage() {
           label: `${dayLabel} ${slot?.start_time.slice(0, 5) ?? ""} — ${subjectName} — ${groupName}`,
         };
       });
-  }, [entries, assignments, subjects, groups, sortedSlots, t]);
+  }, [entries, hifzGroups, hifzGroupIdSet, assignments, subjects, groups, sortedSlots, t]);
 
   const [selectedEntryId, setSelectedEntryId] = useState<number | "">("");
   const [selectedDate, setSelectedDate] = useState<string>(todayIso());
@@ -260,14 +243,7 @@ export default function TeacherClassPage() {
     setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
   }
 
-  const attendanceCounts = useMemo(() => {
-    const counts: Record<AttendanceStatus | "UNSET", number> = { PRESENT: 0, ABSENT: 0, LATE: 0, EXCUSED: 0, UNSET: 0 };
-    for (const r of roster) {
-      if (r.attendance_status) counts[r.attendance_status] += 1;
-      else counts.UNSET += 1;
-    }
-    return counts;
-  }, [roster]);
+  const attendanceCounts = useMemo(() => countAttendance(roster.map((r) => r.attendance_status)), [roster]);
 
   const { data: performance } = useQuery({
     queryKey: ["journal-performance", selectedAssignmentId],
@@ -389,7 +365,7 @@ export default function TeacherClassPage() {
               </TableHead>
               <TableBody>
                 {roster.map((r) => (
-                  <TableRow key={r.student_id} hover sx={{ bgcolor: r.attendance_status ? ROW_TINT[r.attendance_status] : undefined }}>
+                  <TableRow key={r.student_id} hover sx={{ bgcolor: r.attendance_status ? ATTENDANCE_ROW_TINT[r.attendance_status] : undefined }}>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>
                       <Box
                         component="span"
@@ -400,34 +376,7 @@ export default function TeacherClassPage() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <ToggleButtonGroup
-                        size="small"
-                        exclusive
-                        value={r.attendance_status}
-                        onChange={(_e, value) => setAttendance(r.student_id, value)}
-                      >
-                        {ATTENDANCE_OPTIONS.map((status) => (
-                          <ToggleButton
-                            key={status}
-                            value={status}
-                            sx={{
-                              px: 1.1,
-                              py: 0.3,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              "&.Mui-selected": {
-                                bgcolor: ATTENDANCE_COLOR[status],
-                                color: "#fff",
-                                "&:hover": { bgcolor: ATTENDANCE_COLOR[status], opacity: 0.9 },
-                              },
-                            }}
-                          >
-                            <Tooltip title={t(`journal.attendance_${status.toLowerCase()}`)}>
-                              <span>{ATTENDANCE_SHORT[status]}</span>
-                            </Tooltip>
-                          </ToggleButton>
-                        ))}
-                      </ToggleButtonGroup>
+                      <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
                     </TableCell>
                     <TableCell>
                       <TextField

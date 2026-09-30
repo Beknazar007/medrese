@@ -23,12 +23,14 @@ import {
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import SchoolIcon from "@mui/icons-material/School";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 import EditIcon from "@mui/icons-material/Edit";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { assignmentsApi, hifzApi, scheduleApi } from "../../api/entities";
-import type { HifzExam, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
+import type { AttendanceStatus, HifzExam, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
+import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
@@ -173,7 +175,7 @@ export default function HifzJournalPage() {
   }
 
   const saveAllMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       // A (student, kind) pair is only worth omitting if it never had a value — once a
       // record exists server-side, it must keep being sent even when cleared back to empty,
       // or clearing it in the UI would silently fail to clear it in the database.
@@ -187,7 +189,19 @@ export default function HifzJournalPage() {
         if (hasAnyValue(r.repeat) || hadValue(r.student_id, "repeat")) rows.push({ student_id: r.student_id, kind: "REPEAT", ...r.repeat });
         return rows;
       });
-      return hifzApi.putRecords(Number(selectedGroupId), selectedDate, records);
+      await hifzApi.putRecords(Number(selectedGroupId), selectedDate, records);
+      // Saved last because only the session-scoped response carries attendance back.
+      const detail = await hifzApi.putAttendance(
+        sessionId!,
+        roster
+          .filter((r) => r.attendance_status !== null)
+          .map((r) => ({
+            student_id: r.student_id,
+            status: r.attendance_status as AttendanceStatus,
+            comment: r.attendance_comment,
+          })),
+      );
+      return detail.roster;
     },
     onSuccess: (updated) => {
       setRoster(updated);
@@ -208,6 +222,22 @@ export default function HifzJournalPage() {
       prev.map((r) => (r.student_id === studentId ? { ...r, [kind]: { ...r[kind], ...patch } } : r)),
     );
   }
+
+  function setAttendance(studentId: number, status: AttendanceStatus | null) {
+    setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
+  }
+
+  function setAttendanceComment(studentId: number, comment: string) {
+    setRoster((prev) =>
+      prev.map((r) => (r.student_id === studentId ? { ...r, attendance_comment: comment === "" ? null : comment } : r)),
+    );
+  }
+
+  function markAllPresent() {
+    setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
+  }
+
+  const attendanceCounts = useMemo(() => countAttendance(roster.map((r) => r.attendance_status)), [roster]);
 
   const numberOrNull = (v: string) => (v === "" ? null : Number(v));
 
@@ -257,7 +287,7 @@ export default function HifzJournalPage() {
         <Alert severity="info">{t("hifz.no_classes")}</Alert>
       )}
 
-      {sessionId && roster.length > 0 && (
+      {sessionId && (
         <>
           <Box sx={{ display: "flex", gap: 2, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <Typography variant="body2" color="text.secondary">
@@ -275,11 +305,34 @@ export default function HifzJournalPage() {
             )}
           </Box>
 
+          {roster.length === 0 && <Alert severity="info" sx={{ mb: 2 }}>{t("journal.no_students_hint")}</Alert>}
+
+          {roster.length > 0 && (
+            <>
+          <Box sx={{ display: "flex", gap: 3, mb: 1.5, flexWrap: "wrap", alignItems: "center" }}>
+            <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
+              {t("journal.mark_all_present")}
+            </Button>
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", fontSize: 13, color: "text.secondary" }}>
+              {ATTENDANCE_OPTIONS.map((status) => (
+                <span key={status}>
+                  {t(`journal.attendance_${status.toLowerCase()}`)}: <strong>{attendanceCounts[status]}</strong>
+                </span>
+              ))}
+              {attendanceCounts.UNSET > 0 && (
+                <span style={{ color: "#e08600" }}>
+                  {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
+                </span>
+              )}
+            </Box>
+          </Box>
+
           <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 2 }}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("hifz.col_student")}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{t("journal.col_attendance")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("hifz.col_kind")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("hifz.col_score")}</TableCell>
                   <TableCell sx={{ whiteSpace: "nowrap" }}>{t("hifz.col_juz")}</TableCell>
@@ -292,11 +345,34 @@ export default function HifzJournalPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {roster.map((r, idx) => (
+                {roster.map((r) => (
                   <Fragment key={r.student_id}>
                     {(["hifz", "repeat"] as const).map((kind, kindIdx) => (
-                      <TableRow key={`${r.student_id}-${kind}`} hover sx={{ bgcolor: idx % 2 === 1 ? "action.hover" : undefined }}>
-                        <TableCell sx={{ whiteSpace: "nowrap" }}>{kindIdx === 0 ? r.full_name : ""}</TableCell>
+                      <TableRow
+                        key={`${r.student_id}-${kind}`}
+                        hover
+                        sx={{
+                          bgcolor: r.attendance_status ? ATTENDANCE_ROW_TINT[r.attendance_status] : undefined,
+                          "& > td": kindIdx === 1 ? { borderBottomWidth: 2 } : undefined,
+                        }}
+                      >
+                        {kindIdx === 0 && (
+                          <>
+                            <TableCell rowSpan={2} sx={{ whiteSpace: "nowrap", verticalAlign: "top" }}>
+                              {r.full_name}
+                            </TableCell>
+                            <TableCell rowSpan={2} sx={{ verticalAlign: "top" }}>
+                              <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
+                              <TextField
+                                size="small"
+                                placeholder={t("journal.col_lesson_comment")}
+                                value={r.attendance_comment ?? ""}
+                                onChange={(e) => setAttendanceComment(r.student_id, e.target.value)}
+                                sx={{ display: "block", mt: 1, minWidth: 140 }}
+                              />
+                            </TableCell>
+                          </>
+                        )}
                         <TableCell sx={{ whiteSpace: "nowrap" }}>
                           <Chip
                             size="small"
@@ -394,6 +470,8 @@ export default function HifzJournalPage() {
           >
             {isDirty ? t("hifz.save_all") : t("hifz.saved")}
           </Button>
+            </>
+          )}
         </>
       )}
 

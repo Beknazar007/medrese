@@ -5,8 +5,10 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from app.models.enums import GroupType, HifzKind
+from app.models.enums import AttendanceStatus, GroupType, HifzKind
 from app.schemas.hifz import HifzRecordUpsert, HifzTargetCreate
+from app.schemas.journal import AttendanceUpsert
+from app.schemas.journal import AttendanceUpsert
 from app.services import hifz as hifz_service
 from app.services import journal as journal_service
 from app.services import monitoring as monitoring_service
@@ -302,3 +304,63 @@ def test_opening_a_scheduled_hafiz_class_creates_a_session_that_counts_in_monito
     assert rows[0].expected_lessons == 4
     assert rows[0].conducted_lessons == 1
     assert rows[0].missed_lessons == 3
+
+
+def test_hafiz_attendance_is_stored_on_the_lesson_session_like_a_regular_class(db: Session):
+    """Attendance in the hifz journal uses the same AttendanceRecord rows as the regular
+    journal, so it shows up in monitoring/reports exactly like a regular class's."""
+    department = make_department(db)
+    teacher = make_teacher(db, department)
+    subject = make_subject(db, department)
+    group = make_group(db, department, group_type=GroupType.HAFIZ)
+    semester = make_semester(db)
+    assignment = make_assignment(db, teacher, subject, group, semester)
+    entry = make_schedule_entry(db, assignment, make_room(db), make_time_slot(db))  # Monday
+    aisha = make_student(db, group, full_name="Aisha")
+    make_student(db, group, full_name="Bilal")
+
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
+    journal_service.upsert_attendance(
+        db, session=session, records=[AttendanceUpsert(student_id=aisha.id, status=AttendanceStatus.LATE, comment="10 min")]
+    )
+    db.flush()
+
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7), session_id=session.id)
+    by_name = {r.full_name: r for r in roster}
+    assert by_name["Aisha"].attendance_status == AttendanceStatus.LATE
+    assert by_name["Aisha"].attendance_comment == "10 min"
+    assert by_name["Bilal"].attendance_status is None
+
+    # Without a session the roster still works, just with no attendance filled in.
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7))
+    assert all(r.attendance_status is None for r in roster)
+
+
+def test_hifz_roster_shows_attendance_marked_for_the_lesson(db: Session):
+    """The hifz journal takes attendance exactly like the regular journal — same
+    AttendanceRecord rows on the same LessonSession — and the roster reports it back."""
+    department = make_department(db)
+    teacher = make_teacher(db, department)
+    subject = make_subject(db, department)
+    group = make_group(db, department, group_type=GroupType.HAFIZ)
+    semester = make_semester(db)
+    assignment = make_assignment(db, teacher, subject, group, semester)
+    entry = make_schedule_entry(db, assignment, make_room(db), make_time_slot(db))  # Monday
+    aisha = make_student(db, group, full_name="Aisha")
+    make_student(db, group, full_name="Bakyt")
+
+    session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=date(2026, 9, 7), today=date(2026, 9, 7), now=datetime(2026, 9, 7, 8, 30, tzinfo=BISHKEK_TZ))
+    journal_service.upsert_attendance(
+        db, session=session, records=[AttendanceUpsert(student_id=aisha.id, status=AttendanceStatus.LATE, comment="10 min")]
+    )
+    db.flush()
+
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7), session_id=session.id)
+    by_name = {r.full_name: r for r in roster}
+    assert by_name["Aisha"].attendance_status == AttendanceStatus.LATE
+    assert by_name["Aisha"].attendance_comment == "10 min"
+    assert by_name["Bakyt"].attendance_status is None
+
+    # Without a session (e.g. just browsing records) attendance is simply not reported.
+    roster = hifz_service.roster_for_group_date(db, group_id=group.id, on_date=date(2026, 9, 7))
+    assert all(r.attendance_status is None for r in roster)

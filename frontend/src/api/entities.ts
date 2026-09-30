@@ -178,6 +178,11 @@ export const hifzApi = {
     (await api.post<HifzSessionDetail>("/hifz/sessions", { schedule_entry_id, date })).data,
   checkOut: async (sessionId: number): Promise<LessonSession> =>
     (await api.put<LessonSession>(`/hifz/sessions/${sessionId}/check-out`)).data,
+  putAttendance: async (
+    sessionId: number,
+    records: { student_id: number; status: AttendanceStatus; comment: string | null }[],
+  ): Promise<HifzSessionDetail> =>
+    (await api.put<HifzSessionDetail>(`/hifz/sessions/${sessionId}/attendance`, { records })).data,
   putRecords: async (
     group_id: number,
     date: string,

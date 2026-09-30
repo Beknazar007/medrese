@@ -27,7 +27,7 @@ from app.schemas.hifz import (
     HifzTargetOut,
     HifzTargetUpdate,
 )
-from app.schemas.journal import LessonSessionOut, SessionGetOrCreate
+from app.schemas.journal import BulkAttendanceRequest, LessonSessionOut, SessionGetOrCreate
 from app.services import hifz as hifz_service
 from app.services import journal as journal_service
 
@@ -93,7 +93,33 @@ def get_or_create_hifz_session(
         raise HTTPException(status_code=400, detail="A lesson can only be opened during its scheduled date and time") from exc
     db.commit()
     db.refresh(session)
-    roster = hifz_service.roster_for_group_date(db, group_id=entry.group_id, on_date=payload.date)
+    roster = hifz_service.roster_for_group_date(
+        db, group_id=entry.group_id, on_date=payload.date, session_id=session.id
+    )
+    return HifzSessionDetailOut(session=LessonSessionOut.model_validate(session), roster=roster)
+
+
+@router.put("/sessions/{session_id}/attendance", response_model=HifzSessionDetailOut)
+def put_hifz_attendance(
+    session_id: int,
+    payload: BulkAttendanceRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.TEACHER)),
+) -> HifzSessionDetailOut:
+    session = db.get(LessonSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    entry = session.schedule_entry
+    _assert_can_access_hifz_entry(db, current_user, entry)
+
+    group_student_ids = set(db.scalars(select(Student.id).where(Student.group_id == entry.group_id)).all())
+    stray = sorted({r.student_id for r in payload.records} - group_student_ids)
+    if stray:
+        raise HTTPException(status_code=400, detail=f"Student(s) {stray} are not in group {entry.group_id}")
+
+    journal_service.upsert_attendance(db, session=session, records=payload.records)
+    db.commit()
+    roster = hifz_service.roster_for_group_date(db, group_id=entry.group_id, on_date=session.date, session_id=session.id)
     return HifzSessionDetailOut(session=LessonSessionOut.model_validate(session), roster=roster)
 
 

@@ -2,7 +2,7 @@ from datetime import date as DateType
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.models.enums import HifzKind
+from app.models.enums import AttendanceStatus, HifzKind
 from app.schemas.journal import LessonSessionOut
 
 
@@ -171,6 +171,8 @@ class HifzRosterStudentOut(BaseModel):
     student_number: str | None
     hifz: HifzRecordDetail
     repeat: HifzRecordDetail
+    attendance_status: AttendanceStatus | None = None
+    attendance_comment: str | None = None
 
 
 class HifzSessionDetailOut(BaseModel):

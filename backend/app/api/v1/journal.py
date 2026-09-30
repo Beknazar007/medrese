@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import assert_department_access, get_current_user, require_role
 from app.db.session import get_db
 from app.models.assignment import TeachingAssignment
-from app.models.enums import UserRole
+from app.models.enums import GroupType, UserRole
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
@@ -50,6 +50,10 @@ def get_or_create_session(
     if entry is None:
         raise HTTPException(status_code=404, detail="Schedule entry not found")
     _assert_can_access_entry(db, current_user, entry)
+    if entry.assignment.group.group_type == GroupType.HAFIZ:
+        # Hafiz classes are run from the hifz journal, which records memorization alongside
+        # attendance — opening them here too would split one lesson across two journals.
+        raise HTTPException(status_code=400, detail="This is a hafiz class — open it in the hifz journal")
 
     try:
         session = journal_service.get_or_create_session(db, schedule_entry=entry, on_date=payload.date)

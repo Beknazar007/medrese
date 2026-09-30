@@ -34,9 +34,11 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { hifzApi, scheduleApi } from "./api/entities";
 import ChangePasswordDialog from "./components/ChangePasswordDialog";
 import { useAuth } from "./context/AuthContext";
 import { useConfirm } from "./context/ConfirmContext";
@@ -64,6 +66,18 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // A teacher only sees the journal(s) they actually use: the hifz journal for hafiz groups,
+  // "my class" for everything else. Until both lists load, show both rather than flicker.
+  const isTeacher = user?.role === "TEACHER";
+  const { data: myHifzGroups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups(), enabled: isTeacher });
+  const { data: myEntries } = useQuery({ queryKey: ["schedule", "mine"], queryFn: () => scheduleApi.list(), enabled: isTeacher });
+  const teachersLoaded = Boolean(myHifzGroups && myEntries);
+  const hasHifzClasses = !teachersLoaded || (myHifzGroups ?? []).length > 0;
+  const hasRegularClasses =
+    !teachersLoaded ||
+    (myEntries ?? []).some((e) => !(myHifzGroups ?? []).some((g) => g.id === e.group_id)) ||
+    (myHifzGroups ?? []).length === 0;
 
   useEffect(() => {
     if (user?.id != null) {
@@ -120,10 +134,8 @@ export default function Layout() {
 
   const scheduleItems: NavItem[] = [];
   if (user?.role === "TEACHER") {
-    scheduleItems.push(
-      { to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> },
-      { to: "/hifz-journal", label: t("nav.hifz_journal"), icon: <MenuBookIcon /> },
-    );
+    if (hasRegularClasses) scheduleItems.push({ to: "/my-class", label: t("nav.my_class"), icon: <ClassIcon /> });
+    if (hasHifzClasses) scheduleItems.push({ to: "/hifz-journal", label: t("nav.hifz_journal"), icon: <MenuBookIcon /> });
   }
   scheduleItems.push({ to: "/schedule", label: t("nav.schedule"), icon: <EventNoteIcon /> });
   if (user?.role === "RECTOR") {
