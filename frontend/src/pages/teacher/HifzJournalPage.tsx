@@ -56,10 +56,6 @@ function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function hasAnyValue(d: HifzRecordDetail): boolean {
-  return d.score !== null || d.juz !== null || d.page_from !== null || d.page_to !== null || Boolean(d.comment);
-}
-
 type HifzTab = "lesson" | "journal" | "assignments";
 
 export default function HifzJournalPage() {
@@ -167,11 +163,19 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
   // Why the chosen lesson couldn't be opened (e.g. its time is over) — shown persistently,
   // otherwise the teacher just sees an empty page and thinks the group is gone.
   const [openError, setOpenError] = useState<string | null>(null);
-  const savedSnapshot = useRef<string>("[]");
   const autoLoadedOnce = useRef(false);
 
-  const isDirty = JSON.stringify(roster) !== savedSnapshot.current;
-  const selectedGroupId = entries?.find((e) => e.id === selectedEntryId)?.group_id;
+  // Autosave: every cell is saved on its own shortly after the teacher stops typing (and at
+  // once on blur), so nothing is lost on a page reload and a save never overwrites the whole
+  // roster. rosterRef/sessionDateRef let the delayed save read the latest values.
+  const rosterRef = useRef<HifzRosterStudent[]>([]);
+  rosterRef.current = roster;
+  const sessionDateRef = useRef<string | null>(null);
+  const pendingSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // Saves of the same cell run one after another, so an older value can never land last.
+  const saveChains = useRef(new Map<string, Promise<unknown>>());
+  const [inFlight, setInFlight] = useState(0);
+  const [failedKeys, setFailedKeys] = useState<Set<string>>(new Set());
 
   // Comfort win: open today's hafiz class automatically, same as the regular journal.
   useEffect(() => {
@@ -195,7 +199,8 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
         checkedOutAt: detail.session.teacher_checked_out_at,
       });
       setRoster(detail.roster);
-      savedSnapshot.current = JSON.stringify(detail.roster);
+      sessionDateRef.current = detail.session.date;
+      setFailedKeys(new Set());
     },
     onError: (err) => setOpenError(apiErrorMessage(err, t("hifz.save_failed"), t)),
   });
@@ -221,86 +226,150 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
     checkOutMutation.mutate();
   }
 
-  function confirmDiscardIfDirty(): boolean {
-    if (!isDirty) return true;
-    return window.confirm(t("hifz.unsaved_confirm"));
+  async function track<R>(key: string, work: () => Promise<R>): Promise<R | undefined> {
+    setInFlight((n) => n + 1);
+    try {
+      const result = await work();
+      setFailedKeys((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      return result;
+    } catch (err) {
+      setFailedKeys((prev) => new Set(prev).add(key));
+      setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t));
+      return undefined;
+    } finally {
+      setInFlight((n) => n - 1);
+    }
+  }
+
+  function saveCell(studentId: number, kind: "hifz" | "repeat") {
+    const date = sessionDateRef.current;
+    const row = rosterRef.current.find((r) => r.student_id === studentId);
+    if (!date || !row) return;
+    const cell = row[kind];
+    const key = `${studentId}:${kind}`;
+    const previous = saveChains.current.get(key) ?? Promise.resolve();
+    const next = previous.then(() => track(key, () =>
+      hifzApi.putRecord({
+        student_id: studentId,
+        date,
+        kind: kind === "hifz" ? "HIFZ" : "REPEAT",
+        score: cell.score,
+        juz: cell.juz,
+        page_from: cell.page_from,
+        page_to: cell.page_to,
+        comment: cell.comment,
+      }),
+    ));
+    saveChains.current.set(key, next);
+  }
+
+  function scheduleSave(studentId: number, kind: "hifz" | "repeat", delayMs = 700) {
+    const key = `${studentId}:${kind}`;
+    clearTimeout(pendingSaves.current.get(key));
+    pendingSaves.current.set(
+      key,
+      setTimeout(() => {
+        pendingSaves.current.delete(key);
+        saveCell(studentId, kind);
+      }, delayMs),
+    );
+  }
+
+  function flushSave(studentId: number, kind: "hifz" | "repeat") {
+    const key = `${studentId}:${kind}`;
+    if (!pendingSaves.current.has(key)) return;
+    clearTimeout(pendingSaves.current.get(key));
+    pendingSaves.current.delete(key);
+    saveCell(studentId, kind);
+  }
+
+  function flushAllSaves() {
+    for (const key of [...pendingSaves.current.keys()]) {
+      const [id, kind] = key.split(":");
+      flushSave(Number(id), kind as "hifz" | "repeat");
+    }
+  }
+
+  // Leaving or reloading the page sends whatever is still waiting for its delay.
+  useEffect(() => {
+    const onHide = () => flushAllSaves();
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flushAllSaves();
+    };
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      flushAllSaves();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function saveAttendance(records: { student_id: number; status: AttendanceStatus; comment: string | null }[]) {
+    if (!sessionId || records.length === 0) return;
+    void track("attendance", () => hifzApi.putAttendance(sessionId, records));
+  }
+
+  function resetSession() {
+    flushAllSaves();
+    setOpenError(null);
+    setSessionId(null);
+    setSessionTimes(null);
+    setRoster([]);
+    sessionDateRef.current = null;
+    setFailedKeys(new Set());
   }
 
   function handleSelectClass(entryId: number | "") {
-    if (!confirmDiscardIfDirty()) return;
     setSelectedEntryId(entryId);
-    setOpenError(null);
-    setSessionId(null);
-    setSessionTimes(null);
-    setRoster([]);
-    savedSnapshot.current = "[]";
+    resetSession();
   }
 
   function handleSelectDate(date: string) {
-    if (!confirmDiscardIfDirty()) return;
     setSelectedDate(date);
-    setOpenError(null);
-    setSessionId(null);
-    setSessionTimes(null);
-    setRoster([]);
-    savedSnapshot.current = "[]";
+    resetSession();
   }
 
-  const saveAllMutation = useMutation({
-    mutationFn: async () => {
-      // A (student, kind) pair is only worth omitting if it never had a value — once a
-      // record exists server-side, it must keep being sent even when cleared back to empty,
-      // or clearing it in the UI would silently fail to clear it in the database.
-      const original: HifzRosterStudent[] = JSON.parse(savedSnapshot.current);
-      const hadValue = (studentId: number, kind: "hifz" | "repeat") =>
-        hasAnyValue(original.find((o) => o.student_id === studentId)?.[kind] ?? { score: null, juz: null, page_from: null, page_to: null, comment: null });
-
-      const records = roster.flatMap((r) => {
-        const rows: ({ student_id: number; kind: HifzKind } & HifzRecordDetail)[] = [];
-        if (hasAnyValue(r.hifz) || hadValue(r.student_id, "hifz")) rows.push({ student_id: r.student_id, kind: "HIFZ", ...r.hifz });
-        if (hasAnyValue(r.repeat) || hadValue(r.student_id, "repeat")) rows.push({ student_id: r.student_id, kind: "REPEAT", ...r.repeat });
-        return rows;
-      });
-      await hifzApi.putRecords(Number(selectedGroupId), selectedDate, records);
-      // Saved last because only the session-scoped response carries attendance back.
-      const detail = await hifzApi.putAttendance(
-        sessionId!,
-        roster
+  function retryFailed() {
+    for (const key of failedKeys) {
+      const [id, kind] = key.split(":");
+      if (kind === "hifz" || kind === "repeat") saveCell(Number(id), kind);
+    }
+    if (failedKeys.has("attendance")) {
+      saveAttendance(
+        rosterRef.current
           .filter((r) => r.attendance_status !== null)
-          .map((r) => ({
-            student_id: r.student_id,
-            status: r.attendance_status as AttendanceStatus,
-            comment: r.attendance_comment,
-          })),
+          .map((r) => ({ student_id: r.student_id, status: r.attendance_status as AttendanceStatus, comment: r.attendance_comment })),
       );
-      return detail.roster;
-    },
-    onSuccess: (updated) => {
-      setRoster(updated);
-      savedSnapshot.current = JSON.stringify(updated);
-      setSnackbar(t("hifz.saved"));
-    },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("hifz.save_failed"), t)),
-  });
-
-  async function handleSaveAll() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    saveAllMutation.mutate();
+    }
   }
 
   function updateRecord(studentId: number, kind: "hifz" | "repeat", patch: Partial<HifzRecordDetail>) {
-    setRoster((prev) =>
-      prev.map((r) => (r.student_id === studentId ? { ...r, [kind]: { ...r[kind], ...patch } } : r)),
+    const next = rosterRef.current.map((r) =>
+      r.student_id === studentId ? { ...r, [kind]: { ...r[kind], ...patch } } : r,
     );
+    rosterRef.current = next;
+    setRoster(next);
+    scheduleSave(studentId, kind);
   }
 
   function setAttendance(studentId: number, status: AttendanceStatus | null) {
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
+    const row = rosterRef.current.find((r) => r.student_id === studentId);
+    if (status && row) saveAttendance([{ student_id: studentId, status, comment: row.attendance_comment }]);
   }
 
   function markAllPresent() {
     setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
+    saveAttendance(
+      rosterRef.current.map((r) => ({ student_id: r.student_id, status: "PRESENT" as AttendanceStatus, comment: r.attendance_comment })),
+    );
   }
 
   const attendanceCounts = useMemo(() => countAttendance(roster.map((r) => r.attendance_status)), [roster]);
@@ -458,6 +527,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             size="small"
                             value={r[kind].score ?? ""}
                             onChange={(e) => updateRecord(r.student_id, kind, { score: numberOrNull(e.target.value) })}
+                            onBlur={() => flushSave(r.student_id, kind)}
                             slotProps={{ htmlInput: { min: 0, max: 100 } }}
                             sx={{ width: 80 }}
                           />
@@ -468,6 +538,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             size="small"
                             value={r[kind].juz ?? ""}
                             onChange={(e) => updateRecord(r.student_id, kind, { juz: numberOrNull(e.target.value) })}
+                            onBlur={() => flushSave(r.student_id, kind)}
                             slotProps={{ htmlInput: { min: 1, max: 30 } }}
                             sx={{ width: 70 }}
                           />
@@ -480,6 +551,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             onChange={(e) =>
                               updateRecord(r.student_id, kind, { page_from: numberOrNull(e.target.value) })
                             }
+                            onBlur={() => flushSave(r.student_id, kind)}
                             slotProps={{ htmlInput: { min: 1, max: 604 } }}
                             sx={{ width: 80 }}
                           />
@@ -492,6 +564,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             onChange={(e) =>
                               updateRecord(r.student_id, kind, { page_to: numberOrNull(e.target.value) })
                             }
+                            onBlur={() => flushSave(r.student_id, kind)}
                             slotProps={{ htmlInput: { min: 1, max: 604 } }}
                             sx={{ width: 80 }}
                           />
@@ -503,6 +576,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                             onChange={(e) =>
                               updateRecord(r.student_id, kind, { comment: e.target.value === "" ? null : e.target.value })
                             }
+                            onBlur={() => flushSave(r.student_id, kind)}
                             sx={{ minWidth: 160 }}
                           />
                         </TableCell>
@@ -534,14 +608,22 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
             </Table>
           </TableContainer>
 
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => handleSaveAll()}
-            disabled={saveAllMutation.isPending || !isDirty}
-          >
-            {isDirty ? t("hifz.save_all") : t("hifz.saved")}
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+            {failedKeys.size > 0 ? (
+              <>
+                <Typography variant="body2" color="error">
+                  {t("hifz.autosave_failed")}
+                </Typography>
+                <Button size="small" variant="outlined" color="error" onClick={retryFailed}>
+                  {t("hifz.autosave_retry")}
+                </Button>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {inFlight > 0 ? t("hifz.autosave_saving") : t("hifz.autosave_hint")}
+              </Typography>
+            )}
+          </Box>
             </>
           )}
         </>

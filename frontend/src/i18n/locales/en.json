@@ -441,7 +441,11 @@
     "card_status_upcoming": "Upcoming",
     "card_status_done": "Finished",
     "open_group_journal": "Open group journal",
-    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. Check-in and attendance can only be recorded then. Hifz marks for any day go in the Journal tab."
+    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. Check-in and attendance can only be recorded then. Hifz marks for any day go in the Journal tab.",
+    "autosave_hint": "✓ All changes are saved automatically",
+    "autosave_saving": "Saving…",
+    "autosave_failed": "Some changes were not saved",
+    "autosave_retry": "Retry saving"
   },
   "password": {
     "dialog_title": "Change password",
