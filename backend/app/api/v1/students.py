@@ -1,18 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import accessible_department_ids, assert_department_access, get_current_user, require_role
 from app.db.session import get_db
 from app.models.assignment import TeachingAssignment
+from app.models.attendance import AttendanceRecord
 from app.models.enums import UserRole
+from app.models.grade import GradeRecord
 from app.models.group import Group
+from app.models.hifz import HifzExam, HifzRecord, HifzTarget
+from app.models.note import StudentNote
 from app.models.student import Student
 from app.models.teacher import TeacherProfile
 from app.models.user import User
 from app.schemas.journal import StudentHistoryRow
-from app.schemas.student import StudentCreate, StudentOut, StudentUpdate
+from app.schemas.student import StudentCreate, StudentOut, StudentRecordCounts, StudentUpdate
 from app.services import journal as journal_service
 
 router = APIRouter(prefix="/students", tags=["students"])
@@ -134,16 +138,47 @@ def update_student(
     return student
 
 
-@router.delete("/{student_id}", status_code=204)
-def delete_student(
+def _count(db: Session, model: type, student_id: int) -> int:
+    return db.scalar(select(func.count()).select_from(model).where(model.student_id == student_id)) or 0
+
+
+@router.get("/{student_id}/record-counts", response_model=StudentRecordCounts)
+def student_record_counts(
     student_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.RECTOR, UserRole.DEAN)),
-) -> None:
+) -> StudentRecordCounts:
     student = db.get(Student, student_id)
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found")
     assert_department_access(current_user, student.group.department_id)
+    return StudentRecordCounts(
+        attendance=_count(db, AttendanceRecord, student_id),
+        grades=_count(db, GradeRecord, student_id),
+        notes=_count(db, StudentNote, student_id),
+        hifz=sum(_count(db, m, student_id) for m in (HifzRecord, HifzTarget, HifzExam)),
+    )
+
+
+@router.delete("/{student_id}", status_code=204)
+def delete_student(
+    student_id: int,
+    force: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(UserRole.RECTOR, UserRole.DEAN)),
+) -> None:
+    """With force=True, also permanently deletes the student's attendance, grades, notes and
+    hifz records. Without it, a student with any such records is left alone — deactivating
+    (is_active=false) is the way to keep the history.
+    """
+    student = db.get(Student, student_id)
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    assert_department_access(current_user, student.group.department_id)
+    if force:
+        for model in (AttendanceRecord, GradeRecord, StudentNote, HifzRecord, HifzTarget, HifzExam):
+            db.execute(delete(model).where(model.student_id == student_id))
+        db.expire(student)
     db.delete(student)
     try:
         db.commit()

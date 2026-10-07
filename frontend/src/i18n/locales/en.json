@@ -61,6 +61,8 @@
     "search": "Search...",
     "no_search_results": "No results for this search.",
     "close": "Close",
+    "edit": "Edit",
+    "force_remove_label": "Delete anyway",
     "remove": "Remove",
     "error": "Error"
   },
@@ -259,7 +261,8 @@
     "subject_missed": "Missed",
     "subject_exam_count": "Exams",
     "exam_label": "Exam",
-    "notes_title": "Teacher comments"
+    "notes_title": "Teacher comments",
+    "force_remove_confirm": "This student has records: attendance {{attendance}}, grades {{grades}}, teacher notes {{notes}}, hifz {{hifz}}. Deleting the student will permanently erase all of them. This cannot be undone. To keep the history, turn off \"Active\" instead."
   },
   "journal": {
     "title": "Class journal",

@@ -49,3 +49,12 @@ class StudentOut(BaseModel):
     bio: str | None
 
     model_config = {"from_attributes": True}
+
+
+class StudentRecordCounts(BaseModel):
+    """What a forced delete would erase along with the student."""
+
+    attendance: int
+    grades: int
+    notes: int
+    hifz: int

@@ -31,6 +31,10 @@ export default function StudentsPage() {
         canEdit={canWrite}
         canDelete={canWrite}
         onRowClick={(row) => setProfileStudentId(row.id)}
+        forceDelete={{
+          confirmMessage: async (id) => t("students.force_remove_confirm", await studentsApi.recordCounts(id)),
+          remove: studentsApi.forceRemove,
+        }}
         extraToolbar={
           <TextField
             select

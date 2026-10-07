@@ -138,6 +138,11 @@ export const studentsApi = {
   get: async (id: number): Promise<Student> => (await api.get<Student>(`/students/${id}`)).data,
   history: async (id: number): Promise<StudentHistoryRow[]> =>
     (await api.get<StudentHistoryRow[]>(`/students/${id}/history`)).data,
+  recordCounts: async (id: number): Promise<{ attendance: number; grades: number; notes: number; hifz: number }> =>
+    (await api.get(`/students/${id}/record-counts`)).data,
+  forceRemove: async (id: number): Promise<void> => {
+    await api.delete(`/students/${id}`, { params: { force: true } });
+  },
 };
 
 export const journalApi = {

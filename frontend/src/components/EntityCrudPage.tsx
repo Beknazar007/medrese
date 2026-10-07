@@ -30,6 +30,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../context/ConfirmContext";
@@ -95,6 +96,12 @@ interface Props<T extends { id: number }> {
   searchPlaceholder?: string;
   /** When set, clicking a row calls this instead of opening the edit dialog (e.g. a read-only detail view). Edit/delete icon buttons keep working independently. */
   onRowClick?: (row: T) => void;
+  /** When a plain delete is refused (409 — the row still has dependent records), ask a second,
+   *  destructive confirmation with this message and, if accepted, delete via `remove`. */
+  forceDelete?: {
+    confirmMessage: (id: number) => Promise<string>;
+    remove: (id: number) => Promise<void>;
+  };
 }
 
 export default function EntityCrudPage<T extends { id: number }>({
@@ -112,6 +119,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   emptyHint,
   searchPlaceholder,
   onRowClick,
+  forceDelete,
 }: Props<T>) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -180,12 +188,37 @@ export default function EntityCrudPage<T extends { id: number }>({
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.remove!(id),
+    onError: async (err, id) => {
+      setPendingDeleteId(null);
+      if (forceDelete && axios.isAxiosError(err) && err.response?.status === 409) {
+        try {
+          const ok = await confirm({
+            message: await forceDelete.confirmMessage(id),
+            destructive: true,
+            confirmLabel: t("common.force_remove_label"),
+          });
+          if (ok) forceDeleteMutation.mutate(id);
+        } catch (countErr) {
+          setSnackbar(apiErrorMessage(countErr, t("common.failed_to_delete"), t));
+        }
+        return;
+      }
+      setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"), t));
+    },
+    onSuccess: () => {
+      invalidate();
+      setSnackbar(t("common.deleted"));
+      setPendingDeleteId(null);
+    },
+  });
+
+  const forceDeleteMutation = useMutation({
+    mutationFn: (id: number) => forceDelete!.remove(id),
     onSuccess: () => {
       invalidate();
       setSnackbar(t("common.deleted"));
     },
     onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"), t)),
-    onSettled: () => setPendingDeleteId(null),
   });
 
   async function handleSubmit() {
@@ -285,35 +318,49 @@ export default function EntityCrudPage<T extends { id: number }>({
                     key={row.id}
                     variant="outlined"
                     onClick={rowIsClickable ? handleRowClick : undefined}
-                    sx={{ p: 1.5, display: "flex", gap: 1.5, alignItems: "flex-start", cursor: rowIsClickable ? "pointer" : undefined }}
+                    sx={{ p: 1.5, cursor: rowIsClickable ? "pointer" : undefined }}
                   >
-                    {unlabeled.map((col) => (
-                      <Box key={col.key} sx={{ flexShrink: 0 }}>
-                        {cell(col)}
-                      </Box>
-                    ))}
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      {titleCol && <Box sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{cell(titleCol)}</Box>}
-                      {restCols.map((col) => (
-                        <Box key={col.key} sx={{ fontSize: 13, color: "text.secondary", mt: 0.25, overflowWrap: "anywhere" }}>
-                          {col.label}:{" "}
-                          <Box component="span" sx={{ color: "text.primary" }}>
-                            {cell(col)}
-                          </Box>
+                    <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                      {unlabeled.map((col) => (
+                        <Box key={col.key} sx={{ flexShrink: 0 }}>
+                          {cell(col)}
                         </Box>
                       ))}
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        {titleCol && <Box sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{cell(titleCol)}</Box>}
+                        {restCols.map((col) => (
+                          <Box key={col.key} sx={{ fontSize: 13, color: "text.secondary", mt: 0.25, overflowWrap: "anywhere" }}>
+                            {col.label}:{" "}
+                            <Box component="span" sx={{ color: "text.primary" }}>
+                              {cell(col)}
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
                     </Box>
-                    {(canEdit || canDelete) && (
-                      <Box sx={{ display: "flex", flexShrink: 0 }}>
+                    {/* Labeled, thumb-sized buttons along the bottom instead of tiny icons in the corner. */}
+                    {((canEdit && api.update) || (canDelete && api.remove)) && (
+                      <Box sx={{ display: "flex", gap: 1, mt: 1.5, pt: 1.5, borderTop: 1, borderColor: "divider" }}>
                         {canEdit && api.update && (
-                          <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
+                          <Button
+                            variant="outlined"
+                            startIcon={<EditIcon />}
+                            sx={{ flex: 1, minHeight: 48, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 26 } }}
+                            onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                          >
+                            {t("common.edit")}
+                          </Button>
                         )}
                         {canDelete && api.remove && (
-                          <IconButton size="small" onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}>
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            sx={{ flex: 1, minHeight: 48, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 26 } }}
+                            onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}
+                          >
+                            {t("common.remove")}
+                          </Button>
                         )}
                       </Box>
                     )}
