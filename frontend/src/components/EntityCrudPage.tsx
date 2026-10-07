@@ -245,20 +245,68 @@ export default function EntityCrudPage<T extends { id: number }>({
 
   const busy = createMutation.isPending || updateMutation.isPending;
 
+  const hasRows = Boolean(data && data.length > 0);
+
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, gap: 1, flexWrap: "wrap" }}>
-        <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
-          {title}
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          {extraToolbar}
-          {canCreate && api.create && (
-            <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-              {t("common.add")}
-            </Button>
-          )}
+      {/* On phones the title, filters, add button and search stay pinned under the app bar,
+          so changing the group or searching doesn't require scrolling back to the top. */}
+      <Box
+        sx={{
+          position: { xs: "sticky", sm: "static" },
+          top: { xs: "calc(56px + env(safe-area-inset-top))", sm: "auto" },
+          zIndex: 2,
+          bgcolor: "background.default",
+          mx: { xs: -2, sm: 0 },
+          px: { xs: 2, sm: 0 },
+          pt: { xs: 1, sm: 0 },
+          pb: { xs: 1, sm: 0 },
+          mb: { xs: 1.5, sm: 0 },
+          borderBottom: { xs: 1, sm: 0 },
+          borderColor: "divider",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: { xs: 1, sm: 2 }, gap: 1, flexWrap: "wrap" }}>
+          <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+            {title}
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              flexWrap: { xs: "nowrap", sm: "wrap" },
+              width: { xs: "100%", sm: "auto" },
+              "& > :first-of-type:not(:only-child)": { flex: { xs: 1, sm: "initial" }, minWidth: { xs: 0, sm: undefined } },
+            }}
+          >
+            {extraToolbar}
+            {canCreate && api.create && (
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate} sx={{ flexShrink: 0 }}>
+                {t("common.add")}
+              </Button>
+            )}
+          </Box>
         </Box>
+
+        {hasRows && (
+          <TextField
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={searchPlaceholder ?? t("common.search")}
+            sx={{ mb: { xs: 0, sm: 1.5 }, maxWidth: { xs: "none", sm: 320 } }}
+            fullWidth
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        )}
       </Box>
 
       {error && <Alert severity="error">{t("common.failed_to_load")}</Alert>}
@@ -277,26 +325,8 @@ export default function EntityCrudPage<T extends { id: number }>({
         </Alert>
       )}
 
-      {data && data.length > 0 && (
+      {hasRows && (
         <>
-          <TextField
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={searchPlaceholder ?? t("common.search")}
-            sx={{ mb: 1.5, maxWidth: 320 }}
-            fullWidth
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              },
-            }}
-          />
-
           {filteredData && filteredData.length === 0 && (
             <Alert severity="info" sx={{ mb: 2 }}>
               {t("common.no_search_results")}

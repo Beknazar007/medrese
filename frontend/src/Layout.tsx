@@ -276,7 +276,7 @@ export default function Layout() {
           p: { xs: 2, sm: 3 },
           width: { xs: "100%", md: `calc(100% - ${DRAWER_WIDTH}px)` },
           maxWidth: "100%",
-          overflowX: "hidden",
+          overflowX: "clip",
         }}
       >
         <Toolbar sx={{ pt: "env(safe-area-inset-top)" }} />
