@@ -31,6 +31,7 @@ class RosterStudentOut(BaseModel):
     student_number: str | None
     attendance_status: AttendanceStatus | None
     attendance_comment: str | None
+    excuse_reason: str | None = None
     score: int | None
 
 

@@ -13,7 +13,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import RepeatIcon from "@mui/icons-material/Repeat";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { hifzApi } from "../../api/entities";
 import type { HifzKind, HifzRecord, HifzTarget } from "../../api/types";
@@ -79,36 +79,106 @@ export default function HifzDayDialog({
 
   const hasAnyRecord = Boolean(records.HIFZ || records.REPEAT);
 
-  function update(k: HifzKind, patch: Partial<KindForm>) {
-    setForm((prev) => ({ ...prev, [k]: { ...prev[k], ...patch } }));
+  // Autosave: each kind (hifz / repeat) is saved on its own 0.7 s after typing stops and at once
+  // on blur; closing the window waits for everything to land. Saves of a kind run in order.
+  const formRef = useRef(form);
+  formRef.current = form;
+  const timers = useRef(new Map<HifzKind, ReturnType<typeof setTimeout>>());
+  const chains = useRef(new Map<HifzKind, Promise<void>>());
+  const savedSomething = useRef(false);
+  const [inFlight, setInFlight] = useState(0);
+  const [failed, setFailed] = useState(false);
+
+  function saveKind(k: HifzKind) {
+    const f = formRef.current[k];
+    if (scoreInvalid(f.score)) return;
+    const base = { student_id: student.id, date, kind: k };
+    // Sending an empty cell deletes that kind's record on the server.
+    const payload = isFilled(f)
+      ? {
+          ...base,
+          score: numOrNull(f.score),
+          juz: numOrNull(f.juz),
+          page_from: numOrNull(f.page_from),
+          page_to: numOrNull(f.page_to),
+          comment: f.comment.trim() || null,
+        }
+      : base;
+    const next = (chains.current.get(k) ?? Promise.resolve()).then(async () => {
+      setInFlight((n) => n + 1);
+      try {
+        await hifzApi.putRecord(payload);
+        savedSomething.current = true;
+        setFailed(false);
+      } catch (err) {
+        setFailed(true);
+        onError(err);
+      } finally {
+        setInFlight((n) => n - 1);
+      }
+    });
+    chains.current.set(k, next);
   }
+
+  function flush(k: HifzKind) {
+    if (!timers.current.has(k)) return;
+    clearTimeout(timers.current.get(k));
+    timers.current.delete(k);
+    saveKind(k);
+  }
+
+  function update(k: HifzKind, patch: Partial<KindForm>) {
+    const next = { ...formRef.current, [k]: { ...formRef.current[k], ...patch } };
+    formRef.current = next;
+    setForm(next);
+    if (readOnly) return;
+    clearTimeout(timers.current.get(k));
+    timers.current.set(
+      k,
+      setTimeout(() => {
+        timers.current.delete(k);
+        saveKind(k);
+      }, 700),
+    );
+  }
+
+  async function finishAndClose() {
+    KIND_KEYS.forEach(flush);
+    await Promise.all([...chains.current.values()]);
+    if (savedSomething.current) onSaved(t("hifz.saved"));
+    else onClose();
+  }
+
+  // A reload or a switch to another app sends whatever is still waiting.
+  useEffect(() => {
+    const onHide = () => KIND_KEYS.forEach(flush);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") onHide();
+    };
+    window.addEventListener("pagehide", onHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function isFilled(f: KindForm): boolean {
     const juzCounts = f.juz.trim() !== "" && f.juz !== f.autoJuz;
     return f.score.trim() !== "" || f.page_from.trim() !== "" || f.page_to.trim() !== "" || f.comment.trim() !== "" || juzCounts;
   }
 
-  async function save(clearAll: boolean) {
+  async function handleClear() {
+    const ok = await confirm({ message: t("hifz.clear_day_confirm"), destructive: true, confirmLabel: t("hifz.clear_day") });
+    if (!ok) return;
+    for (const k of KIND_KEYS) clearTimeout(timers.current.get(k));
+    timers.current.clear();
     setSaving(true);
     try {
-      for (const k of KIND_KEYS) {
-        const f = form[k];
-        const base = { student_id: student.id, date, kind: k };
-        // Sending an empty cell deletes that kind's record on the server.
-        await hifzApi.putRecord(
-          !clearAll && isFilled(f)
-            ? {
-                ...base,
-                score: numOrNull(f.score),
-                juz: numOrNull(f.juz),
-                page_from: numOrNull(f.page_from),
-                page_to: numOrNull(f.page_to),
-                comment: f.comment.trim() || null,
-              }
-            : base,
-        );
-      }
-      onSaved(clearAll ? t("hifz.day_cleared") : t("hifz.saved"));
+      await Promise.all([...chains.current.values()]);
+      for (const k of KIND_KEYS) await hifzApi.putRecord({ student_id: student.id, date, kind: k });
+      onSaved(t("hifz.day_cleared"));
     } catch (err) {
       onError(err);
     } finally {
@@ -116,20 +186,12 @@ export default function HifzDayDialog({
     }
   }
 
-  async function handleClear() {
-    const ok = await confirm({ message: t("hifz.clear_day_confirm"), destructive: true, confirmLabel: t("hifz.clear_day") });
-    if (ok) save(true);
+  function scoreInvalid(v: string): boolean {
+    return v.trim() !== "" && (Number(v) < 0 || Number(v) > 100 || !Number.isInteger(Number(v)));
   }
-
-  async function handleSave() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (ok) save(false);
-  }
-
-  const scoreInvalid = (v: string) => v.trim() !== "" && (Number(v) < 0 || Number(v) > 100 || !Number.isInteger(Number(v)));
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
+    <Dialog open onClose={finishAndClose} maxWidth="sm" fullWidth fullScreen={isMobile}>
       <DialogTitle sx={{ pb: 0.5 }}>
         {fmtDate(date)} · {t(`days.${dayOfWeek(date)}`)}
         <Typography variant="body2" color="text.secondary">
@@ -163,6 +225,7 @@ export default function HifzDayDialog({
                   error={scoreInvalid(f.score)}
                   autoFocus={!isMobile && !readOnly && k === "HIFZ"}
                   onChange={(e) => update(k, { score: e.target.value })}
+                  onBlur={() => flush(k)}
                   slotProps={{ htmlInput: { min: 0, max: 100, step: 1 } }}
                 />
                 <TextField
@@ -172,6 +235,7 @@ export default function HifzDayDialog({
                   value={f.juz}
                   disabled={readOnly}
                   onChange={(e) => update(k, { juz: e.target.value })}
+                  onBlur={() => flush(k)}
                   slotProps={{ htmlInput: { min: 1, max: 30 } }}
                 />
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, gridColumn: { xs: "1 / -1", md: "auto" } }}>
@@ -182,6 +246,7 @@ export default function HifzDayDialog({
                     value={f.page_from}
                     disabled={readOnly}
                     onChange={(e) => update(k, { page_from: e.target.value })}
+                  onBlur={() => flush(k)}
                     slotProps={{ htmlInput: { min: 1, max: 604 } }}
                   />
                   –
@@ -192,6 +257,7 @@ export default function HifzDayDialog({
                     value={f.page_to}
                     disabled={readOnly}
                     onChange={(e) => update(k, { page_to: e.target.value })}
+                  onBlur={() => flush(k)}
                     slotProps={{ htmlInput: { min: 1, max: 604 } }}
                   />
                 </Box>
@@ -203,6 +269,7 @@ export default function HifzDayDialog({
                 value={f.comment}
                 disabled={readOnly}
                 onChange={(e) => update(k, { comment: e.target.value })}
+                  onBlur={() => flush(k)}
               />
             </Box>
           );
@@ -220,16 +287,14 @@ export default function HifzDayDialog({
             {t("hifz.clear_day")}
           </Button>
         )}
-        <Button onClick={onClose}>{readOnly ? t("common.close") : t("common.cancel")}</Button>
         {!readOnly && (
-          <Button
-            variant="contained"
-            disabled={saving || scoreInvalid(form.HIFZ.score) || scoreInvalid(form.REPEAT.score)}
-            onClick={handleSave}
-          >
-            {t("hifz.target_save")}
-          </Button>
+          <Typography variant="caption" color={failed ? "error" : "text.secondary"} sx={{ mr: "auto", alignSelf: "center" }}>
+            {failed ? t("hifz.autosave_failed") : inFlight > 0 ? t("hifz.autosave_saving") : t("hifz.autosave_hint")}
+          </Typography>
         )}
+        <Button variant={readOnly ? "text" : "contained"} disabled={saving} onClick={finishAndClose}>
+          {readOnly ? t("common.close") : t("hifz.done")}
+        </Button>
       </DialogActions>
     </Dialog>
   );

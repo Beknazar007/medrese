@@ -14,6 +14,7 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
+import EventBusyIcon from "@mui/icons-material/EventBusy";
 import {
   Alert,
   AppBar,
@@ -119,6 +120,7 @@ export default function Layout() {
     academicItems.push(
       { to: "/teachers", label: t("nav.teachers"), icon: <PeopleIcon /> },
       { to: "/students", label: t("nav.students"), icon: <SchoolIcon /> },
+      { to: "/excuses", label: t("nav.excuses"), icon: <EventBusyIcon /> },
       { to: "/subjects", label: t("nav.subjects"), icon: <MenuBookIcon /> },
       { to: "/groups", label: t("nav.groups"), icon: <GroupsIcon /> },
       { to: "/assignments", label: t("nav.assignments"), icon: <AssignmentIcon /> },

@@ -251,6 +251,7 @@ class HifzRosterStudentOut(BaseModel):
     repeat: HifzRecordDetail
     attendance_status: AttendanceStatus | None = None
     attendance_comment: str | None = None
+    excuse_reason: str | None = None
 
 
 class HifzSessionDetailOut(BaseModel):

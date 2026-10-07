@@ -244,7 +244,7 @@ export default function TeacherClassPage() {
   }
 
   function markAllPresent() {
-    setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
+    setRoster((prev) => prev.map((r) => (r.excuse_reason ? r : { ...r, attendance_status: "PRESENT" as AttendanceStatus })));
   }
 
   const attendanceCounts = useMemo(() => countAttendance(roster.map((r) => r.attendance_status)), [roster]);
@@ -391,7 +391,7 @@ export default function TeacherClassPage() {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
+                      <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
                     </TableCell>
                     {isExam && (
                       <TableCell>

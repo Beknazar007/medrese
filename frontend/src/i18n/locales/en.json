@@ -29,7 +29,8 @@
     "group_org": "Organization",
     "group_academic": "Academics",
     "group_monitoring": "Monitoring",
-    "group_schedule": "Schedule"
+    "group_schedule": "Schedule",
+    "excuses": "Excused absences"
   },
   "common": {
     "add": "Add",
@@ -264,6 +265,17 @@
     "notes_title": "Teacher comments",
     "force_remove_confirm": "This student has records: attendance {{attendance}}, grades {{grades}}, teacher notes {{notes}}, hifz {{hifz}}. Deleting the student will permanently erase all of them. This cannot be undone. To keep the history, turn off \"Active\" instead."
   },
+  "excuses": {
+    "title": "Excused absences",
+    "student": "Student",
+    "period": "Period",
+    "date_from": "From",
+    "date_to": "To",
+    "reason": "Reason",
+    "created_by": "Recorded by",
+    "empty_hint": "No excused absences yet. When a student is ill or away for a valid reason, add them here — every lesson in those days is marked \"excused\".",
+    "search": "Search by student or reason..."
+  },
   "journal": {
     "title": "Class journal",
     "select_class": "Select a class",
@@ -306,7 +318,8 @@
     "checked_out_confirm": "Mark this lesson as finished?",
     "exam_toggle": "This is an exam",
     "no_students_hint": "This group has no students yet. The lesson is marked as conducted — once students are added, attendance and grades can be recorded here.",
-    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. It can only be opened and attendance taken during that time."
+    "lesson_time_hint": "The lesson with {{group}} is scheduled {{day}} {{time}}. It can only be opened and attendance taken during that time.",
+    "excused_by_deanery": "Dean's office"
   },
   "monitoring": {
     "title": "Teacher monitoring",
@@ -445,7 +458,8 @@
     "autosave_hint": "✓ All changes are saved automatically",
     "autosave_saving": "Saving…",
     "autosave_failed": "Some changes were not saved",
-    "autosave_retry": "Retry saving"
+    "autosave_retry": "Retry saving",
+    "done": "Done"
   },
   "password": {
     "dialog_title": "Change password",

@@ -1,4 +1,4 @@
-import { ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { Box, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import type { AttendanceStatus } from "../api/types";
 
@@ -36,13 +36,22 @@ export function countAttendance(statuses: (AttendanceStatus | null)[]): Record<A
 export default function AttendanceToggle({
   value,
   onChange,
+  excuseReason,
 }: {
   value: AttendanceStatus | null;
   onChange: (status: AttendanceStatus | null) => void;
+  /** Excused by the dean's office: shown locked, with the reason underneath. */
+  excuseReason?: string | null;
 }) {
   const { t } = useTranslation();
-  return (
-    <ToggleButtonGroup size="small" exclusive value={value} onChange={(_e, next) => onChange(next)}>
+  const group = (
+    <ToggleButtonGroup
+      size="small"
+      exclusive
+      value={value}
+      disabled={Boolean(excuseReason)}
+      onChange={(_e, next) => onChange(next)}
+    >
       {ATTENDANCE_OPTIONS.map((status) => (
         <ToggleButton
           key={status}
@@ -52,7 +61,7 @@ export default function AttendanceToggle({
             py: 0.3,
             fontSize: 12,
             fontWeight: 600,
-            "&.Mui-selected": {
+            "&.Mui-selected, &.Mui-selected.Mui-disabled": {
               bgcolor: ATTENDANCE_COLOR[status],
               color: "#fff",
               "&:hover": { bgcolor: ATTENDANCE_COLOR[status], opacity: 0.9 },
@@ -65,5 +74,14 @@ export default function AttendanceToggle({
         </ToggleButton>
       ))}
     </ToggleButtonGroup>
+  );
+  if (!excuseReason) return group;
+  return (
+    <Box>
+      {group}
+      <Typography variant="caption" sx={{ display: "block", color: ATTENDANCE_COLOR.EXCUSED, mt: 0.25, maxWidth: 220 }}>
+        {t("journal.excused_by_deanery")}: {excuseReason}
+      </Typography>
+    </Box>
   );
 }

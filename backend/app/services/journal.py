@@ -12,6 +12,7 @@ from app.models.schedule import ScheduleEntry
 from app.models.student import Student
 from app.models.subject import Subject
 from app.models.teacher import TeacherProfile
+from app.services import excuses as excuse_service
 from app.schemas.journal import AttendanceUpsert, GradeUpsert, RosterStudentOut, StudentHistoryRow, StudentPerformanceRow
 
 BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
@@ -66,6 +67,7 @@ def get_or_create_session(
     )
     if session is not None:
         auto_close_if_ended(session)
+        excuse_service.apply_to_session(db, session)
         return session
 
     current = now if now is not None else datetime.now(BISHKEK_TZ)
@@ -84,6 +86,7 @@ def get_or_create_session(
     )
     db.add(session)
     db.flush()
+    excuse_service.apply_to_session(db, session)
     return session
 
 
@@ -93,6 +96,10 @@ def check_out_session(session: LessonSession) -> None:
 
 def set_exam_flag(session: LessonSession, is_exam: bool) -> None:
     session.is_exam = is_exam
+
+
+def _excuse_reason(record: AttendanceRecord | None) -> str | None:
+    return record.excuse.reason if record is not None and record.excuse is not None else None
 
 
 def roster_for_session(db: Session, session: LessonSession) -> list[RosterStudentOut]:
@@ -116,6 +123,7 @@ def roster_for_session(db: Session, session: LessonSession) -> list[RosterStuden
             student_number=s.student_number,
             attendance_status=attendance_by_student[s.id].status if s.id in attendance_by_student else None,
             attendance_comment=attendance_by_student[s.id].comment if s.id in attendance_by_student else None,
+            excuse_reason=_excuse_reason(attendance_by_student.get(s.id)),
             score=grades_by_student.get(s.id),
         )
         for s in students
@@ -128,6 +136,9 @@ def upsert_attendance(db: Session, *, session: LessonSession, records: list[Atte
         for a in db.scalars(select(AttendanceRecord).where(AttendanceRecord.session_id == session.id))
     }
     for record in records:
+        # An absence excused by the dean's office stays as it is — the teacher can't overwrite it.
+        if record.student_id in existing and existing[record.student_id].excuse_id is not None:
+            continue
         if record.student_id in existing:
             existing[record.student_id].status = record.status
             existing[record.student_id].comment = record.comment

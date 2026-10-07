@@ -16,6 +16,7 @@ import RoomsPage from "./pages/RoomsPage";
 import ScheduleGridPage from "./pages/ScheduleGridPage";
 import SemestersPage from "./pages/SemestersPage";
 import StudentsPage from "./pages/StudentsPage";
+import ExcusesPage from "./pages/ExcusesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TeachersPage from "./pages/TeachersPage";
 import TeacherMonitoringPage from "./pages/TeacherMonitoringPage";
@@ -129,6 +130,14 @@ export default function App() {
                   element={
                     <RoleRoute roles={["RECTOR", "DEAN"]}>
                       <StudentsPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/excuses"
+                  element={
+                    <RoleRoute roles={["RECTOR", "DEAN"]}>
+                      <ExcusesPage />
                     </RoleRoute>
                   }
                 />

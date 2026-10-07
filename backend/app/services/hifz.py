@@ -78,6 +78,11 @@ def roster_for_group_date(
             repeat=_detail(s.id, "REPEAT"),
             attendance_status=attendance_by_student[s.id].status if s.id in attendance_by_student else None,
             attendance_comment=attendance_by_student[s.id].comment if s.id in attendance_by_student else None,
+            excuse_reason=(
+                attendance_by_student[s.id].excuse.reason
+                if s.id in attendance_by_student and attendance_by_student[s.id].excuse is not None
+                else None
+            ),
         )
         for s in students
     ]

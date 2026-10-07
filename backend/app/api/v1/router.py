@@ -5,6 +5,7 @@ from app.api.v1 import (
     auth,
     dashboard,
     departments,
+    excuses,
     groups,
     hifz,
     journal,
@@ -35,6 +36,7 @@ api_router.include_router(assignments.router)
 api_router.include_router(schedule.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(students.router)
+api_router.include_router(excuses.router)
 api_router.include_router(journal.router)
 api_router.include_router(notes.router)
 api_router.include_router(monitoring.router)

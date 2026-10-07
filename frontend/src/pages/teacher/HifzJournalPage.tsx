@@ -366,9 +366,11 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
   }
 
   function markAllPresent() {
-    setRoster((prev) => prev.map((r) => ({ ...r, attendance_status: "PRESENT" as AttendanceStatus })));
+    setRoster((prev) => prev.map((r) => (r.excuse_reason ? r : { ...r, attendance_status: "PRESENT" as AttendanceStatus })));
     saveAttendance(
-      rosterRef.current.map((r) => ({ student_id: r.student_id, status: "PRESENT" as AttendanceStatus, comment: r.attendance_comment })),
+      rosterRef.current
+        .filter((r) => !r.excuse_reason)
+        .map((r) => ({ student_id: r.student_id, status: "PRESENT" as AttendanceStatus, comment: r.attendance_comment })),
     );
   }
 
@@ -510,7 +512,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                               {r.full_name}
                             </TableCell>
                             <TableCell rowSpan={2} sx={{ verticalAlign: "top" }}>
-                              <AttendanceToggle value={r.attendance_status} onChange={(value) => setAttendance(r.student_id, value)} />
+                              <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
                             </TableCell>
                           </>
                         )}

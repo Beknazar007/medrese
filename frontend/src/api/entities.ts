@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type {
+  Excuse,
   AttendanceStatus,
   Department,
   Group,
@@ -46,6 +47,7 @@ export const groupsApi = crud<Group>("/groups");
 export const semestersApi = crud<Semester>("/semesters");
 export const roomsApi = crud<Room>("/rooms");
 export const timeSlotsApi = crud<TimeSlot>("/timeslots");
+export const excusesApi = crud<Excuse>("/excuses");
 
 export const assignmentsApi = {
   list: async (params?: Record<string, unknown>): Promise<TeachingAssignment[]> =>

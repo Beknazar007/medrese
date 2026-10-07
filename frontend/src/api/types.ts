@@ -141,6 +141,8 @@ export interface RosterStudent {
   student_number: string | null;
   attendance_status: AttendanceStatus | null;
   attendance_comment: string | null;
+  /** Set when the dean's office excused this absence — the teacher can't change it. */
+  excuse_reason?: string | null;
   score: number | null;
 }
 
@@ -265,6 +267,7 @@ export interface HifzRosterStudent {
   repeat: HifzRecordDetail;
   attendance_status: AttendanceStatus | null;
   attendance_comment: string | null;
+  excuse_reason?: string | null;
 }
 
 export interface HifzSessionDetail {
@@ -293,4 +296,16 @@ export interface HifzJournal {
   records: HifzRecord[];
   exams: HifzExam[];
   targets: HifzTarget[];
+}
+
+export interface Excuse {
+  id: number;
+  student_id: number;
+  student_name: string;
+  group_id: number;
+  date_from: string;
+  date_to: string;
+  reason: string;
+  created_by: string | null;
+  created_at: string;
 }

@@ -14,6 +14,11 @@ class AttendanceRecord(Base):
     student_id: Mapped[int] = mapped_column(ForeignKey("students.id"), nullable=False)
     status: Mapped[AttendanceStatus] = mapped_column(Enum(AttendanceStatus, name="attendance_status"), nullable=False)
     comment: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # Set when the dean's office excused this absence — the teacher can't change such a record.
+    excuse_id: Mapped[int | None] = mapped_column(
+        ForeignKey("student_excuses.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     session: Mapped["LessonSession"] = relationship(back_populates="attendance_records")
     student: Mapped["Student"] = relationship(back_populates="attendance_records")
+    excuse: Mapped["StudentExcuse | None"] = relationship()
