@@ -52,6 +52,10 @@ function todayDayOfWeek(): number {
   return js === 0 ? 7 : js;
 }
 
+function cellHasValue(d: HifzRecordDetail): boolean {
+  return d.score !== null || d.juz !== null || d.page_from !== null || d.page_to !== null || Boolean(d.comment);
+}
+
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
@@ -111,6 +115,7 @@ export default function HifzJournalPage() {
 
 function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => void }) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const confirm = useConfirm();
 
   const { data: hifzGroups } = useQuery({ queryKey: ["hifz-groups"], queryFn: () => hifzApi.groups() });
@@ -171,7 +176,8 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
   const rosterRef = useRef<HifzRosterStudent[]>([]);
   rosterRef.current = roster;
   const sessionDateRef = useRef<string | null>(null);
-  const pendingSaves = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  // A key with an undefined timer is an emptied cell waiting for blur (see scheduleSave).
+  const pendingSaves = useRef(new Map<string, ReturnType<typeof setTimeout> | undefined>());
   // Saves of the same cell run one after another, so an older value can never land last.
   const saveChains = useRef(new Map<string, Promise<unknown>>());
   const [inFlight, setInFlight] = useState(0);
@@ -274,6 +280,13 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
     pendingSaves.current.set(
       key,
       setTimeout(() => {
+        // Backspace, a pause to find the next digit, then typing must not delete the record
+        // in between — an empty cell waits for the teacher to leave the field.
+        const cell = rosterRef.current.find((r) => r.student_id === studentId)?.[kind];
+        if (cell && !cellHasValue(cell)) {
+          pendingSaves.current.set(key, undefined);
+          return;
+        }
         pendingSaves.current.delete(key);
         saveCell(studentId, kind);
       }, delayMs),
@@ -477,6 +490,67 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
             </Box>
           </Box>
 
+          {/* Phones: one card per student. In the wide table the name column scrolled out of
+              view as soon as a score field was focused, so teachers typed into the wrong rows. */}
+          {isMobile ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
+              {roster.map((r) => (
+                <Paper
+                  key={r.student_id}
+                  variant="outlined"
+                  sx={{ p: 1.5, bgcolor: r.attendance_status ? ATTENDANCE_ROW_TINT[r.attendance_status] : undefined }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}>
+                    <Typography sx={{ fontWeight: 600, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{r.full_name}</Typography>
+                    <IconButton size="small" title={t("hifz.targets_button")} onClick={() => setTargetsStudent({ id: r.student_id, name: r.full_name })}>
+                      <AssignmentIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" title={t("hifz.exams_button")} onClick={() => setExamsStudent({ id: r.student_id, name: r.full_name })}>
+                      <SchoolIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <Box sx={{ mb: 1.25 }}>
+                    <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
+                  </Box>
+                  {(["hifz", "repeat"] as const).map((kind) => {
+                    const numField = (field: "score" | "juz" | "page_from" | "page_to", label: string, max: number) => (
+                      <TextField
+                        type="number"
+                        size="small"
+                        label={label}
+                        value={r[kind][field] ?? ""}
+                        onChange={(e) => updateRecord(r.student_id, kind, { [field]: numberOrNull(e.target.value) })}
+                        onBlur={() => flushSave(r.student_id, kind)}
+                        slotProps={{ htmlInput: { min: field === "score" ? 0 : 1, max, inputMode: "numeric" }, inputLabel: { shrink: true } }}
+                      />
+                    );
+                    return (
+                      <Box key={kind} sx={{ borderTop: 1, borderColor: "divider", pt: 1, mt: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.75, color: kind === "hifz" ? "primary.main" : "warning.dark" }}>
+                          {kind === "hifz" ? t("hifz.kind_hifz") : t("hifz.kind_repeat")}
+                        </Typography>
+                        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+                          {numField("score", t("hifz.col_score"), 100)}
+                          {numField("juz", t("hifz.col_juz"), 30)}
+                          {numField("page_from", t("hifz.col_page_from"), 604)}
+                          {numField("page_to", t("hifz.col_page_to"), 604)}
+                        </Box>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label={t("hifz.col_comment")}
+                          value={r[kind].comment ?? ""}
+                          onChange={(e) => updateRecord(r.student_id, kind, { comment: e.target.value === "" ? null : e.target.value })}
+                          onBlur={() => flushSave(r.student_id, kind)}
+                          sx={{ mt: 1 }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Paper>
+              ))}
+            </Box>
+          ) : (
           <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 2 }}>
             <Table size="small" stickyHeader>
               <TableHead>
@@ -609,6 +683,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
               </TableBody>
             </Table>
           </TableContainer>
+          )}
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
             {failedKeys.size > 0 ? (

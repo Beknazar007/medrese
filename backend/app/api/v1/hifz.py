@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -34,6 +35,8 @@ from app.schemas.hifz import (
 from app.schemas.journal import BulkAttendanceRequest, LessonSessionOut, SessionGetOrCreate
 from app.services import hifz as hifz_service
 from app.services import journal as journal_service
+
+audit_log = logging.getLogger("uvicorn.error")
 
 router = APIRouter(prefix="/hifz", tags=["hifz"])
 
@@ -256,6 +259,12 @@ def put_record(
     lesson's time window. Returns null when an all-empty payload deleted the record."""
     student = _get_student_or_404(db, payload.student_id)
     _assert_can_access_student(db, current_user, student)
+    # Audit trail in the server log: lets a lost or overwritten mark be traced and restored.
+    audit_log.info(
+        "hifz-record user=%s student=%s date=%s kind=%s score=%s juz=%s pages=%s-%s comment=%r",
+        current_user.username, payload.student_id, payload.date, payload.kind.value,
+        payload.score, payload.juz, payload.page_from, payload.page_to, payload.comment,
+    )
     record = hifz_service.put_record(db, payload=payload)
     try:
         db.commit()

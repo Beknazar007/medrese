@@ -83,7 +83,8 @@ export default function HifzDayDialog({
   // on blur; closing the window waits for everything to land. Saves of a kind run in order.
   const formRef = useRef(form);
   formRef.current = form;
-  const timers = useRef(new Map<HifzKind, ReturnType<typeof setTimeout>>());
+  // An undefined timer marks an emptied kind waiting for blur/close — never deleted mid-correction.
+  const timers = useRef(new Map<HifzKind, ReturnType<typeof setTimeout> | undefined>());
   const chains = useRef(new Map<HifzKind, Promise<void>>());
   const savedSomething = useRef(false);
   const [inFlight, setInFlight] = useState(0);
@@ -136,6 +137,10 @@ export default function HifzDayDialog({
     timers.current.set(
       k,
       setTimeout(() => {
+        if (!isFilled(formRef.current[k])) {
+          timers.current.set(k, undefined);
+          return;
+        }
         timers.current.delete(k);
         saveKind(k);
       }, 700),
