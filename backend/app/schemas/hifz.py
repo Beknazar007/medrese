@@ -1,6 +1,6 @@
 from datetime import date as DateType
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.enums import AttendanceStatus, HifzKind
 from app.schemas.journal import LessonSessionOut
@@ -174,10 +174,15 @@ class HifzRecordUpsert(BaseModel):
     student_id: int
     kind: HifzKind
     score: int | None = Field(None, ge=0, le=100)
-    juz: int | None = Field(None, ge=1, le=30)
+    juz: str | None = Field(None, max_length=50)
     page_from: int | None = Field(None, ge=1, le=604)
     page_to: int | None = Field(None, ge=1, le=604)
     comment: str | None = None
+
+    @field_validator("juz")
+    @classmethod
+    def _strip_juz(cls, v: str | None) -> str | None:
+        return (v or "").strip() or None
 
     @model_validator(mode="after")
     def _check(self) -> "HifzRecordUpsert":
@@ -199,7 +204,7 @@ class HifzRecordOut(BaseModel):
     date: DateType
     kind: HifzKind
     score: int | None
-    juz: int | None
+    juz: str | None
     page_from: int | None
     page_to: int | None
     comment: str | None
@@ -237,7 +242,7 @@ class HifzRecordsPutRequest(BaseModel):
 
 class HifzRecordDetail(BaseModel):
     score: int | None
-    juz: int | None
+    juz: str | None
     page_from: int | None
     page_to: int | None
     comment: str | None

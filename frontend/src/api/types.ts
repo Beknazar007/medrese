@@ -253,7 +253,7 @@ export interface HifzExam {
 
 export interface HifzRecordDetail {
   score: number | null;
-  juz: number | null;
+  juz: string | null;
   page_from: number | null;
   page_to: number | null;
   comment: string | null;
@@ -281,7 +281,7 @@ export interface HifzRecord {
   date: string;
   kind: HifzKind;
   score: number | null;
-  juz: number | null;
+  juz: string | null;
   page_from: number | null;
   page_to: number | null;
   comment: string | null;

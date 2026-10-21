@@ -51,7 +51,8 @@ class HifzRecord(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     kind: Mapped[HifzKind] = mapped_column(Enum(HifzKind, name="hifz_kind"), nullable=False)
     score: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    juz: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Free text: a juz number or a note like "5 (Бакара)".
+    juz: Mapped[str | None] = mapped_column(String(50), nullable=True)
     page_from: Mapped[int | None] = mapped_column(Integer, nullable=True)
     page_to: Mapped[int | None] = mapped_column(Integer, nullable=True)
     comment: Mapped[str | None] = mapped_column(String(1000), nullable=True)

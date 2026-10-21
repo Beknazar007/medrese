@@ -46,8 +46,8 @@ def test_upsert_records_keeps_hifz_and_repeat_independent_for_same_day(db: Sessi
         group_id=group.id,
         on_date=on_date,
         records=[
-            HifzRecordUpsert(student_id=student.id, kind=HifzKind.HIFZ, score=80, juz=5, page_from=91, page_to=95),
-            HifzRecordUpsert(student_id=student.id, kind=HifzKind.REPEAT, score=90, juz=3, page_from=41, page_to=45),
+            HifzRecordUpsert(student_id=student.id, kind=HifzKind.HIFZ, score=80, juz="5", page_from=91, page_to=95),
+            HifzRecordUpsert(student_id=student.id, kind=HifzKind.REPEAT, score=90, juz="3 (Бакара)", page_from=41, page_to=45),
         ],
     )
     db.flush()
@@ -56,9 +56,9 @@ def test_upsert_records_keeps_hifz_and_repeat_independent_for_same_day(db: Sessi
     assert len(roster) == 1
     row = roster[0]
     assert row.hifz.score == 80
-    assert row.hifz.juz == 5
+    assert row.hifz.juz == "5"
     assert row.repeat.score == 90
-    assert row.repeat.juz == 3
+    assert row.repeat.juz == "3 (Бакара)"
 
 
 def test_upsert_records_updates_in_place_instead_of_duplicating(db: Session):

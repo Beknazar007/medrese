@@ -30,7 +30,7 @@ interface KindForm {
   autoJuz: string | null;
 }
 
-const str = (v: number | null | undefined) => (v == null ? "" : String(v));
+const str = (v: number | string | null | undefined) => (v == null ? "" : String(v));
 const numOrNull = (v: string) => (v.trim() === "" ? null : Number(v));
 
 export default function HifzDayDialog({
@@ -99,7 +99,7 @@ export default function HifzDayDialog({
       ? {
           ...base,
           score: numOrNull(f.score),
-          juz: numOrNull(f.juz),
+          juz: f.juz.trim() || null,
           page_from: numOrNull(f.page_from),
           page_to: numOrNull(f.page_to),
           comment: f.comment.trim() || null,
@@ -235,13 +235,12 @@ export default function HifzDayDialog({
                 />
                 <TextField
                   size="small"
-                  type="number"
                   label={t("hifz.col_juz")}
                   value={f.juz}
                   disabled={readOnly}
                   onChange={(e) => update(k, { juz: e.target.value })}
                   onBlur={() => flush(k)}
-                  slotProps={{ htmlInput: { min: 1, max: 30 } }}
+                  slotProps={{ htmlInput: { maxLength: 50 } }}
                 />
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, gridColumn: { xs: "1 / -1", md: "auto" } }}>
                   <TextField

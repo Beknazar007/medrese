@@ -513,7 +513,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                     <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
                   </Box>
                   {(["hifz", "repeat"] as const).map((kind) => {
-                    const numField = (field: "score" | "juz" | "page_from" | "page_to", label: string, max: number) => (
+                    const numField = (field: "score" | "page_from" | "page_to", label: string, max: number) => (
                       <TextField
                         type="number"
                         size="small"
@@ -531,7 +531,14 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                         </Typography>
                         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
                           {numField("score", t("hifz.col_score"), 100)}
-                          {numField("juz", t("hifz.col_juz"), 30)}
+                          <TextField
+                            size="small"
+                            label={t("hifz.col_juz")}
+                            value={r[kind].juz ?? ""}
+                            onChange={(e) => updateRecord(r.student_id, kind, { juz: e.target.value === "" ? null : e.target.value })}
+                            onBlur={() => flushSave(r.student_id, kind)}
+                            slotProps={{ htmlInput: { maxLength: 50 }, inputLabel: { shrink: true } }}
+                          />
                           {numField("page_from", t("hifz.col_page_from"), 604)}
                           {numField("page_to", t("hifz.col_page_to"), 604)}
                         </Box>
@@ -610,13 +617,12 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                         </TableCell>
                         <TableCell>
                           <TextField
-                            type="number"
                             size="small"
                             value={r[kind].juz ?? ""}
-                            onChange={(e) => updateRecord(r.student_id, kind, { juz: numberOrNull(e.target.value) })}
+                            onChange={(e) => updateRecord(r.student_id, kind, { juz: e.target.value === "" ? null : e.target.value })}
                             onBlur={() => flushSave(r.student_id, kind)}
-                            slotProps={{ htmlInput: { min: 1, max: 30 } }}
-                            sx={{ width: 70 }}
+                            slotProps={{ htmlInput: { maxLength: 50 } }}
+                            sx={{ width: 110 }}
                           />
                         </TableCell>
                         <TableCell>

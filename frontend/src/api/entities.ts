@@ -199,7 +199,7 @@ export const hifzApi = {
       student_id: number;
       kind: HifzKind;
       score: number | null;
-      juz: number | null;
+      juz: string | null;
       page_from: number | null;
       page_to: number | null;
       comment: string | null;
@@ -214,7 +214,7 @@ export const hifzApi = {
     date: string;
     kind: HifzKind;
     score?: number | null;
-    juz?: number | null;
+    juz?: string | null;
     page_from?: number | null;
     page_to?: number | null;
     comment?: string | null;
