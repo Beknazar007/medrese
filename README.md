@@ -51,6 +51,14 @@ npm run dev
 
 Opens on http://localhost:5173 (or the next free port — check the terminal output).
 
+## Deploy
+
+| Part | Where | How it gets deployed |
+|---|---|---|
+| Frontend | Cloudflare Pages, project `medrese` (https://medrese.pages.dev) | `cd frontend && npm run build && npx wrangler pages deploy dist --project-name medrese --branch main` |
+| Backend | Render, https://medrese-backend.onrender.com | Render auto-deploy from `main`, "After CI Checks Pass" (`.github/workflows/ci.yml`) |
+| Database | Neon Postgres | `alembic upgrade head` in Render's start command, before `uvicorn` |
+
 ## What's built (v1)
 
 - Faculties, Departments (with a Dean as head), Teachers, Subjects, Groups, Semesters, Rooms, Time Slots
