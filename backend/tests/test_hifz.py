@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.models.enums import AttendanceStatus, GroupType, HifzKind
-from app.schemas.hifz import HifzRecordPut, HifzRecordUpsert, HifzTargetBulkCreate, HifzTargetCreate
+from app.schemas.hifz import HifzRecordDetail, HifzRecordPut, HifzRecordUpsert, HifzTargetBulkCreate, HifzTargetCreate
 from app.schemas.journal import AttendanceUpsert
 from app.schemas.journal import AttendanceUpsert
 from app.services import hifz as hifz_service
@@ -437,3 +437,11 @@ def test_journal_returns_only_the_period_and_targets_overlapping_it(db: Session)
     assert [(r.student_id, r.date) for r in journal.records] == [(student.id, date(2026, 9, 7))]
     assert [t.kind for t in journal.targets] == [HifzKind.REPEAT]
     assert journal.can_edit is False
+
+
+def test_juz_accepts_numbers_from_older_clients_and_integer_rows():
+    # An older app build sends juz as a number; rows saved before the column became
+    # text come back from the database as integers. Both must still work.
+    assert HifzRecordUpsert(student_id=1, kind=HifzKind.HIFZ, juz=5).juz == "5"
+    assert HifzRecordUpsert(student_id=1, kind=HifzKind.HIFZ, juz="  ").juz is None
+    assert HifzRecordDetail(score=None, juz=7, page_from=None, page_to=None, comment=None).juz == "7"

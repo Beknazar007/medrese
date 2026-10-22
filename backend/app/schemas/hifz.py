@@ -1,9 +1,22 @@
 from datetime import date as DateType
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from app.models.enums import AttendanceStatus, HifzKind
 from app.schemas.journal import LessonSessionOut
+
+
+def _juz_to_text(v: Any) -> str | None:
+    # Accepts a number too: older app builds send juz as 5, and rows written before
+    # the column became text come back from the database as integers.
+    if v is None:
+        return None
+    return str(v).strip() or None
+
+
+# Free text like "5" or "3 (Бакара)".
+JuzText = Annotated[str | None, BeforeValidator(_juz_to_text)]
 
 
 def validate_hifz_ranges(
@@ -174,15 +187,10 @@ class HifzRecordUpsert(BaseModel):
     student_id: int
     kind: HifzKind
     score: int | None = Field(None, ge=0, le=100)
-    juz: str | None = Field(None, max_length=50)
+    juz: JuzText = Field(None, max_length=50)
     page_from: int | None = Field(None, ge=1, le=604)
     page_to: int | None = Field(None, ge=1, le=604)
     comment: str | None = None
-
-    @field_validator("juz")
-    @classmethod
-    def _strip_juz(cls, v: str | None) -> str | None:
-        return (v or "").strip() or None
 
     @model_validator(mode="after")
     def _check(self) -> "HifzRecordUpsert":
@@ -204,7 +212,7 @@ class HifzRecordOut(BaseModel):
     date: DateType
     kind: HifzKind
     score: int | None
-    juz: str | None
+    juz: JuzText
     page_from: int | None
     page_to: int | None
     comment: str | None
@@ -242,7 +250,7 @@ class HifzRecordsPutRequest(BaseModel):
 
 class HifzRecordDetail(BaseModel):
     score: int | None
-    juz: str | None
+    juz: JuzText
     page_from: int | None
     page_to: int | None
     comment: str | None
