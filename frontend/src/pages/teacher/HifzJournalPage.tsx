@@ -43,8 +43,10 @@ import HifzExamsDialog from "../../components/hifz/HifzExamsDialog";
 import HifzGradebook, { type GradebookView } from "../../components/hifz/HifzGradebook";
 import { todayIso as localTodayIso, weekRange } from "../../components/hifz/hifzUtils";
 
+// Local date, like todayDayOfWeek — toISOString() is UTC, which in Bishkek (UTC+6) is still
+// yesterday until 06:00 and made the page open the wrong day's lesson.
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localTodayIso();
 }
 
 function todayDayOfWeek(): number {
