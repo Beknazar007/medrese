@@ -16,6 +16,10 @@ class TeacherWorkload:
     department_id: int
     assignment_count: int
     weekly_scheduled_periods: int
+    # Assignments with at least one timetable slot — `assignment_count` minus this is what still
+    # needs placing. Compare it with `assignment_count`, never `weekly_scheduled_periods`: one
+    # assignment usually takes several slots a week, so periods/assignments is not a percentage.
+    placed_assignment_count: int = 0
 
 
 def teacher_workload(db: Session, *, semester_id: int, department_id: int | None = None) -> list[TeacherWorkload]:
@@ -37,6 +41,16 @@ def teacher_workload(db: Session, *, semester_id: int, department_id: int | None
         .subquery()
     )
 
+    placed_counts = (
+        select(TeachingAssignment.teacher_id, func.count(TeachingAssignment.id).label("count"))
+        .where(
+            TeachingAssignment.semester_id == semester_id,
+            select(ScheduleEntry.id).where(ScheduleEntry.assignment_id == TeachingAssignment.id).exists(),
+        )
+        .group_by(TeachingAssignment.teacher_id)
+        .subquery()
+    )
+
     stmt = (
         select(
             TeacherProfile.id,
@@ -44,9 +58,11 @@ def teacher_workload(db: Session, *, semester_id: int, department_id: int | None
             TeacherProfile.department_id,
             func.coalesce(assignment_counts.c.count, 0),
             func.coalesce(schedule_counts.c.count, 0),
+            func.coalesce(placed_counts.c.count, 0),
         )
         .outerjoin(assignment_counts, assignment_counts.c.teacher_id == TeacherProfile.id)
         .outerjoin(schedule_counts, schedule_counts.c.teacher_id == TeacherProfile.id)
+        .outerjoin(placed_counts, placed_counts.c.teacher_id == TeacherProfile.id)
     )
     if department_id is not None:
         stmt = stmt.where(TeacherProfile.department_id == department_id)
@@ -58,6 +74,7 @@ def teacher_workload(db: Session, *, semester_id: int, department_id: int | None
             department_id=row[2],
             assignment_count=row[3],
             weekly_scheduled_periods=row[4],
+            placed_assignment_count=row[5],
         )
         for row in db.execute(stmt).all()
     ]

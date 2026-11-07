@@ -1,13 +1,12 @@
 import { Box, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-// Status-palette roles from the dataviz skill: present=good, late=warning,
-// absent=critical, excused=categorical blue (informational, not "bad").
-const COLOR_PRESENT = "#0ca30c";
-const COLOR_LATE = "#fab219";
-const COLOR_ABSENT = "#d03b3b";
-const COLOR_EXCUSED = "#2a78d6";
-const COLOR_TRACK = "#eae9e6";
+import { STATUS_FILL, TRACK as COLOR_TRACK } from "../lib/palette";
+
+const COLOR_PRESENT = STATUS_FILL.present;
+const COLOR_LATE = STATUS_FILL.late;
+const COLOR_ABSENT = STATUS_FILL.absent;
+const COLOR_EXCUSED = STATUS_FILL.excused;
 
 interface Segment {
   key: "present" | "late" | "excused" | "absent";

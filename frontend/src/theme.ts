@@ -4,9 +4,22 @@ export const theme = createTheme({
   palette: {
     mode: "light",
     primary: { main: "#2f5fb3" },
+    // Light grey page behind white cards/tables, so sections read as separate blocks.
+    background: { default: "#f5f6f8", paper: "#fff" },
   },
   shape: { borderRadius: 8 },
+  typography: {
+    // h5 = page titles, h6 = section titles: one responsive size here instead of per page.
+    h5: { fontWeight: 600, fontSize: "1.25rem", "@media (min-width:600px)": { fontSize: "1.5rem" } },
+    h6: { fontWeight: 600, fontSize: "1.05rem", "@media (min-width:600px)": { fontSize: "1.2rem" } },
+    // ALL-CAPS Cyrillic ("ӨЗГӨРТҮҮ") is hard to read; sentence case everywhere.
+    button: { textTransform: "none", fontWeight: 600 },
+  },
   components: {
+    MuiTab: { styleOverrides: { root: { textTransform: "none", fontWeight: 600, fontSize: "0.95rem" } } },
+    MuiToggleButton: { styleOverrides: { root: { textTransform: "none", fontWeight: 600 } } },
+    MuiAppBar: { defaultProps: { elevation: 0 } },
+    MuiTableCell: { styleOverrides: { head: { fontWeight: 600, color: "rgba(0,0,0,0.6)" } } },
     MuiDialog: {
       styleOverrides: {
         // Full-screen dialogs (phones) cover the whole viewport, and with viewport-fit=cover

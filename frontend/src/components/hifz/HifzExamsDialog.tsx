@@ -170,10 +170,10 @@ export default function HifzExamsDialog({
             </Box>
             {!readOnly && (
               <>
-                <IconButton size="small" onClick={() => startEdit(exam)}>
+                <IconButton aria-label={t("common.edit")} title={t("common.edit")} size="small" onClick={() => startEdit(exam)}>
                   <EditIcon fontSize="small" />
                 </IconButton>
-                <IconButton
+                <IconButton aria-label={t("common.remove")} title={t("common.remove")}
                   size="small"
                   onClick={() => handleDeleteExam(exam.id)}
                 >

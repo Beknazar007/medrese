@@ -105,6 +105,8 @@ export interface TeacherWorkload {
   department_id: number;
   assignment_count: number;
   weekly_scheduled_periods: number;
+  /** Assignments with at least one timetable slot — coverage is this ÷ assignment_count. */
+  placed_assignment_count?: number;
 }
 
 export interface Student {

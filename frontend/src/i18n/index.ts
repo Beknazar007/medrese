@@ -26,4 +26,10 @@ i18n
     },
   });
 
+// Keep <html lang> in step with the UI language — screen readers and the browser's hyphenation /
+// spell-check pick their language from it.
+const syncHtmlLang = (lng: string) => document.documentElement.setAttribute("lang", lng);
+i18n.on("languageChanged", syncHtmlLang);
+if (i18n.resolvedLanguage) syncHtmlLang(i18n.resolvedLanguage);
+
 export default i18n;

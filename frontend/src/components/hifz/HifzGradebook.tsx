@@ -326,17 +326,25 @@ export default function HifzGradebook({
                 return (
                   <TableRow key={s.id} data-student={s.id} sx={{ "& td": { ...cellSx, bgcolor: rowBg, transition: "background-color .6s" } }}>
                     <TableCell sx={{ ...pinned, bgcolor: `${rowBg} !important`, left: 0, width: nameW, minWidth: nameW, maxWidth: nameW, textAlign: "left !important" }}>
+                      {/* Up to two lines: on a phone the column is ~120px and one line cut most
+                          names to "Абдижусупо…", which made students hard to tell apart. */}
                       <Box
                         component="button"
+                        title={s.full_name}
                         onClick={() => setProfileStudentId(s.id)}
                         sx={{
                           all: "unset",
                           cursor: "pointer",
                           fontWeight: 550,
-                          display: "block",
+                          display: "-webkit-box",
+                          WebkitBoxOrient: "vertical",
+                          WebkitLineClamp: 2,
+                          whiteSpace: "normal",
+                          overflowWrap: "anywhere",
+                          lineHeight: 1.25,
+                          fontSize: isMobile ? 13.5 : undefined,
                           maxWidth: "100%",
                           overflow: "hidden",
-                          textOverflow: "ellipsis",
                           "&:hover": { textDecoration: "underline" },
                         }}
                       >

@@ -33,7 +33,9 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { assignmentsApi, hifzApi, scheduleApi } from "../../api/entities";
 import type { AttendanceStatus, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
-import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
+import AttendanceToggle from "../../components/AttendanceToggle";
+import { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
+import { STATUS_INK } from "../../lib/palette";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
@@ -80,7 +82,7 @@ export default function HifzJournalPage() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 1, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+      <Typography variant="h5" sx={{ mb: 1 }}>
         {t("hifz.title")}
       </Typography>
       <Tabs value={tab} onChange={(_e, next: HifzTab) => setTab(next)} sx={{ mb: 2 }} variant="scrollable" allowScrollButtonsMobile>
@@ -485,7 +487,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                 </span>
               ))}
               {attendanceCounts.UNSET > 0 && (
-                <span style={{ color: "#e08600" }}>
+                <span style={{ color: STATUS_INK.late }}>
                   {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
                 </span>
               )}
@@ -504,10 +506,10 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                 >
                   <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}>
                     <Typography sx={{ fontWeight: 600, flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{r.full_name}</Typography>
-                    <IconButton size="small" title={t("hifz.targets_button")} onClick={() => setTargetsStudent({ id: r.student_id, name: r.full_name })}>
+                    <IconButton aria-label={t("hifz.targets_button")} size="small" title={t("hifz.targets_button")} onClick={() => setTargetsStudent({ id: r.student_id, name: r.full_name })}>
                       <AssignmentIcon fontSize="small" />
                     </IconButton>
-                    <IconButton size="small" title={t("hifz.exams_button")} onClick={() => setExamsStudent({ id: r.student_id, name: r.full_name })}>
+                    <IconButton aria-label={t("hifz.exams_button")} size="small" title={t("hifz.exams_button")} onClick={() => setExamsStudent({ id: r.student_id, name: r.full_name })}>
                       <SchoolIcon fontSize="small" />
                     </IconButton>
                   </Box>
@@ -667,14 +669,14 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                         <TableCell align="right">
                           {kindIdx === 0 && (
                             <>
-                              <IconButton
+                              <IconButton aria-label={t("hifz.targets_button")}
                                 size="small"
                                 title={t("hifz.targets_button")}
                                 onClick={() => setTargetsStudent({ id: r.student_id, name: r.full_name })}
                               >
                                 <AssignmentIcon fontSize="small" />
                               </IconButton>
-                              <IconButton
+                              <IconButton aria-label={t("hifz.exams_button")}
                                 size="small"
                                 title={t("hifz.exams_button")}
                                 onClick={() => setExamsStudent({ id: r.student_id, name: r.full_name })}
@@ -841,10 +843,10 @@ function HifzTargetsDialog({
                 {target.note ? ` · ${target.note}` : ""}
               </Typography>
             </Box>
-            <IconButton size="small" onClick={() => startEdit(target)}>
+            <IconButton aria-label={t("common.edit")} title={t("common.edit")} size="small" onClick={() => startEdit(target)}>
               <EditIcon fontSize="small" />
             </IconButton>
-            <IconButton size="small" onClick={() => handleDeleteTarget(target.id)}>
+            <IconButton aria-label={t("common.remove")} title={t("common.remove")} size="small" onClick={() => handleDeleteTarget(target.id)}>
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Box>

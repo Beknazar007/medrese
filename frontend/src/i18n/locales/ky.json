@@ -30,7 +30,8 @@
     "group_academic": "Окуу процесси",
     "group_monitoring": "Мониторинг",
     "group_schedule": "Жадыбал",
-    "excuses": "Себептүү жоктуктар"
+    "excuses": "Себептүү жоктуктар",
+    "menu": "Меню"
   },
   "common": {
     "add": "Кошуу",
@@ -65,7 +66,9 @@
     "edit": "Өзгөртүү",
     "force_remove_label": "Бардыбир өчүрүү",
     "remove": "Өчүрүү",
-    "error": "Ката"
+    "error": "Ката",
+    "show_more": "Дагы {{count}} көрсөтүү (калды {{total}})",
+    "server_waking": "Сервер ойгонуп жатат — биринчи кирүүдө 30 секундага чейин созулушу мүмкүн. Күтө туруңуз…"
   },
   "days": {
     "1": "Дүй",
@@ -97,17 +100,18 @@
     "col_code": "Код",
     "stat_teachers": "Мугалимдер",
     "stat_assignments": "Дайындоолор",
-    "stat_placed": "Жадыбалга коюлган",
+    "stat_placed": "Жумасына сабак",
     "stat_coverage": "Камсыздоо",
     "stat_unassigned": "Мугалими жок сабактар",
-    "legend_placed": "Жадыбалга коюлган",
-    "legend_gap": "Дайындалган, бирок жадыбалга коюла элек",
+    "legend_placed": "Жумасына сабак",
+    "legend_gap": "Жадыбалга коюлбаган дайындоолор",
     "monitoring_title": "Мониторинг",
     "teacher_monitoring_title": "Мугалимдер",
     "student_stats_title": "Окуучулар",
     "top_missed_title": "Эң көп сабак калтыргандар",
     "no_missed_hint": "Бул мезгилде калтырылган сабак жок.",
-    "download_report": "Отчетту жүктөп алуу"
+    "download_report": "Отчетту жүктөп алуу",
+    "unplaced_count": "{{count}} коюлган эмес"
   },
   "departments": {
     "title": "Кафедралар",
@@ -123,7 +127,8 @@
     "role_dean": "Кафедра башчысы",
     "role_rector": "Ректор",
     "password": "Сырсөз",
-    "empty_hint": "Өзүңүздөн башка админ каттоо жок."
+    "empty_hint": "Өзүңүздөн башка админ каттоо жок.",
+    "role_teacher": "Мугалим"
   },
   "teachers": {
     "title": "Мугалимдер",
@@ -538,5 +543,6 @@
     "hifz_student_not_in_group": "Тандалган студенттердин бири бул топто эмес",
     "period_end_before_start": "Аралыктын аягы башынан мурун",
     "period_too_long": "Аралык 400 күндөн ашпашы керек"
-  }
+  },
+  "app_short_title": "Медресе"
 }

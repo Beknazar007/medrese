@@ -23,9 +23,11 @@ import AttendanceBar from "../components/AttendanceBar";
 import DateRangePicker from "../components/DateRangePicker";
 import MonitoringBar from "../components/MonitoringBar";
 import StatTile from "../components/StatTile";
+import SemesterSelect from "../components/SemesterSelect";
 import WorkloadBars from "../components/WorkloadBars";
 import { useDepartments, useGroups, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type DateRange } from "../lib/dateRanges";
+import { STATUS_FILL } from "../lib/palette";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -36,12 +38,7 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-const ATTENDANCE_LEGEND: { key: "present" | "late" | "excused" | "absent"; color: string }[] = [
-  { key: "present", color: "#0ca30c" },
-  { key: "late", color: "#fab219" },
-  { key: "excused", color: "#2a78d6" },
-  { key: "absent", color: "#d03b3b" },
-];
+const ATTENDANCE_LEGEND = (["present", "late", "excused", "absent"] as const).map((key) => ({ key, color: STATUS_FILL[key] }));
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -111,7 +108,12 @@ export default function DashboardPage() {
   const totals = useMemo(() => {
     const assignments = (workload ?? []).reduce((sum, r) => sum + r.assignment_count, 0);
     const placed = (workload ?? []).reduce((sum, r) => sum + r.weekly_scheduled_periods, 0);
-    const coverage = assignments > 0 ? Math.round((placed / assignments) * 100) : null;
+    // Share of assignments that are on the timetable at all. Not placed/assignments: one
+    // assignment usually takes several slots a week, which used to show e.g. "480%".
+    const placedAssignments = (workload ?? []).reduce((sum, r) => sum + (r.placed_assignment_count ?? 0), 0);
+    // An older backend (site deployed before the server) doesn't send the field: show "—", not 0%.
+    const knowsPlaced = (workload ?? []).every((r) => r.placed_assignment_count !== undefined);
+    const coverage = assignments > 0 && knowsPlaced ? Math.round((placedAssignments / assignments) * 100) : null;
     return { teachers: workload?.length ?? 0, assignments, placed, coverage };
   }, [workload]);
 
@@ -127,33 +129,17 @@ export default function DashboardPage() {
   return (
     <Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2, flexWrap: "wrap" }}>
-        <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+        <Typography variant="h5">
           {t("dashboard.title")}
         </Typography>
-        <TextField
-          select
-          size="small"
-          label={t("common.select_semester")}
-          value={semesterId}
-          onChange={(e) => setSemesterId(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ minWidth: 220 }}
-        >
-          <MenuItem value="">
-            {activeSemester ? `${t("common.active_prefix")} ${activeSemester.name}` : t("common.pick_semester")}
-          </MenuItem>
-          {(semesters ?? []).map((s) => (
-            <MenuItem key={s.id} value={s.id}>
-              {s.name}
-            </MenuItem>
-          ))}
-        </TextField>
+        <SemesterSelect value={semesterId} onChange={setSemesterId} sx={{ minWidth: 220 }} />
       </Box>
 
       {!effectiveSemesterId && <Alert severity="info">{t("dashboard.pick_semester_hint")}</Alert>}
 
       {effectiveSemesterId && workload && (
         <>
-          <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: { xs: 1.5, sm: 2 }, mb: 4, flexWrap: "wrap" }}>
             <StatTile label={t("dashboard.stat_teachers")} value={totals.teachers} />
             <StatTile label={t("dashboard.stat_assignments")} value={totals.assignments} />
             <StatTile label={t("dashboard.stat_placed")} value={totals.placed} />

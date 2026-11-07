@@ -28,14 +28,15 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { notesApi, studentsApi } from "../api/entities";
 import type { AttendanceStatus, StudentHistoryRow } from "../api/types";
 import { nameById, useGroups, useTeachers } from "../hooks/useReferenceData";
+import { filledSx, STATUS_FILL } from "../lib/palette";
 
 // Same status-palette roles as AttendanceBar: present=good, late=warning, absent=critical,
 // excused=categorical blue (informational, not "bad").
 const ATTENDANCE_COLOR: Record<AttendanceStatus, string> = {
-  PRESENT: "#0ca30c",
-  LATE: "#fab219",
-  EXCUSED: "#2a78d6",
-  ABSENT: "#d03b3b",
+  PRESENT: STATUS_FILL.present,
+  LATE: STATUS_FILL.late,
+  EXCUSED: STATUS_FILL.excused,
+  ABSENT: STATUS_FILL.absent,
 };
 
 interface SubjectGroup {
@@ -209,7 +210,7 @@ export default function StudentProfileDialog({
                                 <Chip
                                   size="small"
                                   label={t(`journal.attendance_${row.attendance_status.toLowerCase()}`)}
-                                  sx={{ bgcolor: ATTENDANCE_COLOR[row.attendance_status], color: "#fff" }}
+                                  sx={filledSx(ATTENDANCE_COLOR[row.attendance_status])}
                                 />
                               ) : (
                                 "—"

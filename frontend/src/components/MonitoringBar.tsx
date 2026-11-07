@@ -1,10 +1,10 @@
 import { Box, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-// Status-palette roles from the dataviz skill: conducted=good, missed=critical.
-const COLOR_CONDUCTED = "#0ca30c";
-const COLOR_MISSED = "#d03b3b";
-const COLOR_TRACK = "#eae9e6";
+import { STATUS_FILL, TRACK as COLOR_TRACK } from "../lib/palette";
+
+const COLOR_CONDUCTED = STATUS_FILL.present;
+const COLOR_MISSED = STATUS_FILL.absent;
 
 export default function MonitoringBar({ conducted, missed }: { conducted: number; missed: number }) {
   const { t } = useTranslation();

@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogTitle,
   Button,
-  MenuItem,
   Paper,
   Table,
   TableBody,
@@ -15,7 +14,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Typography,
   useMediaQuery,
   useTheme,
@@ -28,15 +26,17 @@ import type { TeacherMonitoringRow } from "../api/types";
 import DateRangePicker from "../components/DateRangePicker";
 import { nameById, useDepartments, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type DateRange } from "../lib/dateRanges";
+import { filledSx, STATUS_FILL, STATUS_INK } from "../lib/palette";
+import SemesterSelect from "../components/SemesterSelect";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-const SCORE_GOOD = "#0ca30c";
-const SCORE_WARNING = "#fab219";
-const SCORE_CRITICAL = "#d03b3b";
+const SCORE_GOOD = STATUS_FILL.present;
+const SCORE_WARNING = STATUS_FILL.late;
+const SCORE_CRITICAL = STATUS_FILL.absent;
 
 function performanceScore(row: TeacherMonitoringRow): number | null {
   if (row.expected_lessons <= 0) return null;
@@ -84,26 +84,10 @@ export default function TeacherMonitoringPage() {
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography variant="h5" sx={{ mr: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+        <Typography variant="h5" sx={{ mr: 2 }}>
           {t("monitoring.title")}
         </Typography>
-        <TextField
-          select
-          size="small"
-          label={t("common.select_semester")}
-          value={semesterId}
-          onChange={(e) => setSemesterId(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ minWidth: 200 }}
-        >
-          <MenuItem value="">
-            {activeSemester ? `${t("common.active_prefix")} ${activeSemester.name}` : t("common.pick_semester")}
-          </MenuItem>
-          {(semesters ?? []).map((s) => (
-            <MenuItem key={s.id} value={s.id}>
-              {s.name}
-            </MenuItem>
-          ))}
-        </TextField>
+        <SemesterSelect value={semesterId} onChange={setSemesterId} sx={{ minWidth: 200 }} />
         <DateRangePicker value={range} onChange={setRange} />
       </Box>
 
@@ -122,7 +106,7 @@ export default function TeacherMonitoringPage() {
               { label: t("monitoring.col_expected"), value: row.expected_lessons },
               { label: t("monitoring.col_conducted"), value: row.conducted_lessons },
               { label: t("monitoring.col_missed"), value: row.missed_lessons, color: row.missed_lessons > 0 ? "error.main" : undefined },
-              { label: t("monitoring.col_late"), value: row.late_lessons, color: row.late_lessons > 0 ? "#d98e00" : undefined },
+              { label: t("monitoring.col_late"), value: row.late_lessons, color: row.late_lessons > 0 ? STATUS_INK.late : undefined },
             ];
             return (
               <Paper key={row.teacher_id} variant="outlined" sx={{ p: 1.5, cursor: "pointer" }} onClick={() => setDrillDownTeacher(row)}>
@@ -135,7 +119,7 @@ export default function TeacherMonitoringPage() {
                       {nameById(departments, row.department_id, (d) => d.name)}
                     </Typography>
                   </Box>
-                  {score !== null && <Chip size="small" sx={{ bgcolor: scoreColor(score), color: "#fff" }} label={`${score}%`} />}
+                  {score !== null && <Chip size="small" sx={filledSx(scoreColor(score))} label={`${score}%`} />}
                 </Box>
                 <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75, mt: 1 }}>
                   {stats.map((st) => (
@@ -186,7 +170,7 @@ export default function TeacherMonitoringPage() {
                   </TableCell>
                   <TableCell align="right">
                     {row.late_lessons > 0 ? (
-                      <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={row.late_lessons} />
+                      <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={row.late_lessons} />
                     ) : (
                       row.late_lessons
                     )}
@@ -197,7 +181,7 @@ export default function TeacherMonitoringPage() {
                       return score === null ? (
                         "—"
                       ) : (
-                        <Chip size="small" sx={{ bgcolor: scoreColor(score), color: "#fff" }} label={`${score}%`} />
+                        <Chip size="small" sx={filledSx(scoreColor(score))} label={`${score}%`} />
                       );
                     })()}
                   </TableCell>
@@ -225,7 +209,7 @@ export default function TeacherMonitoringPage() {
                         color={row.conducted ? "success" : "error"}
                         label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
                       />
-                      {row.late && <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={t("monitoring.status_late")} />}
+                      {row.late && <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={t("monitoring.status_late")} />}
                     </Box>
                   </Box>
                   <Typography variant="body2">
@@ -265,7 +249,7 @@ export default function TeacherMonitoringPage() {
                         label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
                       />
                       {row.late && (
-                        <Chip size="small" sx={{ bgcolor: "#fab219", color: "#fff" }} label={t("monitoring.status_late")} />
+                        <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={t("monitoring.status_late")} />
                       )}
                     </TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDateTime(row.checked_in_at)}</TableCell>

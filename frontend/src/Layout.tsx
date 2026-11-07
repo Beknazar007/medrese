@@ -23,6 +23,7 @@ import {
   Divider,
   Drawer,
   IconButton,
+  LinearProgress,
   List,
   ListItemButton,
   ListItemIcon,
@@ -32,11 +33,12 @@ import {
   Select,
   Toolbar,
   Typography,
+  alpha,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { hifzApi, scheduleApi } from "./api/entities";
@@ -66,7 +68,7 @@ export default function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [dismissedNow, setDismissedNow] = useState(false);
 
   // A teacher only sees the journal(s) they actually use: the hifz journal for hafiz groups,
   // "my class" for everything else. Until both lists load, show both rather than flicker.
@@ -80,16 +82,15 @@ export default function Layout() {
     (myEntries ?? []).some((e) => !(myHifzGroups ?? []).some((g) => g.id === e.group_id)) ||
     (myHifzGroups ?? []).length === 0;
 
-  useEffect(() => {
-    if (user?.id != null) {
-      setBannerDismissed(sessionStorage.getItem(`pwd_prompt_dismissed_${user.id}`) === "1");
-    }
-  }, [user?.id]);
+  const bannerKey = user?.id != null ? `pwd_prompt_dismissed_${user.id}` : null;
+  const bannerDismissed = dismissedNow || (bannerKey !== null && readSession(bannerKey) === "1");
 
   function dismissBanner() {
-    if (user?.id != null) sessionStorage.setItem(`pwd_prompt_dismissed_${user.id}`, "1");
-    setBannerDismissed(true);
+    if (bannerKey) writeSession(bannerKey, "1");
+    setDismissedNow(true);
   }
+
+  const roleLabel = user ? t(`users.role_${user.role.toLowerCase()}`) : "";
 
   const showRecommendBanner = Boolean(user?.must_change_password) && !bannerDismissed;
 
@@ -154,7 +155,17 @@ export default function Layout() {
   const drawerContent = (
     <List>
       {isMobile && (
-        <Box sx={{ px: 2, py: 1.5 }}>
+        <Box sx={{ px: 2, pt: 0.5, pb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+            {user?.username}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {roleLabel}
+          </Typography>
+        </Box>
+      )}
+      {isMobile && (
+        <Box sx={{ px: 2, pb: 1.5 }}>
           <Select
             size="small"
             fullWidth
@@ -179,6 +190,16 @@ export default function Layout() {
               component={NavLink}
               to={item.to}
               onClick={() => isMobile && setMobileOpen(false)}
+              sx={{
+                mx: 1,
+                borderRadius: 1.5,
+                "&.active": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  "& .MuiListItemIcon-root": { color: "primary.main" },
+                  "& .MuiListItemText-primary": { fontWeight: 600 },
+                },
+              }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} />
@@ -186,6 +207,23 @@ export default function Layout() {
           ))}
         </Box>
       ))}
+      {isMobile && (
+        <>
+          <Divider sx={{ my: 0.5 }} />
+          <ListItemButton
+            sx={{ mx: 1, borderRadius: 1.5 }}
+            onClick={() => {
+              setMobileOpen(false);
+              setChangePasswordOpen(true);
+            }}
+          >
+            <ListItemIcon>
+              <VpnKeyIcon />
+            </ListItemIcon>
+            <ListItemText primary={t("nav.change_password")} />
+          </ListItemButton>
+        </>
+      )}
     </List>
   );
 
@@ -197,7 +235,7 @@ export default function Layout() {
       >
         <Toolbar sx={{ gap: { xs: 1, sm: 2 } }}>
           {isMobile && (
-            <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 1 }}>
+            <IconButton color="inherit" edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 1 }} aria-label={t("nav.menu")}>
               <MenuIcon />
             </IconButton>
           )}
@@ -206,7 +244,7 @@ export default function Layout() {
             noWrap
             sx={{ flexGrow: 1, fontSize: { xs: "1rem", sm: "1.25rem" }, overflow: "hidden", textOverflow: "ellipsis" }}
           >
-            {t("app_title")}
+            {isMobile ? t("app_short_title") : t("app_title")}
           </Typography>
           <Select
             size="small"
@@ -219,13 +257,14 @@ export default function Layout() {
             <MenuItem value="en">English</MenuItem>
           </Select>
           <Typography variant="body2" sx={{ display: { xs: "none", md: "block" } }}>
-            {user?.username} ({user?.role})
+            {user?.username} · {roleLabel}
           </Typography>
           <IconButton
             color="inherit"
             onClick={() => setChangePasswordOpen(true)}
             aria-label={t("nav.change_password")}
             title={t("nav.change_password")}
+            sx={{ display: { xs: "none", md: "inline-flex" } }}
           >
             <VpnKeyIcon />
           </IconButton>
@@ -234,6 +273,7 @@ export default function Layout() {
             onClick={handleLogout}
             sx={{ display: { xs: "inline-flex", sm: "none" } }}
             aria-label={t("nav.logout")}
+            title={t("nav.logout")}
           >
             <LogoutIcon />
           </IconButton>
@@ -298,7 +338,9 @@ export default function Layout() {
             </Button>
           </Alert>
         )}
-        <Outlet />
+        <Suspense fallback={<LinearProgress sx={{ mt: 1 }} />}>
+          <Outlet />
+        </Suspense>
       </Box>
       <ChangePasswordDialog
         open={changePasswordOpen}
@@ -307,4 +349,21 @@ export default function Layout() {
       />
     </Box>
   );
+}
+
+// sessionStorage can throw (private mode, blocked storage) — the banner then simply shows again.
+function readSession(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* ignore */
+  }
 }

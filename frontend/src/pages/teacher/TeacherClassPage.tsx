@@ -32,7 +32,9 @@ import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { assignmentsApi, hifzApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import AttendanceBar from "../../components/AttendanceBar";
-import AttendanceToggle, { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../components/AttendanceToggle";
+import AttendanceToggle from "../../components/AttendanceToggle";
+import { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
+import { STATUS_FILL, STATUS_INK } from "../../lib/palette";
 import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -257,7 +259,7 @@ export default function TeacherClassPage() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>
         {t("journal.title")}
       </Typography>
 
@@ -359,7 +361,7 @@ export default function TeacherClassPage() {
                 </span>
               ))}
               {attendanceCounts.UNSET > 0 && (
-                <span style={{ color: "#e08600" }}>
+                <span style={{ color: STATUS_INK.late }}>
                   {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
                 </span>
               )}
@@ -406,7 +408,7 @@ export default function TeacherClassPage() {
                       </TableCell>
                     )}
                     <TableCell align="right">
-                      <IconButton size="small" onClick={() => setNoteStudent({ id: r.student_id, name: r.full_name })}>
+                      <IconButton aria-label={t("students.notes_title")} title={t("students.notes_title")} size="small" onClick={() => setNoteStudent({ id: r.student_id, name: r.full_name })}>
                         <CommentIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
@@ -448,7 +450,7 @@ export default function TeacherClassPage() {
                     width: 9,
                     height: 9,
                     borderRadius: "3px",
-                    bgcolor: { present: "#0ca30c", late: "#fab219", excused: "#2a78d6", absent: "#d03b3b" }[key],
+                    bgcolor: STATUS_FILL[key],
                   }}
                 />
                 {t(`journal.attendance_${key}`)}

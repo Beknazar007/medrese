@@ -16,6 +16,7 @@ import {
   IconButton,
   InputAdornment,
   Paper,
+  Skeleton,
   Snackbar,
   Switch,
   Table,
@@ -65,6 +66,13 @@ async function resizeImageToDataUrl(file: File, maxDim = 400, quality = 0.82): P
   if (!ctx) throw new Error("Canvas not supported");
   ctx.drawImage(bitmap, 0, 0, width, height);
   return canvas.toDataURL("image/jpeg", quality);
+}
+
+/** Rows rendered at first; "show more" adds this many again. Search still covers every row. */
+const PAGE_SIZE = 30;
+
+function isEmptyCell(value: ReactNode): boolean {
+  return value === null || value === undefined || value === "" || value === "—" || value === false;
 }
 
 export interface ColumnConfig<T> {
@@ -138,6 +146,14 @@ export default function EntityCrudPage<T extends { id: number }>({
     if (!q) return data;
     return data.filter((row) => JSON.stringify(row).toLowerCase().includes(q));
   }, [data, search]);
+
+  // Drawing hundreds of rows at once made the students page ~88,000px tall on a phone and slow
+  // to open; show a page at a time. A new search starts from the top again.
+  const pageKey = JSON.stringify([search, listParams ?? null]);
+  const [paging, setPaging] = useState({ key: pageKey, count: PAGE_SIZE });
+  const visibleCount = paging.key === pageKey ? paging.count : PAGE_SIZE;
+  const visibleData = filteredData?.slice(0, visibleCount);
+  const hiddenCount = Math.max(0, (filteredData?.length ?? 0) - visibleCount);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<T | null>(null);
@@ -267,7 +283,7 @@ export default function EntityCrudPage<T extends { id: number }>({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: { xs: 1, sm: 2 }, gap: 1, flexWrap: "wrap" }}>
-          <Typography variant="h5" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+          <Typography variant="h5">
             {title}
           </Typography>
           <Box
@@ -310,6 +326,13 @@ export default function EntityCrudPage<T extends { id: number }>({
       </Box>
 
       {error && <Alert severity="error">{t("common.failed_to_load")}</Alert>}
+      {isLoading && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }} aria-busy="true">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} variant="rounded" height={isMobile ? 88 : 40} />
+          ))}
+        </Box>
+      )}
       {!isLoading && !error && data && data.length === 0 && (
         <Alert
           severity="info"
@@ -336,7 +359,7 @@ export default function EntityCrudPage<T extends { id: number }>({
           {/* Phones: one card per row — a wide table would hide most columns off-screen. */}
           {isMobile && filteredData && filteredData.length > 0 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {filteredData.map((row) => {
+              {visibleData!.map((row) => {
                 const rowIsClickable = onRowClick ? true : canEdit && Boolean(api.update);
                 const handleRowClick = onRowClick ? () => onRowClick(row) : () => openEdit(row);
                 const cell = (col: ColumnConfig<T>) =>
@@ -358,24 +381,29 @@ export default function EntityCrudPage<T extends { id: number }>({
                       ))}
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         {titleCol && <Box sx={{ fontWeight: 600, overflowWrap: "anywhere" }}>{cell(titleCol)}</Box>}
-                        {restCols.map((col) => (
-                          <Box key={col.key} sx={{ fontSize: 13, color: "text.secondary", mt: 0.25, overflowWrap: "anywhere" }}>
-                            {col.label}:{" "}
-                            <Box component="span" sx={{ color: "text.primary" }}>
-                              {cell(col)}
+                        {/* Empty fields ("Phone: —") are left out — they only made every card taller. */}
+                        {restCols.map((col) => {
+                          const value = cell(col);
+                          if (isEmptyCell(value)) return null;
+                          return (
+                            <Box key={col.key} sx={{ fontSize: 13, color: "text.secondary", mt: 0.25, overflowWrap: "anywhere" }}>
+                              {col.label}:{" "}
+                              <Box component="span" sx={{ color: "text.primary" }}>
+                                {value}
+                              </Box>
                             </Box>
-                          </Box>
-                        ))}
+                          );
+                        })}
                       </Box>
                     </Box>
                     {/* Labeled, thumb-sized buttons along the bottom instead of tiny icons in the corner. */}
                     {((canEdit && api.update) || (canDelete && api.remove)) && (
-                      <Box sx={{ display: "flex", gap: 1, mt: 1.5, pt: 1.5, borderTop: 1, borderColor: "divider" }}>
+                      <Box sx={{ display: "flex", gap: 1, mt: 1, pt: 1, borderTop: 1, borderColor: "divider" }}>
                         {canEdit && api.update && (
                           <Button
                             variant="outlined"
                             startIcon={<EditIcon />}
-                            sx={{ flex: 1, minHeight: 48, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 26 } }}
+                            sx={{ flex: 1, minHeight: 44, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 24 } }}
                             onClick={(e) => { e.stopPropagation(); openEdit(row); }}
                           >
                             {t("common.edit")}
@@ -386,7 +414,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                             variant="outlined"
                             color="error"
                             startIcon={<DeleteIcon />}
-                            sx={{ flex: 1, minHeight: 48, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 26 } }}
+                            sx={{ flex: 1, minHeight: 44, fontSize: 15, "& .MuiButton-startIcon > svg": { fontSize: 24 } }}
                             onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}
                           >
                             {t("common.remove")}
@@ -418,7 +446,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredData.map((row) => {
+                  {visibleData!.map((row) => {
                     const rowIsClickable = onRowClick ? true : canEdit && Boolean(api.update);
                     const handleRowClick = onRowClick ? () => onRowClick(row) : () => openEdit(row);
                     return (
@@ -436,13 +464,20 @@ export default function EntityCrudPage<T extends { id: number }>({
                       {(canEdit || canDelete) && (
                         <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                           {canEdit && api.update && (
-                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); openEdit(row); }}>
+                            <IconButton
+                              size="small"
+                              aria-label={t("common.edit")}
+                              title={t("common.edit")}
+                              onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                            >
                               <EditIcon fontSize="small" />
                             </IconButton>
                           )}
                           {canDelete && api.remove && (
                             <IconButton
                               size="small"
+                              aria-label={t("common.remove")}
+                              title={t("common.remove")}
                               onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}
                             >
                               <DeleteIcon fontSize="small" />
@@ -456,6 +491,14 @@ export default function EntityCrudPage<T extends { id: number }>({
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+
+          {hiddenCount > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Button variant="outlined" onClick={() => setPaging({ key: pageKey, count: visibleCount + PAGE_SIZE })} sx={{ minWidth: 220 }}>
+                {t("common.show_more", { count: Math.min(PAGE_SIZE, hiddenCount), total: hiddenCount })}
+              </Button>
+            </Box>
           )}
         </>
       )}

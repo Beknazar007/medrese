@@ -34,10 +34,11 @@ import type { DayOfWeek, HourType, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import { useConfirm } from "../context/ConfirmContext";
 import { apiErrorMessage } from "../lib/errors";
+import { filledSx, GROUP_COLORS } from "../lib/palette";
+import SemesterSelect from "../components/SemesterSelect";
 import { nameById, useDepartments, useGroups, useSemesters, useSubjects, useTeachers, useTimeSlots } from "../hooks/useReferenceData";
 
 // Validated categorical palette (fixed order) from the dataviz skill's reference palette.
-const GROUP_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
 export default function ScheduleGridPage() {
   const { t } = useTranslation();
@@ -66,8 +67,9 @@ export default function ScheduleGridPage() {
   const [semesterId, setSemesterId] = useState<number | "">("");
   const [groupId, setGroupId] = useState<number | "">("");
   const [snackbar, setSnackbar] = useState<string | null>(null);
-  // Phones show one day at a time, starting on today.
-  const [mobileDay, setMobileDay] = useState<DayOfWeek>(() => (((new Date().getDay() + 6) % 7) + 1) as DayOfWeek);
+  // Phones show one day at a time: the one the user picked, else today — or, when today has no
+  // lessons (Friday), the next day that does, instead of a screen of empty "+ Add" rows.
+  const [pickedDay, setMobileDay] = useState<DayOfWeek | null>(null);
 
   const activeSemester = semesters?.find((s) => s.is_active);
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
@@ -87,6 +89,17 @@ export default function ScheduleGridPage() {
     queryFn: () => assignmentsApi.list(effectiveSemesterId ? { semester_id: effectiveSemesterId } : undefined),
     enabled: canWrite && Boolean(effectiveSemesterId),
   });
+
+  const mobileDay = useMemo<DayOfWeek>(() => {
+    if (pickedDay) return pickedDay;
+    const today = ((new Date().getDay() + 6) % 7) + 1;
+    const busy = new Set((entries ?? []).map((e) => e.day_of_week));
+    for (let i = 0; i < 7; i++) {
+      const day = ((today - 1 + i) % 7) + 1;
+      if (busy.has(day as DayOfWeek)) return day as DayOfWeek;
+    }
+    return today as DayOfWeek;
+  }, [pickedDay, entries]);
 
   const entriesByCell = useMemo(() => {
     const map = new Map<string, ScheduleEntry[]>();
@@ -309,7 +322,7 @@ export default function ScheduleGridPage() {
             <Chip
               size="small"
               label={info.groupName}
-              sx={color ? { bgcolor: color, color: "#fff" } : undefined}
+              sx={color ? filledSx(color) : undefined}
             />
           )}
           <Chip size="small" variant="outlined" label={info.roomName} />
@@ -321,26 +334,10 @@ export default function ScheduleGridPage() {
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography variant="h5" sx={{ mr: 2, fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
+        <Typography variant="h5" sx={{ mr: 2 }}>
           {t("schedule.title")}
         </Typography>
-        <TextField
-          select
-          size="small"
-          label={t("common.select_semester")}
-          value={semesterId}
-          onChange={(e) => setSemesterId(e.target.value === "" ? "" : Number(e.target.value))}
-          sx={{ minWidth: 200, flex: { xs: 1, sm: "none" } }}
-        >
-          <MenuItem value="">
-            {activeSemester ? `${t("common.active_prefix")} ${activeSemester.name}` : t("common.pick_semester")}
-          </MenuItem>
-          {(semesters ?? []).map((s) => (
-            <MenuItem key={s.id} value={s.id}>
-              {s.name}
-            </MenuItem>
-          ))}
-        </TextField>
+        <SemesterSelect value={semesterId} onChange={setSemesterId} sx={{ minWidth: 200, flex: { xs: 1, sm: "none" } }} />
         {user?.role !== "TEACHER" && (
           <TextField
             select

@@ -1,5 +1,6 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
+import { lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
@@ -8,23 +9,26 @@ import Layout from "./Layout";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
-import AssignmentsPage from "./pages/AssignmentsPage";
-import DashboardPage from "./pages/DashboardPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
-import GroupsPage from "./pages/GroupsPage";
-import RoomsPage from "./pages/RoomsPage";
-import ScheduleGridPage from "./pages/ScheduleGridPage";
-import SemestersPage from "./pages/SemestersPage";
-import StudentsPage from "./pages/StudentsPage";
-import ExcusesPage from "./pages/ExcusesPage";
-import SubjectsPage from "./pages/SubjectsPage";
-import TeachersPage from "./pages/TeachersPage";
-import TeacherMonitoringPage from "./pages/TeacherMonitoringPage";
-import TeacherClassPage from "./pages/teacher/TeacherClassPage";
-import HifzJournalPage from "./pages/teacher/HifzJournalPage";
-import TimeSlotsPage from "./pages/TimeSlotsPage";
-import UsersPage from "./pages/UsersPage";
 import { theme } from "./theme";
+
+// Each page is its own chunk: a teacher no longer downloads the rector's dashboard, schedule
+// editor, etc. on first open. Layout shows a thin progress bar while a page chunk loads.
+const AssignmentsPage = lazy(() => import("./pages/AssignmentsPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DepartmentsPage = lazy(() => import("./pages/DepartmentsPage"));
+const GroupsPage = lazy(() => import("./pages/GroupsPage"));
+const RoomsPage = lazy(() => import("./pages/RoomsPage"));
+const ScheduleGridPage = lazy(() => import("./pages/ScheduleGridPage"));
+const SemestersPage = lazy(() => import("./pages/SemestersPage"));
+const StudentsPage = lazy(() => import("./pages/StudentsPage"));
+const ExcusesPage = lazy(() => import("./pages/ExcusesPage"));
+const SubjectsPage = lazy(() => import("./pages/SubjectsPage"));
+const TeachersPage = lazy(() => import("./pages/TeachersPage"));
+const TeacherMonitoringPage = lazy(() => import("./pages/TeacherMonitoringPage"));
+const TeacherClassPage = lazy(() => import("./pages/teacher/TeacherClassPage"));
+const HifzJournalPage = lazy(() => import("./pages/teacher/HifzJournalPage"));
+const TimeSlotsPage = lazy(() => import("./pages/TimeSlotsPage"));
+const UsersPage = lazy(() => import("./pages/UsersPage"));
 
 const queryClient = new QueryClient();
 

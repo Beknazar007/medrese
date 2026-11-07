@@ -13,14 +13,11 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Only a stored token needs checking with the server; without one we know right away.
+  const [isLoading, setIsLoading] = useState(() => Boolean(localStorage.getItem("access_token")));
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    if (!localStorage.getItem("access_token")) return;
     api
       .get<CurrentUser>("/auth/me")
       .then((res) => setUser(res.data))

@@ -30,7 +30,8 @@
     "group_academic": "Учебный процесс",
     "group_monitoring": "Мониторинг",
     "group_schedule": "Расписание",
-    "excuses": "Пропуски по уважительной причине"
+    "excuses": "Пропуски по уважительной причине",
+    "menu": "Меню"
   },
   "common": {
     "add": "Добавить",
@@ -65,7 +66,9 @@
     "edit": "Изменить",
     "force_remove_label": "Всё равно удалить",
     "remove": "Удалить",
-    "error": "Ошибка"
+    "error": "Ошибка",
+    "show_more": "Показать ещё {{count}} (осталось {{total}})",
+    "server_waking": "Сервер просыпается — первый вход может занять до 30 секунд. Пожалуйста, подождите…"
   },
   "days": {
     "1": "Пн",
@@ -97,17 +100,18 @@
     "col_code": "Код",
     "stat_teachers": "Преподавателей",
     "stat_assignments": "Назначений",
-    "stat_placed": "В расписании",
+    "stat_placed": "Уроков в неделю",
     "stat_coverage": "Покрытие",
     "stat_unassigned": "Предметов без преподавателя",
-    "legend_placed": "В расписании",
-    "legend_gap": "Назначено, но не в расписании",
+    "legend_placed": "Уроков в неделю",
+    "legend_gap": "Назначения вне расписания",
     "monitoring_title": "Мониторинг",
     "teacher_monitoring_title": "Преподаватели",
     "student_stats_title": "Студенты",
     "top_missed_title": "Больше всего пропусков",
     "no_missed_hint": "Пропущенных уроков нет за этот период.",
-    "download_report": "Скачать отчёт"
+    "download_report": "Скачать отчёт",
+    "unplaced_count": "{{count}} не в расписании"
   },
   "departments": {
     "title": "Кафедры",
@@ -123,7 +127,8 @@
     "role_dean": "Заведующий кафедрой",
     "role_rector": "Ректор",
     "password": "Пароль",
-    "empty_hint": "Кроме вас, других админ-аккаунтов нет."
+    "empty_hint": "Кроме вас, других админ-аккаунтов нет.",
+    "role_teacher": "Преподаватель"
   },
   "teachers": {
     "title": "Преподаватели",
@@ -538,5 +543,6 @@
     "hifz_student_not_in_group": "Один из выбранных студентов не состоит в этой группе",
     "period_end_before_start": "Конец периода раньше начала",
     "period_too_long": "Период не может быть длиннее 400 дней"
-  }
+  },
+  "app_short_title": "Медресе"
 }

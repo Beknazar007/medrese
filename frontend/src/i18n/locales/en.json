@@ -30,7 +30,8 @@
     "group_academic": "Academics",
     "group_monitoring": "Monitoring",
     "group_schedule": "Schedule",
-    "excuses": "Excused absences"
+    "excuses": "Excused absences",
+    "menu": "Menu"
   },
   "common": {
     "add": "Add",
@@ -65,7 +66,9 @@
     "edit": "Edit",
     "force_remove_label": "Delete anyway",
     "remove": "Remove",
-    "error": "Error"
+    "error": "Error",
+    "show_more": "Show {{count}} more ({{total}} left)",
+    "server_waking": "The server is waking up — the first sign-in can take up to 30 seconds. Please wait…"
   },
   "days": {
     "1": "Mon",
@@ -97,17 +100,18 @@
     "col_code": "Code",
     "stat_teachers": "Teachers",
     "stat_assignments": "Assignments",
-    "stat_placed": "Placed on timetable",
+    "stat_placed": "Lessons per week",
     "stat_coverage": "Coverage",
     "stat_unassigned": "Subjects with no teacher",
-    "legend_placed": "Placed on timetable",
-    "legend_gap": "Assigned, not yet on timetable",
+    "legend_placed": "Lessons per week",
+    "legend_gap": "Assignments not on the timetable",
     "monitoring_title": "Monitoring",
     "teacher_monitoring_title": "Teachers",
     "student_stats_title": "Students",
     "top_missed_title": "Most missed lessons",
     "no_missed_hint": "No missed lessons for this period.",
-    "download_report": "Download report"
+    "download_report": "Download report",
+    "unplaced_count": "{{count}} not placed"
   },
   "departments": {
     "title": "Departments",
@@ -123,7 +127,8 @@
     "role_dean": "Dean",
     "role_rector": "Rector",
     "password": "Password",
-    "empty_hint": "No admin accounts yet besides yourself."
+    "empty_hint": "No admin accounts yet besides yourself.",
+    "role_teacher": "Teacher"
   },
   "teachers": {
     "title": "Teachers",
@@ -538,5 +543,6 @@
     "hifz_student_not_in_group": "One of the selected students is not in this group",
     "period_end_before_start": "The end of the period is before its start",
     "period_too_long": "The period cannot be longer than 400 days"
-  }
+  },
+  "app_short_title": "Medrese"
 }
