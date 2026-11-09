@@ -1,12 +1,24 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, type PaletteMode } from "@mui/material/styles";
 
-export const theme = createTheme({
-  palette: {
-    mode: "light",
-    primary: { main: "#2f5fb3" },
-    // Light grey page behind white cards/tables, so sections read as separate blocks.
-    background: { default: "#f5f6f8", paper: "#fff" },
-  },
+/** Color of the app bar / browser chrome per mode (also used for <meta name="theme-color">). */
+export const BAR_COLOR: Record<PaletteMode, string> = { light: "#2f5fb3", dark: "#1a1d22" };
+
+export const makeTheme = (mode: PaletteMode) => createTheme({
+  palette:
+    mode === "light"
+      ? {
+          mode,
+          primary: { main: "#2f5fb3" },
+          // Light grey page behind white cards/tables, so sections read as separate blocks.
+          background: { default: "#f5f6f8", paper: "#fff" },
+        }
+      : {
+          mode,
+          // A lighter blue: the light theme's #2f5fb3 is too dim as text on a dark page.
+          primary: { main: "#7ea6ee" },
+          // Same idea at night: the page a step darker than the cards on it.
+          background: { default: "#121417", paper: "#1a1d22" },
+        },
   shape: { borderRadius: 8 },
   typography: {
     // h5 = page titles, h6 = section titles: one responsive size here instead of per page.
@@ -18,8 +30,8 @@ export const theme = createTheme({
   components: {
     MuiTab: { styleOverrides: { root: { textTransform: "none", fontWeight: 600, fontSize: "0.95rem" } } },
     MuiToggleButton: { styleOverrides: { root: { textTransform: "none", fontWeight: 600 } } },
-    MuiAppBar: { defaultProps: { elevation: 0 } },
-    MuiTableCell: { styleOverrides: { head: { fontWeight: 600, color: "rgba(0,0,0,0.6)" } } },
+    MuiAppBar: { defaultProps: { elevation: 0 }, styleOverrides: { root: { backgroundColor: BAR_COLOR[mode], color: "#fff" } } },
+    MuiTableCell: { styleOverrides: { head: ({ theme }) => ({ fontWeight: 600, color: theme.palette.text.secondary }) } },
     MuiDialog: {
       styleOverrides: {
         // Full-screen dialogs (phones) cover the whole viewport, and with viewport-fit=cover
@@ -40,7 +52,7 @@ export const theme = createTheme({
           ".MuiDialog-paperFullScreen > &": {
             padding: "12px 16px",
             gap: 12,
-            borderTop: "1px solid rgba(0, 0, 0, 0.12)",
+            borderTop: `1px solid ${mode === "light" ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.12)"}`,
             "& > .MuiButton-root": { flex: 1, minHeight: 44, marginLeft: 0 },
           },
         },

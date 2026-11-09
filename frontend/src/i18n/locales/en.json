@@ -25,6 +25,8 @@
     "hifz_journal": "Hafiz journal",
     "logout": "Log out",
     "logout_confirm": "Log out of the system?",
+    "dark_mode": "Dark mode",
+    "light_mode": "Light mode",
     "change_password": "Change password",
     "group_org": "Organization",
     "group_academic": "Academics",

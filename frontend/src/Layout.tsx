@@ -14,6 +14,8 @@ import FactCheckIcon from "@mui/icons-material/FactCheck";
 import MenuIcon from "@mui/icons-material/Menu";
 import LogoutIcon from "@mui/icons-material/Logout";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
 import {
   Alert,
@@ -45,6 +47,7 @@ import { hifzApi, scheduleApi } from "./api/entities";
 import ChangePasswordDialog from "./components/ChangePasswordDialog";
 import { useAuth } from "./context/AuthContext";
 import { useConfirm } from "./context/ConfirmContext";
+import { useColorMode } from "./hooks/useColorMode";
 
 const DRAWER_WIDTH = 230;
 
@@ -61,6 +64,7 @@ interface NavGroup {
 
 export default function Layout() {
   const { t, i18n } = useTranslation();
+  const colorMode = useColorMode();
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -259,6 +263,14 @@ export default function Layout() {
           <Typography variant="body2" sx={{ display: { xs: "none", md: "block" } }}>
             {user?.username} · {roleLabel}
           </Typography>
+          <IconButton
+            color="inherit"
+            onClick={colorMode.toggle}
+            aria-label={colorMode.mode === "dark" ? t("nav.light_mode") : t("nav.dark_mode")}
+            title={colorMode.mode === "dark" ? t("nav.light_mode") : t("nav.dark_mode")}
+          >
+            {colorMode.mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+          </IconButton>
           <IconButton
             color="inherit"
             onClick={() => setChangePasswordOpen(true)}

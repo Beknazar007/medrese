@@ -25,6 +25,8 @@
     "hifz_journal": "Журнал хафиз",
     "logout": "Выйти",
     "logout_confirm": "Выйти из системы?",
+    "dark_mode": "Ночной режим",
+    "light_mode": "Дневной режим",
     "change_password": "Сменить пароль",
     "group_org": "Организация",
     "group_academic": "Учебный процесс",

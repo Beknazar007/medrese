@@ -118,6 +118,21 @@ export default function TeacherClassPage() {
   const autoLoadedOnce = useRef(false);
 
   const isDirty = JSON.stringify(roster) !== savedSnapshot.current;
+  const [saveFailed, setSaveFailed] = useState(false);
+  // Latest values for the autosave timer and the flush on leave, which run outside a render.
+  const latest = useRef({ sessionId, roster, isExam, isDirty });
+  latest.current = { sessionId, roster, isExam, isDirty };
+
+  // While a save is still pending (the short pause after typing), closing the tab asks first.
+  useEffect(() => {
+    if (!isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [isDirty]);
 
   // Comfort win: open today's class automatically, so a teacher who just wants to take
   // attendance for the lesson happening right now doesn't have to pick anything.
@@ -169,13 +184,14 @@ export default function TeacherClassPage() {
     onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
   });
 
-  function confirmDiscardIfDirty(): boolean {
-    if (!isDirty) return true;
-    return window.confirm(t("journal.unsaved_confirm"));
+  // Switching lesson or date saves what's pending first instead of dropping it.
+  function flushPendingSave() {
+    const cur = latest.current;
+    if (cur.isDirty && cur.sessionId) saveMutation.mutate({ sessionId: cur.sessionId, roster: cur.roster, isExam: cur.isExam });
   }
 
   function handleSelectClass(entryId: number | "") {
-    if (!confirmDiscardIfDirty()) return;
+    flushPendingSave();
     setSelectedEntryId(entryId);
     setOpenError(null);
     setSessionId(null);
@@ -186,7 +202,7 @@ export default function TeacherClassPage() {
   }
 
   function handleSelectDate(date: string) {
-    if (!confirmDiscardIfDirty()) return;
+    flushPendingSave();
     setSelectedDate(date);
     setOpenError(null);
     setSessionId(null);
@@ -196,11 +212,12 @@ export default function TeacherClassPage() {
     savedSnapshot.current = "[]";
   }
 
-  const saveAllMutation = useMutation({
-    mutationFn: async () => {
+  // Marks save themselves shortly after each change, like the hifz gradebook: no button to forget.
+  const saveMutation = useMutation({
+    mutationFn: async (v: { sessionId: number; roster: RosterStudent[]; isExam: boolean }) => {
       await journalApi.putAttendance(
-        sessionId!,
-        roster
+        v.sessionId,
+        v.roster
           .filter((r) => r.attendance_status !== null)
           .map((r) => ({
             student_id: r.student_id,
@@ -209,27 +226,59 @@ export default function TeacherClassPage() {
           })),
       );
       return journalApi.putGrades(
-        sessionId!,
-        isExam
-          ? roster
-              .filter((r) => r.score !== null && r.score !== undefined)
+        v.sessionId,
+        v.isExam
+          ? v.roster
+              .filter((r) => r.score !== null && r.score !== undefined && !Number.isNaN(r.score))
               .map((r) => ({ student_id: r.student_id, score: r.score as number }))
           : [],
       );
     },
-    onSuccess: (detail) => {
-      setRoster(detail.roster);
-      savedSnapshot.current = JSON.stringify(detail.roster);
-      setSnackbar(t("journal.saved"));
+    onSuccess: (detail, v) => {
+      setSaveFailed(false);
+      // A save for a lesson the teacher has already left must not overwrite the new one.
+      if (latest.current.sessionId !== v.sessionId) return;
+      const sent = JSON.stringify(v.roster);
+      if (JSON.stringify(latest.current.roster) === sent) {
+        // Nothing changed meanwhile: take the server's view (e.g. excuses it applied).
+        setRoster(detail.roster);
+        savedSnapshot.current = JSON.stringify(detail.roster);
+      } else {
+        // The teacher kept marking while this was in flight: keep their marks, save them next.
+        savedSnapshot.current = sent;
+      }
     },
-    onError: (err) => setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t)),
+    onError: (err) => {
+      setSaveFailed(true);
+      setSnackbar(apiErrorMessage(err, t("journal.save_failed"), t));
+    },
   });
 
-  async function handleSaveAll() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    saveAllMutation.mutate();
+  function saveNow() {
+    const cur = latest.current;
+    if (!cur.sessionId || !cur.isDirty || saveMutation.isPending) return;
+    saveMutation.mutate({ sessionId: cur.sessionId, roster: cur.roster, isExam: cur.isExam });
   }
+
+  // Save ~0.8 s after the last change; re-runs after a save so edits made meanwhile go too.
+  // Not retried automatically after a failure, so a rejected mark doesn't loop: the retry button does it.
+  useEffect(() => {
+    if (!isDirty || !sessionId || saveMutation.isPending || saveFailed) return;
+    const timer = window.setTimeout(saveNow, 800);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, isDirty, sessionId, saveMutation.isPending, saveFailed]);
+
+  // Leaving the page (menu, another tab of the app) saves what's pending right away.
+  useEffect(() => {
+    const onHide = () => saveNow();
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("pagehide", onHide);
+      flushPendingSave();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCheckOut() {
     const ok = await confirm({ message: t("journal.checked_out_confirm"), confirmLabel: t("journal.check_out") });
@@ -238,14 +287,17 @@ export default function TeacherClassPage() {
   }
 
   function setAttendance(studentId: number, status: AttendanceStatus | null) {
+    setSaveFailed(false);
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, attendance_status: status } : r)));
   }
 
   function setScore(studentId: number, score: number | null) {
+    setSaveFailed(false);
     setRoster((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, score } : r)));
   }
 
   function markAllPresent() {
+    setSaveFailed(false);
     setRoster((prev) => prev.map((r) => (r.excuse_reason ? r : { ...r, attendance_status: "PRESENT" as AttendanceStatus })));
   }
 
@@ -418,14 +470,22 @@ export default function TeacherClassPage() {
             </Table>
           </TableContainer>
 
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => handleSaveAll()}
-            disabled={saveAllMutation.isPending || !isDirty}
-          >
-            {isDirty ? t("journal.save_all") : t("journal.saved")}
-          </Button>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, minHeight: 40 }}>
+            {saveFailed ? (
+              <>
+                <Typography variant="body2" sx={{ color: "error.main" }}>
+                  {t("hifz.autosave_failed")}
+                </Typography>
+                <Button variant="contained" onClick={() => { setSaveFailed(false); }}>
+                  {t("hifz.autosave_retry")}
+                </Button>
+              </>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {isDirty || saveMutation.isPending ? t("hifz.autosave_saving") : t("hifz.autosave_hint")}
+              </Typography>
+            )}
+          </Box>
             </>
           )}
         </>

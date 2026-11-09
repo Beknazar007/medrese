@@ -4,8 +4,9 @@ import type { AttendanceStatus } from "../api/types";
 export const ATTENDANCE_OPTIONS: AttendanceStatus[] = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
 
 export const ATTENDANCE_ROW_TINT: Partial<Record<AttendanceStatus, string>> = {
-  ABSENT: "rgba(198,40,40,.06)",
-  LATE: "rgba(224,134,0,.08)",
+  // Per-theme values: see paletteCssVars.
+  ABSENT: "var(--tint-absent)",
+  LATE: "var(--tint-late)",
 };
 
 export function countAttendance(statuses: (AttendanceStatus | null)[]): Record<AttendanceStatus | "UNSET", number> {

@@ -2,7 +2,7 @@ import { Box, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/
 import { useTranslation } from "react-i18next";
 import type { AttendanceStatus } from "../api/types";
 import { ATTENDANCE_OPTIONS } from "../lib/attendance";
-import { STATUS_INK } from "../lib/palette";
+import { STATUS_INK, STATUS_SOLID } from "../lib/palette";
 
 const ATTENDANCE_SHORT: Record<AttendanceStatus, string> = {
   PRESENT: "К",
@@ -13,10 +13,10 @@ const ATTENDANCE_SHORT: Record<AttendanceStatus, string> = {
 
 // Darker "ink" shades: white letters stay readable on all four.
 const ATTENDANCE_COLOR: Record<AttendanceStatus, string> = {
-  PRESENT: STATUS_INK.present,
-  ABSENT: STATUS_INK.absent,
-  LATE: STATUS_INK.late,
-  EXCUSED: STATUS_INK.excused,
+  PRESENT: STATUS_SOLID.present,
+  ABSENT: STATUS_SOLID.absent,
+  LATE: STATUS_SOLID.late,
+  EXCUSED: STATUS_SOLID.excused,
 };
 
 export default function AttendanceToggle({
@@ -65,7 +65,7 @@ export default function AttendanceToggle({
   return (
     <Box>
       {group}
-      <Typography variant="caption" sx={{ display: "block", color: ATTENDANCE_COLOR.EXCUSED, mt: 0.25, maxWidth: 220 }}>
+      <Typography variant="caption" sx={{ display: "block", color: STATUS_INK.excused, mt: 0.25, maxWidth: 220 }}>
         {t("journal.excused_by_deanery")}: {excuseReason}
       </Typography>
     </Box>

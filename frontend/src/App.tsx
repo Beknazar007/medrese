@@ -1,5 +1,3 @@
-import CssBaseline from "@mui/material/CssBaseline";
-import { ThemeProvider } from "@mui/material/styles";
 import { lazy } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
@@ -9,7 +7,7 @@ import Layout from "./Layout";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleRoute from "./RoleRoute";
-import { theme } from "./theme";
+import ColorModeProvider from "./context/ColorModeProvider";
 
 // Each page is its own chunk: a teacher no longer downloads the rector's dashboard, schedule
 // editor, etc. on first open. Layout shows a thin progress bar while a page chunk loads.
@@ -34,8 +32,7 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ColorModeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ConfirmProvider>
@@ -177,6 +174,6 @@ export default function App() {
           </ConfirmProvider>
         </AuthProvider>
       </QueryClientProvider>
-    </ThemeProvider>
+    </ColorModeProvider>
   );
 }

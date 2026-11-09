@@ -445,3 +445,17 @@ def test_juz_accepts_numbers_from_older_clients_and_integer_rows():
     assert HifzRecordUpsert(student_id=1, kind=HifzKind.HIFZ, juz=5).juz == "5"
     assert HifzRecordUpsert(student_id=1, kind=HifzKind.HIFZ, juz="  ").juz is None
     assert HifzRecordDetail(score=None, juz=7, page_from=None, page_to=None, comment=None).juz == "7"
+
+
+def test_exam_title_is_trimmed_and_cannot_be_blank():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.schemas.hifz import HifzExamCreate, HifzExamUpdate
+
+    assert HifzExamCreate(student_id=1, date=date(2026, 11, 9), title="  1-джуз  ").title == "1-джуз"
+    with pytest.raises(ValidationError):
+        HifzExamCreate(student_id=1, date=date(2026, 11, 9), title="   ")
+    with pytest.raises(ValidationError):
+        HifzExamUpdate(title="")
+    assert HifzExamUpdate(score=90).title is None

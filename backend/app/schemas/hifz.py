@@ -137,10 +137,18 @@ class HifzTargetOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _strip(v: Any) -> Any:
+    return v.strip() if isinstance(v, str) else v
+
+
+# An exam needs a real name: "   " would show up as a blank row in the student's list.
+ExamTitle = Annotated[str, BeforeValidator(_strip), Field(min_length=1, max_length=255)]
+
+
 class HifzExamCreate(BaseModel):
     student_id: int
     date: DateType
-    title: str
+    title: ExamTitle
     juz_from: int | None = Field(None, ge=1, le=30)
     juz_to: int | None = Field(None, ge=1, le=30)
     score: int | None = Field(None, ge=0, le=100)
@@ -156,7 +164,7 @@ class HifzExamCreate(BaseModel):
 
 class HifzExamUpdate(BaseModel):
     date: DateType | None = None
-    title: str | None = None
+    title: ExamTitle | None = None
     juz_from: int | None = Field(None, ge=1, le=30)
     juz_to: int | None = Field(None, ge=1, le=30)
     score: int | None = Field(None, ge=0, le=100)

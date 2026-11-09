@@ -34,7 +34,7 @@ export default function HifzExamsDialog({
   onError: (msg: string) => void;
   onChanged?: () => void;
   readOnly?: boolean;
-  /** Only list exams inside this period (the gradebook's current one). */
+  /** The gradebook's current period: picks the default date for a new exam. */
   period?: { from: string; to: string };
 }) {
   const { t } = useTranslation();
@@ -52,13 +52,12 @@ export default function HifzExamsDialog({
   const [score, setScore] = useState<string>("");
   const [comment, setComment] = useState<string>("");
 
-  const { data: allExams } = useQuery({
+  // Every exam of the student, newest first. Filtering by the gradebook period made an exam
+  // saved with a date outside it vanish from the list, which looked like it wasn't saved.
+  const { data: exams } = useQuery({
     queryKey: ["hifz-exams", student.id],
     queryFn: () => hifzApi.exams(student.id),
   });
-  const exams = period
-    ? allExams?.filter((e) => e.date >= period.from && e.date <= period.to)
-    : allExams;
 
   function resetForm() {
     setEditingId(null);
