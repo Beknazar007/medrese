@@ -1,0 +1,51 @@
+{
+  "feature": "hifz-assignments",
+  "videos": [
+    {
+      "id": "hifz-assignments-hafiz-ky",
+      "feature": "hifz-assignments",
+      "role": "hafiz",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/hifz-assignments/hafiz-ky.mp4",
+      "subtitles": "videos/output/hifz-assignments/hafiz-ky.srt",
+      "duration_s": 39.0,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-assignments.md",
+      "scenario_hash": "619f499343a992ac907a3f4978c74f12d1e83582a92afd165dba180978b20c13",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/hifz-assignments/frames/hafiz-ky-start.png",
+        "videos/output/hifz-assignments/frames/hafiz-ky-middle.png",
+        "videos/output/hifz-assignments/frames/hafiz-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:43:54+06:00"
+    },
+    {
+      "id": "hifz-assignments-hafiz-ru",
+      "feature": "hifz-assignments",
+      "role": "hafiz",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/hifz-assignments/hafiz-ru.mp4",
+      "subtitles": "videos/output/hifz-assignments/hafiz-ru.srt",
+      "duration_s": 41.7,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-assignments.md",
+      "scenario_hash": "619f499343a992ac907a3f4978c74f12d1e83582a92afd165dba180978b20c13",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/hifz-assignments/frames/hafiz-ru-start.png",
+        "videos/output/hifz-assignments/frames/hafiz-ru-middle.png",
+        "videos/output/hifz-assignments/frames/hafiz-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:45:07+06:00"
+    }
+  ]
+}

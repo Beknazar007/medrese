@@ -1,0 +1,51 @@
+{
+  "feature": "assignments",
+  "videos": [
+    {
+      "id": "assignments-rector-ru",
+      "feature": "assignments",
+      "role": "rector",
+      "lang": "ru",
+      "device": "desktop",
+      "file": "videos/output/assignments/rector-ru.mp4",
+      "subtitles": "videos/output/assignments/rector-ru.srt",
+      "duration_s": 39.3,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/assignments.md",
+      "scenario_hash": "ccea691850d931d5635e5614efaa31080e73e16860516d8314e26d4f51e7044e",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/assignments/frames/rector-ru-start.png",
+        "videos/output/assignments/frames/rector-ru-middle.png",
+        "videos/output/assignments/frames/rector-ru-end.png"
+      ],
+      "created_at": "2026-11-10T15:53:44+06:00"
+    },
+    {
+      "id": "assignments-rector-ky",
+      "feature": "assignments",
+      "role": "rector",
+      "lang": "ky",
+      "device": "desktop",
+      "file": "videos/output/assignments/rector-ky.mp4",
+      "subtitles": "videos/output/assignments/rector-ky.srt",
+      "duration_s": 39.0,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/assignments.md",
+      "scenario_hash": "ccea691850d931d5635e5614efaa31080e73e16860516d8314e26d4f51e7044e",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/assignments/frames/rector-ky-start.png",
+        "videos/output/assignments/frames/rector-ky-middle.png",
+        "videos/output/assignments/frames/rector-ky-end.png"
+      ],
+      "created_at": "2026-11-10T16:00:13+06:00"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "feature": "teacher-attendance",
+  "videos": [
+    {
+      "id": "teacher-attendance-teacher-ky",
+      "feature": "teacher-attendance",
+      "role": "teacher",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/teacher-attendance/teacher-ky.mp4",
+      "subtitles": "videos/output/teacher-attendance/teacher-ky.srt",
+      "duration_s": 49.6,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/teacher-attendance.md",
+      "scenario_hash": "432a601f30e5c7e4e0f8f2a22d096012175a83e8ed941c35ae99b3b23b97053f",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/teacher-attendance/frames/teacher-ky-start.png",
+        "videos/output/teacher-attendance/frames/teacher-ky-middle.png",
+        "videos/output/teacher-attendance/frames/teacher-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:02:32+06:00"
+    },
+    {
+      "id": "teacher-attendance-teacher-ru",
+      "feature": "teacher-attendance",
+      "role": "teacher",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/teacher-attendance/teacher-ru.mp4",
+      "subtitles": "videos/output/teacher-attendance/teacher-ru.srt",
+      "duration_s": 50.4,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/teacher-attendance.md",
+      "scenario_hash": "432a601f30e5c7e4e0f8f2a22d096012175a83e8ed941c35ae99b3b23b97053f",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/teacher-attendance/frames/teacher-ru-start.png",
+        "videos/output/teacher-attendance/frames/teacher-ru-middle.png",
+        "videos/output/teacher-attendance/frames/teacher-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:03:58+06:00"
+    }
+  ]
+}

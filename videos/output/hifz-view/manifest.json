@@ -1,0 +1,51 @@
+{
+  "feature": "hifz-view",
+  "videos": [
+    {
+      "id": "hifz-view-rector-ky",
+      "feature": "hifz-view",
+      "role": "rector",
+      "lang": "ky",
+      "device": "desktop",
+      "file": "videos/output/hifz-view/rector-ky.mp4",
+      "subtitles": "videos/output/hifz-view/rector-ky.srt",
+      "duration_s": 27.0,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-view.md",
+      "scenario_hash": "8d7e4149e50d1e1e0a4dd36e02da5ce0c05890582d6713b465f5886d54cdaa41",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/hifz-view/frames/rector-ky-start.png",
+        "videos/output/hifz-view/frames/rector-ky-middle.png",
+        "videos/output/hifz-view/frames/rector-ky-end.png"
+      ],
+      "created_at": "2026-11-10T15:00:06+06:00"
+    },
+    {
+      "id": "hifz-view-rector-ru",
+      "feature": "hifz-view",
+      "role": "rector",
+      "lang": "ru",
+      "device": "desktop",
+      "file": "videos/output/hifz-view/rector-ru.mp4",
+      "subtitles": "videos/output/hifz-view/rector-ru.srt",
+      "duration_s": 24.9,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-view.md",
+      "scenario_hash": "8d7e4149e50d1e1e0a4dd36e02da5ce0c05890582d6713b465f5886d54cdaa41",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/hifz-view/frames/rector-ru-start.png",
+        "videos/output/hifz-view/frames/rector-ru-middle.png",
+        "videos/output/hifz-view/frames/rector-ru-end.png"
+      ],
+      "created_at": "2026-11-10T15:00:50+06:00"
+    }
+  ]
+}

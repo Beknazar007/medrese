@@ -1,0 +1,22 @@
+{
+  "feature": "ux-fixes",
+  "title": "Исправление недочётов, найденных при записи видео (B1–B6)",
+  "branch": "feature/ux-fixes",
+  "next": "architect",
+  "waiting_for": "spec_approval",
+  "review_iteration": 0,
+  "version": null,
+  "artifacts": {
+    "spec": "specs/ux-fixes.md",
+    "plan": null,
+    "review": null,
+    "e2e": [],
+    "user_guide": [],
+    "scenario": null,
+    "videos": null
+  },
+  "history": [
+    {"agent": "human", "at": "2026-11-10T00:00+06:00", "result": "фича создана: недочёты B1–B6 из docs/user-guide/features.md («Иди дальше»)", "next": "pm"},
+    {"agent": "pm", "at": "2026-11-10T12:00+06:00", "result": "спека-черновик specs/ux-fixes.md: B1–B6, 39 критериев; нужен новый PATCH /assignments; 4 открытых вопроса (правка назначения в расписании, смена предмета после уроков, даты семестра, хафиз-расписание)", "next": "architect"}
+  ]
+}

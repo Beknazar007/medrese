@@ -1,0 +1,51 @@
+{
+  "feature": "dashboard",
+  "videos": [
+    {
+      "id": "dashboard-rector-ky",
+      "feature": "dashboard",
+      "role": "rector",
+      "lang": "ky",
+      "device": "desktop",
+      "file": "videos/output/dashboard/rector-ky.mp4",
+      "subtitles": "videos/output/dashboard/rector-ky.srt",
+      "duration_s": 38.3,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/dashboard.md",
+      "scenario_hash": "cc59ddeaa6a57b0277caca0bba68a56306016fa84a65e9ddbe26b428b6ddfc41",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/dashboard/frames/rector-ky-start.png",
+        "videos/output/dashboard/frames/rector-ky-middle.png",
+        "videos/output/dashboard/frames/rector-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:51:25+06:00"
+    },
+    {
+      "id": "dashboard-rector-ru",
+      "feature": "dashboard",
+      "role": "rector",
+      "lang": "ru",
+      "device": "desktop",
+      "file": "videos/output/dashboard/rector-ru.mp4",
+      "subtitles": "videos/output/dashboard/rector-ru.srt",
+      "duration_s": 41.4,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/dashboard.md",
+      "scenario_hash": "cc59ddeaa6a57b0277caca0bba68a56306016fa84a65e9ddbe26b428b6ddfc41",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/dashboard/frames/rector-ru-start.png",
+        "videos/output/dashboard/frames/rector-ru-middle.png",
+        "videos/output/dashboard/frames/rector-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:52:38+06:00"
+    }
+  ]
+}

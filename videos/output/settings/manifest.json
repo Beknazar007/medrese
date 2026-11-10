@@ -1,0 +1,51 @@
+{
+  "feature": "settings",
+  "videos": [
+    {
+      "id": "settings-teacher-ky",
+      "feature": "settings",
+      "role": "teacher",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/settings/teacher-ky.mp4",
+      "subtitles": "videos/output/settings/teacher-ky.srt",
+      "duration_s": 28.5,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/settings.md",
+      "scenario_hash": "5208277c4a6a9a67fd9e9c807a9663e4a6f086118d7d478f9b18826b72ac4dae",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/settings/frames/teacher-ky-start.png",
+        "videos/output/settings/frames/teacher-ky-middle.png",
+        "videos/output/settings/frames/teacher-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:12:17+06:00"
+    },
+    {
+      "id": "settings-teacher-ru",
+      "feature": "settings",
+      "role": "teacher",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/settings/teacher-ru.mp4",
+      "subtitles": "videos/output/settings/teacher-ru.srt",
+      "duration_s": 29.3,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/settings.md",
+      "scenario_hash": "5208277c4a6a9a67fd9e9c807a9663e4a6f086118d7d478f9b18826b72ac4dae",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/settings/frames/teacher-ru-start.png",
+        "videos/output/settings/frames/teacher-ru-middle.png",
+        "videos/output/settings/frames/teacher-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:13:13+06:00"
+    }
+  ]
+}

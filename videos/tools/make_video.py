@@ -33,7 +33,8 @@ ROOT = Path(__file__).resolve().parents[2]
 TOOLS = Path(__file__).resolve().parent
 LOCALES = ROOT / "frontend" / "src" / "i18n" / "locales"
 RELIGIOUS_MARK = "ТРЕБУЕТ ПРОВЕРКИ УСТАЗОМ"
-DEVICES = {"mobile": {"width": 390, "height": 844}, "desktop": {"width": 1280, "height": 800}}
+# "slides": the drawn phone in videos/tools/slides/phone.html (browser menus, home screen).
+DEVICES = {"mobile": {"width": 390, "height": 844}, "desktop": {"width": 1280, "height": 800}, "slides": {"width": 540, "height": 960}}
 # Breathing room so a line never starts on the very first frame or gets cut at the end.
 LEAD_IN_S, TAIL_S, AFTER_LINE_S = 0.8, 1.5, 0.4
 
@@ -61,7 +62,7 @@ def parse_scenarios(path: Path) -> list[Scenario]:
     sha = hashlib.sha256(text.encode("utf-8")).hexdigest()
 
     # One file may hold several roles: "## Сценарий: teacher" sections, each with its own steps.
-    sections = re.split(r"^## Сценарий:\s*(\w+)\s*$", text, flags=re.M)
+    sections = re.split(r"^## Сценарий:\s*([\w-]+)\s*$", text, flags=re.M)
     if len(sections) == 1:
         chunks = [(header.get("role", "teacher"), text)]
     else:
@@ -158,8 +159,9 @@ def srt_time(t: float) -> str:
 
 @dataclass
 class Stand:
-    backend_port: str = "8767"
-    frontend_port: str = "5177"
+    # VIDEO_*_PORT + E2E_DB let two recordings run side by side on separate stands.
+    backend_port: str = field(default_factory=lambda: os.environ.get("VIDEO_BACKEND_PORT", "8767"))
+    frontend_port: str = field(default_factory=lambda: os.environ.get("VIDEO_FRONTEND_PORT", "5177"))
     procs: list[subprocess.Popen] = field(default_factory=list)
 
     @property
@@ -260,6 +262,7 @@ async def synthesize(lines: dict[str, str], voice: dict, out_dir: Path) -> dict[
 
 def spotlight(locator) -> None:
     # Headless video has no mouse pointer — outline the element so the viewer sees where to tap.
+    locator.scroll_into_view_if_needed()
     locator.evaluate(
         """el => { const o = el.style.outline; el.style.outline = '3px solid #f5a623';
                     el.style.outlineOffset = '2px'; setTimeout(() => { el.style.outline = o; }, 900); }"""
@@ -267,15 +270,35 @@ def spotlight(locator) -> None:
 
 
 def locate(page, target: str):
-    if target.startswith("label="):
-        return page.get_by_label(target[6:]).first
-    m = re.fullmatch(r'role=(\w+)\[name="(.+)"\]', target)
-    if m:
-        return page.get_by_role(m.group(1), name=m.group(2)).first
-    return page.locator(target).first  # text=…, css, etc.
+    """`label=…`, `role=x[name="…"]` or any Playwright selector; parts chained with ` >> ` narrow the search
+    (e.g. `role=dialog >> label=Пароль`)."""
+    node = page
+    for part in target.split(" >> "):
+        part = part.strip()
+        m = re.fullmatch(r'role=(\w+)(?:\[name="(.+)"\])?', part)
+        if part.startswith("label="):
+            text = part[6:]
+            # label="…" in quotes = label starts with the text: «Роль» must not also find «Пароль»
+            # (required fields end with « *», so an exact match would miss them).
+            if len(text) > 1 and text[0] == text[-1] == '"':
+                node = node.get_by_label(re.compile("^" + re.escape(text.strip('"'))))
+            else:
+                node = node.get_by_label(text)
+        elif m:
+            node = node.get_by_role(m.group(1), name=m.group(2)) if m.group(2) else node.get_by_role(m.group(1))
+        else:
+            node = node.locator(part)  # text=…, css, etc.
+    return node.first
 
 
-def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_len: dict[str, float], work: Path):
+def place(target: str, base_url: str) -> str:
+    """Absolute URL for a goto target: /path on the stand, {base} = stand URL, {tools} = videos/tools as file://."""
+    target = target.replace("{base}", base_url).replace("{tools}", TOOLS.as_uri())
+    return base_url + target if target.startswith("/") else target
+
+
+def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_len: dict[str, float], work: Path,
+           lines_text: dict[str, str]):
     from playwright.sync_api import sync_playwright
 
     strings = i18n(lang)
@@ -285,12 +308,14 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
         browser = pw.chromium.launch()
         ctx = browser.new_context(
             viewport=size, record_video_dir=str(work), record_video_size=size,
-            is_mobile=sc.device == "mobile", has_touch=sc.device == "mobile", locale="ru-RU",
+            is_mobile=sc.device == "mobile", has_touch=sc.device == "mobile", locale="ru-RU", timezone_id="Asia/Bishkek",
         )
         ctx.add_init_script(f"localStorage.setItem('i18nextLng', '{lang}')")
         page = ctx.new_page()
         t0 = time.monotonic()  # the video starts with the page
-        page.goto(base_url + "/login")  # neutral first frame while the lead-in plays
+        # Neutral first frame while the lead-in plays: the scenario's first page, else the login page.
+        first = sc.steps[0] if sc.steps else {}
+        page.goto(place(first["target"], base_url) if first.get("action") == "goto" else base_url + "/login")
         page.wait_for_load_state("networkidle")
         time.sleep(LEAD_IN_S)
 
@@ -299,7 +324,11 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
             key = step.get("say")
             if key:
                 cues.append((started - t0, started - t0 + clip_len[key], key))
-            action, target, value = step["action"], resolve(step.get("target"), strings), resolve(step.get("value"), strings)
+            # target/value may differ per language: {ky: …, ru: …} (a note typed in that language, a language to pick).
+            raw_target, raw_value = step.get("target"), step.get("value")
+            raw_target = raw_target.get(lang) if isinstance(raw_target, dict) else raw_target
+            raw_value = raw_value.get(lang) if isinstance(raw_value, dict) else raw_value
+            action, target, value = step["action"], resolve(raw_target, strings), resolve(raw_value, strings)
             if action == "login":  # quick, off-topic part of most videos: log in as a stand account
                 page.goto(base_url + "/login")
                 page.get_by_label(strings["login"]["username"]).fill(str(value))
@@ -307,8 +336,14 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
                 page.get_by_role("button", name=strings["login"]["submit"]).click()
                 page.wait_for_load_state("networkidle")
             elif action == "goto":
-                page.goto(base_url + target if target.startswith("/") else target)
-                page.wait_for_load_state("networkidle")
+                url = place(target, base_url)
+                if page.url != url:
+                    page.goto(url)
+                    page.wait_for_load_state("networkidle")
+            elif action == "press":  # a key, e.g. Escape to close the side menu
+                page.keyboard.press(str(value))
+            elif action == "eval":  # drive the drawn phone: show('sheet')
+                page.evaluate(target)
             elif action == "click":
                 loc = locate(page, target)
                 spotlight(loc)
@@ -317,8 +352,11 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
             elif action == "fill":
                 loc = locate(page, target)
                 spotlight(loc)
-                loc.click()
-                loc.press_sequentially(str(value), delay=90)  # typed letter by letter, like a person
+                if loc.get_attribute("type") in ("date", "time", "datetime-local"):
+                    loc.fill(str(value))  # pickers take the whole value; typing it letter by letter garbles it
+                else:
+                    loc.click()
+                    loc.press_sequentially(str(value), delay=90)  # typed letter by letter, like a person
             elif action == "select":
                 locate(page, target).select_option(str(value))
             elif action == "highlight":
@@ -330,6 +368,8 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
                     locate(page, target).wait_for(timeout=15000)
             else:
                 raise SystemExit(f"step {step.get('id')}: unknown action '{action}'")
+            if key:  # pages that can show the line on screen (phone.html) do — Telegram's player hides .srt tracks
+                page.evaluate("t => window.__caption && window.__caption(t)", lines_text[key])
             # Hold the step until the line is spoken and the viewer has had `pause` seconds.
             hold = max(float(step.get("pause", 1.0)), (clip_len[key] + AFTER_LINE_S) if key else 0)
             left = hold - (time.monotonic() - started)
@@ -405,10 +445,17 @@ def main() -> None:
         stand.start()
         base_url = stand.url
     try:
+        first = True
         for sc in scenarios:
             for lang in langs:
                 vid = f"{sc.feature}-{sc.role}-{lang}"
                 print(f"→ {vid}")
+                # Every video starts from the same freshly seeded stand: marks made while recording
+                # the Kyrgyz version must not show up in the Russian one.
+                if stand and not first:
+                    stand.stop()
+                    stand.start()
+                first = False
                 with tempfile.TemporaryDirectory() as tmp:
                     work = Path(tmp)
                     texts = {k: v[lang] for k, v in sc.lines.items() if v.get(lang)}
@@ -418,7 +465,7 @@ def main() -> None:
                     voice = pick_voice(lang, voices, env)
                     clips = asyncio.run(synthesize(texts, voice, work))
                     clip_len = {k: duration(ffprobe, p) for k, p in clips.items()}
-                    raw, cues = record(sc, lang, base_url, clips, clip_len, work)
+                    raw, cues = record(sc, lang, base_url, clips, clip_len, work, texts)
 
                     srt = out_dir / f"{sc.role}-{lang}.srt"
                     srt.write_text(

@@ -15,8 +15,14 @@ feature: <feature> · role: <rector|dean|teacher|hafiz> · version: X.Y.Z · dev
   select     target: <локатор>, value: вариант
   highlight  target: <локатор>                      — только подсветить
   wait       target: /адрес | <локатор>             — дождаться страницы или элемента
+  press      value: Escape                          — нажать клавишу (закрыть меню)
+  eval       target: show('sheet')                  — управлять нарисованным телефоном (device: slides,
+                                                       videos/tools/slides/phone.html; пример — install-app.md)
 Локаторы:
   label=<подпись поля>     role=button[name="<текст>"]     text=<видимый текст>
+  в строке таблицы: tr:has-text("Асанов Эмир") >> role=button[name="@journal.attendance_absent"]
+  в окне: role=dialog >> role=button[name="@common.yes"]
+target и value могут быть разными для языков:  value: {ky: "Кыргызча текст", ru: "Русский текст"}
   @ключ.i18n вместо текста (@login.submit) — подставится текст на языке видео,
   поэтому один сценарий годится и для ky, и для ru. Текст из данных стенда пишется как есть.
 pause — сколько секунд держать шаг; если реплика длиннее, шаг держится до её конца.

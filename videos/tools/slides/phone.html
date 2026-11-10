@@ -1,0 +1,211 @@
+<!doctype html>
+<!--
+  Drawn phone for how-to videos about things outside the web page (browser menus, home screen).
+  The browser chrome and menus are simplified sketches, not copies of Safari/Chrome; the page inside
+  is the real app from the local stand (iframe). Driven by videos/tools/make_video.py:
+    goto  {tools}/slides/phone.html?screen=safari&app={base}
+    eval  show('sheet')                 — switch the picture
+  Menu labels are Russian: iOS has no Kyrgyz interface, so Kyrgyz-speaking users see Russian menus.
+-->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>phone</title>
+<style>
+  :root { --accent: #f5a623; --blue: #0a7aff; --ink: #1c1c1e; --muted: #8e8e93; --line: #d1d1d6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 540px; height: 960px; overflow: hidden; background: #e9eef6;
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); }
+  .phone { position: absolute; left: 90px; top: 40px; width: 360px; height: 760px; border-radius: 48px;
+    background: #111; padding: 10px; box-shadow: 0 20px 50px rgba(20, 40, 80, .25); }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 38px; overflow: hidden; background: #fff; }
+  .status { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 26px;
+    font-size: 13px; font-weight: 600; background: #f7f7f7; }
+  .android .status { justify-content: space-between; padding: 0 18px; }
+  .app { position: absolute; left: 0; right: 0; border: 0; width: 100%; background: #fff; }
+  .bar { position: absolute; left: 0; right: 0; background: #f7f7f7; display: flex; align-items: center; gap: 10px; padding: 0 12px; }
+  .url { flex: 1; height: 34px; border-radius: 10px; background: #e5e5ea; display: flex; align-items: center;
+    justify-content: center; gap: 6px; font-size: 14px; color: #333; padding: 0 10px; }
+  .android .url { border-radius: 17px; justify-content: flex-start; background: #eceff3; }
+  .icon { width: 30px; height: 30px; display: grid; place-items: center; color: var(--blue); flex: none; }
+  .android .icon { color: #444; }
+  svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .ring { position: relative; }
+  .ring::after { content: ""; position: absolute; inset: -6px; border: 3px solid var(--accent); border-radius: 12px;
+    animation: pulse 1.2s ease-in-out infinite; pointer-events: none; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12); opacity: .55; } }
+  .dim { position: absolute; inset: 0; background: rgba(0, 0, 0, .35); opacity: 0; transition: opacity .3s; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #f2f2f7; border-radius: 14px 14px 0 0;
+    transform: translateY(105%); transition: transform .45s cubic-bezier(.2, .8, .2, 1); padding: 10px 12px 26px; }
+  .show .dim { opacity: 1; } .sheet.open { transform: none; }
+  .grab { width: 38px; height: 5px; border-radius: 3px; background: #c7c7cc; margin: 2px auto 10px; }
+  .head { display: flex; gap: 10px; align-items: center; padding: 4px 4px 12px; border-bottom: 1px solid var(--line); }
+  .head img { width: 40px; height: 40px; border-radius: 9px; }
+  .head small { display: block; color: var(--muted); font-size: 12px; }
+  .apps { display: flex; gap: 14px; padding: 12px 4px; }
+  .apps span { width: 52px; height: 52px; border-radius: 13px; background: #d8d8de; }
+  .list { background: #fff; border-radius: 12px; margin-top: 8px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; font-size: 15px;
+    border-bottom: 1px solid #ececf0; }
+  .row:last-child { border-bottom: 0; }
+  .row svg { color: #333; width: 20px; height: 20px; }
+  .full { position: absolute; inset: 34px 0 0 0; background: #f2f2f7; transform: translateY(105%);
+    transition: transform .45s cubic-bezier(.2, .8, .2, 1); }
+  .full.open { transform: none; }
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 14px 14px; font-size: 15px; }
+  .nav b { font-size: 15px; } .nav a { color: var(--blue); } .nav a.strong { font-weight: 700; }
+  .card { background: #fff; margin: 8px 14px; border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; }
+  .card img { width: 56px; height: 56px; border-radius: 12px; }
+  .card .field { flex: 1; border-bottom: 1px solid var(--line); padding: 6px 0; font-size: 16px; }
+  .card small { display: block; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .menu { position: absolute; right: 8px; top: 40px; width: 230px; background: #fff; border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .25); padding: 6px 0; transform-origin: top right; transform: scale(.6);
+    opacity: 0; transition: all .25s; }
+  .menu.open { transform: none; opacity: 1; }
+  .menu div { padding: 10px 16px; font-size: 14px; }
+  .dialog { position: absolute; left: 24px; right: 24px; top: 230px; background: #fff; border-radius: 22px; padding: 22px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .3); opacity: 0; transform: scale(.9); transition: all .25s; }
+  .dialog.open { opacity: 1; transform: none; }
+  .dialog h3 { margin: 0 0 14px; font-size: 18px; font-weight: 500; }
+  .dialog .btns { display: flex; justify-content: flex-end; gap: 22px; margin-top: 20px; color: #1a73e8; font-weight: 600; font-size: 15px; }
+  .home { position: absolute; inset: 0; padding: 70px 22px; display: none;
+    background: linear-gradient(160deg, #6c8fd6, #3b5aa8 55%, #2a3f78); }
+  .home.open { display: block; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px 14px; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: #fff; }
+  .tile i { width: 58px; height: 58px; border-radius: 14px; background: rgba(255, 255, 255, .35); display: block; }
+  .android .tile i { border-radius: 50%; }
+  .tile img { width: 58px; height: 58px; border-radius: 14px; }
+  .android .tile img { border-radius: 50%; }
+  .caption { position: absolute; left: 24px; right: 24px; top: 818px; min-height: 110px; display: flex; align-items: center;
+    justify-content: center; text-align: center; font-size: 22px; line-height: 1.3; font-weight: 600; color: #1d2b4a; }
+  .label { position: absolute; left: 0; right: 0; top: 8px; text-align: center; font-size: 15px; color: #51607d; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="label" id="label"></div>
+<div class="phone"><div class="screen" id="screen">
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+  <div class="bar" id="topbar"></div>
+  <iframe class="app" id="app"></iframe>
+  <div class="bar" id="bottombar"></div>
+  <div class="dim" id="dim"></div>
+
+  <!-- iOS share sheet (Safari and Chrome on iPhone use the same system sheet) -->
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <div class="head"><img class="appicon" alt=""><div><b>Медресе</b><small>medrese.pages.dev</small></div></div>
+    <div class="apps"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="list">
+      <div class="row">Скопировать <svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></div>
+      <div class="row">Добавить в избранное <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg></div>
+      <div class="row" id="addhome">На экран «Домой» <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div>
+      <div class="row">Добавить закладку <svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div>
+    </div>
+  </div>
+
+  <!-- iOS "add to home screen" page -->
+  <div class="full" id="addpage">
+    <div class="nav"><a>Отменить</a><b>На экран «Домой»</b><a class="strong" id="addbtn">Добавить</a></div>
+    <div class="card"><img class="appicon" alt=""><div style="flex:1"><div class="field">Медресе</div><small>https://medrese.pages.dev/</small></div></div>
+  </div>
+
+  <!-- Android Chrome menu and install dialog -->
+  <div class="menu" id="menu">
+    <div>Новая вкладка</div><div>Новая вкладка инкогнито</div><div>История</div><div>Скачанные файлы</div>
+    <div>Закладки</div><div>Поделиться…</div><div>Найти на странице</div>
+    <div id="install">Установить приложение</div><div>Версия для ПК</div><div>Настройки</div>
+  </div>
+  <div class="dialog" id="dialog">
+    <h3>Установить приложение</h3>
+    <div style="display:flex;gap:12px;align-items:center"><img class="appicon" alt="" style="width:44px;height:44px;border-radius:50%">
+      <div><b>Медресе</b><div style="color:#666;font-size:13px">medrese.pages.dev</div></div></div>
+    <div class="btns"><span>Отмена</span><span id="installbtn">Установить</span></div>
+  </div>
+
+  <!-- Home screen -->
+  <div class="home" id="home"><div class="grid" id="grid"></div></div>
+</div></div>
+<div class="caption" id="caption"></div>
+
+<script>
+  const q = new URLSearchParams(location.search);
+  const screenKind = q.get("screen") || "safari";
+  const appUrl = (q.get("app") || "http://localhost:5177") + (q.get("path") || "/login");
+  const icon = (q.get("app") || "http://localhost:5177") + "/pwa-icon-192.png";
+  const $ = (id) => document.getElementById(id);
+  const ICONS = {
+    share: '<svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',
+    back: '<svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>',
+    fwd: '<svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>',
+    book: '<svg viewBox="0 0 24 24"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg>',
+    tabs: '<svg viewBox="0 0 24 24"><rect x="4" y="7" width="13" height="13" rx="2"/><path d="M8 4h10a2 2 0 0 1 2 2v10"/></svg>',
+    dots: '<svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>',
+    house: '<svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4z"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" style="width:14px;height:14px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  };
+  const url = `<div class="url">${ICONS.lock}medrese.pages.dev</div>`;
+  const topBar = $("topbar"), bottomBar = $("bottombar"), app = $("app");
+  document.querySelectorAll(".appicon").forEach((img) => (img.src = icon));
+  if (screenKind === "android") $("screen").classList.add("android");
+
+  // Browser chrome layout per browser; the iframe fills what is left.
+  if (screenKind === "safari") {
+    topBar.style.display = "none";
+    bottomBar.style.cssText += "bottom:0;height:96px;flex-direction:column;padding:8px 12px 18px;gap:8px";
+    bottomBar.innerHTML = `<div style="display:flex;width:100%">${url}</div>
+      <div style="display:flex;width:100%;justify-content:space-between">
+        <span class="icon">${ICONS.back}</span><span class="icon">${ICONS.fwd}</span>
+        <span class="icon" id="sharebtn">${ICONS.share}</span><span class="icon">${ICONS.book}</span><span class="icon">${ICONS.tabs}</span></div>`;
+    app.style.cssText += "top:34px;height:calc(100% - 34px - 96px)";
+  } else if (screenKind === "chrome-ios") {
+    topBar.style.cssText += "top:34px;height:52px";
+    topBar.innerHTML = `${url}<span class="icon" id="sharebtn">${ICONS.share}</span>`;
+    bottomBar.style.cssText += "bottom:0;height:70px;justify-content:space-around;padding-bottom:16px";
+    bottomBar.innerHTML = `<span class="icon">${ICONS.back}</span><span class="icon">${ICONS.fwd}</span><span class="icon" style="font-size:26px">+</span><span class="icon">${ICONS.tabs}</span><span class="icon">${ICONS.dots}</span>`;
+    app.style.cssText += "top:86px;height:calc(100% - 86px - 70px)";
+  } else {
+    topBar.style.cssText += "top:34px;height:56px";
+    topBar.innerHTML = `<span class="icon">${ICONS.house}</span>${url}<span class="icon">${ICONS.tabs}</span><span class="icon" id="menubtn">${ICONS.dots}</span>`;
+    bottomBar.style.display = "none";
+    app.style.cssText += "top:90px;height:calc(100% - 90px)";
+  }
+  app.src = appUrl;
+
+  // Home screen: a few blank icons and ours.
+  const blanks = ["", "", "", "", "", "", "", "", "", ""];
+  $("grid").innerHTML = blanks.map(() => `<div class="tile"><i></i>&nbsp;</div>`).join("") +
+    `<div class="tile" id="homeicon"><img src="${icon}" alt="">Медресе</div>`;
+
+  const ring = (id, on) => $(id) && $(id).classList.toggle("ring", on);
+  const clear = () => {
+    ["sharebtn", "addhome", "addbtn", "menubtn", "install", "installbtn", "homeicon"].forEach((id) => ring(id, false));
+  };
+
+  // Called by the recorder's `eval` steps.
+  window.show = (step) => {
+    clear();
+    const s = $("screen");
+    switch (step) {
+      case "page": s.classList.remove("show"); break;
+      case "tap-share": ring("sharebtn", true); break;
+      case "sheet": s.classList.add("show"); $("sheet").classList.add("open"); ring("addhome", true); break;
+      case "add": $("addpage").classList.add("open"); ring("addbtn", true); break;
+      case "tap-menu": ring("menubtn", true); break;
+      case "menu": $("menu").classList.add("open"); ring("install", true); break;
+      case "install": $("menu").classList.remove("open"); s.classList.add("show"); $("dialog").classList.add("open"); ring("installbtn", true); break;
+      case "home":
+        s.classList.remove("show");
+        ["sheet", "addpage", "menu", "dialog"].forEach((id) => $(id).classList.remove("open"));
+        $("home").classList.add("open"); ring("homeicon", true); break;
+      case "opened":
+        // Installed app: no browser bars, the app fills the screen.
+        $("home").classList.remove("open"); topBar.style.display = "none"; bottomBar.style.display = "none";
+        app.style.top = "34px"; app.style.height = "calc(100% - 34px)"; break;
+    }
+  };
+  window.__caption = (text) => { $("caption").textContent = text; };
+  window.__label = (text) => { $("label").textContent = text; };
+</script>
+</body>
+</html>

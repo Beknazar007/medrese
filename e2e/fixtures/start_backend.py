@@ -16,7 +16,8 @@ frontend_port = os.environ.get("E2E_FRONTEND_PORT", "5175")
 
 env = {
     **os.environ,
-    "DATABASE_URL": f"sqlite:///{(STAND / 'e2e.db').as_posix()}",
+    # E2E_DB lets a second stand run beside the first (e.g. exploring while a video records).
+    "DATABASE_URL": f"sqlite:///{(STAND / os.environ.get('E2E_DB', 'e2e.db')).as_posix()}",
     "JWT_SECRET_KEY": "e2e-only-secret-not-for-servers",
     "CORS_ORIGINS": f"http://localhost:{frontend_port},http://127.0.0.1:{frontend_port}",
 }

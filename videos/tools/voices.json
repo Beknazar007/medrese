@@ -4,8 +4,9 @@
     "note": "edge-tts has no Kyrgyz voice; a Kazakh voice reads the Kyrgyz text. Used only while ElevenLabs is not configured.",
     "elevenlabs": {
       "model": "eleven_v3",
-      "voice_id": null,
-      "language_code": "ky"
+      "voice_id": "jsSE6b3qmZL9jOxuseza",
+      "language_code": "ky",
+      "voice_name": "Alymbek Kyrgyz (ElevenLabs library)"
     }
   },
   "ru": {
@@ -13,8 +14,9 @@
     "note": null,
     "elevenlabs": {
       "model": "eleven_v3",
-      "voice_id": null,
-      "language_code": "ru"
+      "voice_id": "MWyJiWDobXN8FX3CJTdE",
+      "language_code": "ru",
+      "voice_name": "Oleg - Calm, Natural and Clear (ElevenLabs library)"
     }
   }
 }
