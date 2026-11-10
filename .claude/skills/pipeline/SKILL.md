@@ -55,7 +55,7 @@ argument-hint: <feature> [описание новой фичи]
 | video-scriptwriter | сценарий | video-producer |
 | video-producer | видео | publisher (режим 1: только регистрация) |
 | publisher (регистрация) | записи `draft` | ворота `video_approval` → publisher (режим 1: публикация) |
-| publisher (публикация) | опубликовано | `next: done` |
+| publisher (публикация) | пробный прогон показан, после «да» — `--send` в Telegram | `next: done` |
 
 ## Как проверять ворота
 
@@ -64,7 +64,8 @@ argument-hint: <feature> [описание новой фичи]
 - `spec_approval` — в `specs/<feature>.md` есть строка `Статус: утверждено`.
 - `pr_merge` — `git fetch origin` и `git merge-base --is-ancestor <branch> origin/main` возвращает 0.
 - `tag_confirm` — тег `v<version>` существует (`git tag -l`). Если человек в этом разговоре явно написал «да» на команды тега — передай release «человек подтвердил тег», он выполнит команды; иначе жди.
-- `video_approval` — у всех записей фичи в `videos/registry.json` стоит `"approved": true`, и нет `religious_review: "required"`.
+- `video_approval` — у всех записей фичи в `videos/registry.json` стоит `"approved": true`, и нет `religious_review: "required"`. Спроси у человека комментарий к посту (поле `comment`) — publisher вставит его в подпись в Telegram.
+- Отправка в Telegram (`publish_telegram.py --send`) — только после явного «да» на показанные подписи.
 - `human_decision` — человек сказал, что делать (продолжить ревью, принять как есть, отменить); запиши решение в `history`.
 
 ## Цикл

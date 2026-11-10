@@ -25,6 +25,8 @@ tools: Read, Glob, Grep, Edit, Write, Bash
       "approved": false,
       "approved_by": null,
       "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "comment": "что сказать в посте — со слов человека",
       "published_url": null,
       "published_at": null,
       "replaces": null
@@ -41,7 +43,7 @@ tools: Read, Glob, Grep, Edit, Write, Bash
 
 1. Добавь или обнови записи по `videos/output/<feature>/manifest.json` (`status: draft`, `approved: false`).
 2. Публикуй запись, только если `approved: true` И `religious_review` ≠ `required`. Иначе — ничего не публикуй, перечисли, чего ждёт каждая запись.
-3. Публикация — командой из `videos/tools/README.md` (раздел «Публикация»). Если команда не настроена — не выдумывай площадку: подготовь список файлов и спроси человека.
+3. Публикация — в Telegram-канал: сначала пробный прогон `videos/tools/.venv/Scripts/python videos/tools/publish_telegram.py` и покажи человеку подписи; `--send` — только после его «да». Подпись собирается из названия сценария, «Что нового» из `CHANGELOG.md` и `comment` записи; `comment` пишешь со слов человека, сам не сочиняешь. Нет `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHANNEL_ID` в `.env` — попроси человека, в файлы проекта их не пиши.
 4. При замене старой версии: новая запись с `replaces: <старый id>`, старая — `outdated`; обнови ссылку «Видео:» в разделе `docs/user-guide/`, где стоит `<!-- feature: <feature> -->`.
 
 ## Режим 2. Что переснять (после релиза)

@@ -1,0 +1,51 @@
+{
+  "feature": "login",
+  "videos": [
+    {
+      "id": "login-teacher-ky",
+      "feature": "login",
+      "role": "teacher",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/login/teacher-ky.mp4",
+      "subtitles": "videos/output/login/teacher-ky.srt",
+      "duration_s": 35.6,
+      "voice": "kk-KZ-AigulNeural",
+      "voice_note": "edge-tts has no Kyrgyz voice; a Kazakh voice reads the Kyrgyz text. Accent is noticeable — native speaker review required.",
+      "scenario": "videos/scenarios/login.md",
+      "scenario_hash": "18dcf98711f72b28a4189ef26ece18617fad496fe822b15142434837a12c8ebf",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/login/frames/teacher-ky-start.png",
+        "videos/output/login/frames/teacher-ky-middle.png",
+        "videos/output/login/frames/teacher-ky-end.png"
+      ],
+      "created_at": "2026-11-10T12:08:25+06:00"
+    },
+    {
+      "id": "login-teacher-ru",
+      "feature": "login",
+      "role": "teacher",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/login/teacher-ru.mp4",
+      "subtitles": "videos/output/login/teacher-ru.srt",
+      "duration_s": 36.0,
+      "voice": "ru-RU-SvetlanaNeural",
+      "voice_note": null,
+      "scenario": "videos/scenarios/login.md",
+      "scenario_hash": "18dcf98711f72b28a4189ef26ece18617fad496fe822b15142434837a12c8ebf",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/login/frames/teacher-ru-start.png",
+        "videos/output/login/frames/teacher-ru-middle.png",
+        "videos/output/login/frames/teacher-ru-end.png"
+      ],
+      "created_at": "2026-11-10T12:12:33+06:00"
+    }
+  ]
+}

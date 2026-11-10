@@ -26,7 +26,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash
    - есть / нет; ручные шаги при деплое
    ```
 4. Обнови версию в `frontend/package.json` и `backend/pyproject.toml`.
-5. Подготовь коммит `Release vX.Y.Z` и **покажи команды** тега (`git tag -a vX.Y.Z -m ...`, `git push origin vX.Y.Z`), но выполняй их только после явного «да» человека: тег запускает деплой на сервер.
+5. Подготовь коммит `Release vX.Y.Z` и **покажи команды** тега (`git tag -a vX.Y.Z -m ...`, `git push origin vX.Y.Z`), но выполняй их только после явного «да» человека: тег запускает `.github/workflows/deploy.yml` — проверки и выкладку фронтенда на Cloudflare Pages. Бэкенд Render выкатывает сам при мерже в `main` — скажи об этом, если в релизе есть миграции.
 
 ## Запрещено
 

@@ -35,7 +35,13 @@ pytest -q                                        # тесты бэкенда (о
 
 cd frontend && npm install && npm run dev        # http://localhost:5173
 npm run lint && npm run build                    # проверка фронтенда (обязательно перед коммитом)
+
+docker compose up -d --build                     # всё приложение в Docker: http://localhost:8080 (нужен .env)
+cd e2e && npm ci && npx playwright test          # e2e на стенде с выдуманными людьми (сам поднимает бэкенд и фронтенд)
+videos/tools/.venv/Scripts/python videos/tools/make_video.py videos/scenarios/<feature>.md   # видео (videos/tools/README.md)
 ```
+
+**Деплой:** PR и `main` — только проверки (`ci.yml`); фронтенд на Cloudflare Pages выкатывается тегом `vX.Y.Z` (`deploy.yml`); бэкенд Render — сам после зелёного CI на `main`. Видео после релиза — вручную: Actions → «Post-release videos» (только запись, без публикации); публикация — `publish_telegram.py` после одобрения.
 
 Новая миграция: `alembic revision --autogenerate -m "..."` — сгенерированный файл всегда читать и править руками.
 
@@ -85,7 +91,7 @@ pm → [человек утверждает спеку] → architect → develo
 | docs | `docs/user-guide/<role>.md` |
 | video-scriptwriter | `videos/scenarios/<feature>.md` — шаги + озвучка на кыргызском и русском |
 | video-producer | `videos/output/<feature>/<lang>.mp4` + `.srt` |
-| publisher | `videos/registry.json`; публикует только одобренные видео |
+| publisher | `videos/registry.json`; публикует в Telegram-канал только одобренные видео |
 
 **Ручные ворота (агенты их не обходят):** утверждение спеки (`Статус: утверждено` в спеке ставит человек), мерж PR, одобрение видео (`"approved": true` в реестре ставит человек). Никаких автопубликаций.
 
