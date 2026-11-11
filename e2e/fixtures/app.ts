@@ -1,7 +1,7 @@
 import { expect, test as base, type Page } from "@playwright/test";
 import ky from "../../frontend/src/i18n/locales/ky.json" with { type: "json" };
 import ru from "../../frontend/src/i18n/locales/ru.json" with { type: "json" };
-import { PASSWORD, USERS, type Role } from "./users";
+import { EXTRA_USERS, PASSWORD, USERS, type ExtraUser, type Role } from "./users";
 
 const LOCALES = { ky, ru } as const;
 export type Lang = keyof typeof LOCALES;
@@ -14,11 +14,11 @@ export function tr(key: string, lang: Lang = "ky"): string {
 }
 
 /** Logs in through the login form, the way a person does. */
-export async function loginAs(page: Page, role: Role, lang: Lang = "ky") {
-  const user = USERS[role];
+export async function loginAs(page: Page, role: Role | ExtraUser, lang: Lang = "ky", password: string = PASSWORD) {
+  const user = role in USERS ? USERS[role as Role] : EXTRA_USERS[role as ExtraUser];
   await page.goto("/login");
   await page.getByLabel(tr("login.username", lang)).fill(user.username);
-  await page.getByLabel(tr("login.password", lang)).fill(PASSWORD);
+  await page.getByLabel(tr("login.password", lang)).fill(password);
   await page.getByRole("button", { name: tr("login.submit", lang) }).click();
   await expect(page).toHaveURL(new RegExp(`${user.home}$`));
 }
@@ -31,5 +31,15 @@ export const test = base.extend<{ lang: Lang }>({
     await use(page);
   },
 });
+
+/** The stand's API (same base URL the frontend dev server is pointed at). */
+export const API_URL = `http://127.0.0.1:${process.env.E2E_BACKEND_PORT ?? "8765"}/api/v1`;
+
+/** Bearer header of the user logged in on this page — for checks that the server itself refuses. */
+export async function authHeader(page: Page): Promise<Record<string, string>> {
+  const token = await page.evaluate(() => localStorage.getItem("access_token"));
+  if (!token) throw new Error("Not logged in");
+  return { Authorization: `Bearer ${token}` };
+}
 
 export { expect };

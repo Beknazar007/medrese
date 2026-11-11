@@ -3,14 +3,17 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session, selectinload
 
+from app.models.assignment import TeachingAssignment
+from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
+from app.services.assignments import changes_by_assignment, responsible_teacher_id
 from app.services.journal import auto_close_if_ended
 
 BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
@@ -83,24 +86,34 @@ def teacher_monitoring(
 
     entry_ids = [e.id for e in entries]
     held_rows = {
-        (row.schedule_entry_id, row.date): row.teacher_checked_in_at
+        (row.schedule_entry_id, row.date): (row.teacher_checked_in_at, row.teacher_id)
         for row in db.execute(
-            select(LessonSession.schedule_entry_id, LessonSession.date, LessonSession.teacher_checked_in_at).where(
+            select(
+                LessonSession.schedule_entry_id,
+                LessonSession.date,
+                LessonSession.teacher_checked_in_at,
+                LessonSession.teacher_id,
+            ).where(
                 LessonSession.schedule_entry_id.in_(entry_ids),
                 LessonSession.date >= date_from,
                 LessonSession.date <= effective_to,
             )
         ).all()
     }
+    changes = changes_by_assignment(db, {e.assignment_id for e in entries})
 
     totals: dict[int, dict[str, int]] = {}
     for entry in entries:
-        bucket = totals.setdefault(entry.teacher_id, {"expected": 0, "conducted": 0, "late": 0})
+        entry_changes = changes.get(entry.assignment_id, [])
         for d in _expected_dates(entry.day_of_week.value, date_from, effective_to):
+            held = held_rows.get((entry.id, d))
+            # After a teacher replacement, each date counts for whoever was responsible then.
+            teacher_id = responsible_teacher_id(entry, d, entry_changes, held[1] if held else None)
+            bucket = totals.setdefault(teacher_id, {"expected": 0, "conducted": 0, "late": 0})
             bucket["expected"] += 1
-            if (entry.id, d) in held_rows:
+            if held is not None:
                 bucket["conducted"] += 1
-                if _is_late(held_rows[(entry.id, d)], d, entry.time_slot.start_time):
+                if _is_late(held[0], d, entry.time_slot.start_time):
                     bucket["late"] += 1
 
     teachers = {t.id: t for t in db.scalars(select(TeacherProfile).where(TeacherProfile.id.in_(totals.keys()))).all()}
@@ -172,15 +185,28 @@ def teacher_session_log(
     whether it was held and the check-in/check-out timestamps when it was."""
     effective_to = min(date_to, today or date.today())
 
+    # Entries this teacher has now, plus those of assignments they were replaced on or took
+    # over — their earlier or later dates may still be this teacher's.
+    replaced_assignment_ids = select(AssignmentTeacherChange.assignment_id).where(
+        or_(AssignmentTeacherChange.from_teacher_id == teacher_id, AssignmentTeacherChange.to_teacher_id == teacher_id)
+    )
     entries = list(
         db.scalars(
-            select(ScheduleEntry).where(
-                ScheduleEntry.semester_id == semester_id, ScheduleEntry.teacher_id == teacher_id
+            select(ScheduleEntry)
+            .options(
+                selectinload(ScheduleEntry.assignment).selectinload(TeachingAssignment.subject),
+                selectinload(ScheduleEntry.assignment).selectinload(TeachingAssignment.group),
+                selectinload(ScheduleEntry.time_slot),
+            )
+            .where(
+                ScheduleEntry.semester_id == semester_id,
+                or_(ScheduleEntry.teacher_id == teacher_id, ScheduleEntry.assignment_id.in_(replaced_assignment_ids)),
             )
         ).all()
     )
     if not entries:
         return []
+    changes = changes_by_assignment(db, {e.assignment_id for e in entries})
 
     entry_ids = [e.id for e in entries]
     sessions_by_pair = {
@@ -198,8 +224,12 @@ def teacher_session_log(
     for entry in entries:
         subject_name = entry.assignment.subject.name
         group_name = entry.assignment.group.name
+        entry_changes = changes.get(entry.assignment_id, [])
         for d in _expected_dates(entry.day_of_week.value, date_from, effective_to):
             session = sessions_by_pair.get((entry.id, d))
+            held_by = session.teacher_id if session is not None else None
+            if responsible_teacher_id(entry, d, entry_changes, held_by) != teacher_id:
+                continue
             if session is not None:
                 auto_close_if_ended(session)
             checked_in_at = session.teacher_checked_in_at if session else None

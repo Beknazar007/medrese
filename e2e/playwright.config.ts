@@ -28,6 +28,8 @@ export default defineConfig({
       url: `http://127.0.0.1:${BACKEND_PORT}/health`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
+      // Extra stand data for feature tests (seed.py); video recording starts the stand without it.
+      env: { E2E_EXTRA_DATA: "1" },
     },
     {
       command: `npm --prefix ../frontend run dev -- --port ${FRONTEND_PORT} --strictPort`,

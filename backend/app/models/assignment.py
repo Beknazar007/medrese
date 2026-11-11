@@ -28,3 +28,8 @@ class TeachingAssignment(Base):
     group: Mapped["Group"] = relationship(back_populates="assignments")
     semester: Mapped["Semester"] = relationship(back_populates="assignments")
     schedule_entries: Mapped[list["ScheduleEntry"]] = relationship(back_populates="assignment")
+    # The replacement log belongs to the assignment: deleting the assignment must not be
+    # blocked by its own history.
+    teacher_changes: Mapped[list["AssignmentTeacherChange"]] = relationship(
+        cascade="all, delete-orphan", order_by="AssignmentTeacherChange.effective_from"
+    )

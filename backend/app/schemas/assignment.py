@@ -11,6 +11,16 @@ class TeachingAssignmentCreate(BaseModel):
     hour_type: HourType
 
 
+class TeachingAssignmentUpdate(BaseModel):
+    """Every field optional; absent or null means "keep the current value"."""
+
+    teacher_id: int | None = None
+    subject_id: int | None = None
+    group_id: int | None = None
+    semester_id: int | None = None
+    hour_type: HourType | None = None
+
+
 class TeachingAssignmentOut(BaseModel):
     id: int
     teacher_id: int

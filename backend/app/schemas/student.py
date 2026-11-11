@@ -1,6 +1,13 @@
 from datetime import date
+from typing import Annotated, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, BeforeValidator
+
+
+def _none_to_true(v: Any) -> Any:
+    # A newly enrolled student is active unless explicitly marked otherwise; an untouched
+    # switch arrives as null.
+    return True if v is None else v
 
 
 class StudentCreate(BaseModel):
@@ -13,7 +20,7 @@ class StudentCreate(BaseModel):
     guardian_name: str | None = None
     guardian_phone: str | None = None
     enrollment_date: date | None = None
-    is_active: bool = True
+    is_active: Annotated[bool, BeforeValidator(_none_to_true)] = True
     photo: str | None = None
     bio: str | None = None
 

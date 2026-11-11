@@ -1,4 +1,5 @@
 from app.models.assignment import TeachingAssignment
+from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.department import Department
 from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind, HourType, NoteVisibility, UserRole
@@ -19,6 +20,7 @@ from app.models.user import User
 
 __all__ = [
     "TeachingAssignment",
+    "AssignmentTeacherChange",
     "AttendanceRecord",
     "Department",
     "AttendanceStatus",

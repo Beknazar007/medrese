@@ -22,12 +22,13 @@ from app.core.security import hash_password  # noqa: E402
 from app.db.base import Base  # noqa: E402
 from app.models import *  # noqa: E402,F401,F403
 from app.models.attendance import AttendanceRecord  # noqa: E402
-from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind, NoteVisibility, UserRole  # noqa: E402
+from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind, HourType, NoteVisibility, UserRole  # noqa: E402
 from app.models.excuse import StudentExcuse  # noqa: E402
 from app.models.grade import GradeRecord  # noqa: E402
 from app.models.hifz import HifzExam, HifzRecord, HifzTarget  # noqa: E402
 from app.models.lesson_session import LessonSession  # noqa: E402
 from app.models.note import StudentNote  # noqa: E402
+from app.models.semester import Semester  # noqa: E402
 from app.models.timeslot import TimeSlot  # noqa: E402
 from app.models.user import User  # noqa: E402
 from tests import factories as f  # noqa: E402
@@ -143,7 +144,7 @@ with Session(engine) as db:
             start = slot1.start_time if entry.time_slot_id == slot1.id else (slot2 if entry.time_slot_id == slot2.id else slot3).start_time
             hh, mm = (9, 0) if start == time(0, 0) else (start.hour, start.minute)
             late = rnd.random() < 0.15
-            session = LessonSession(schedule_entry_id=entry.id, date=d, is_exam=(i == 2 and entry is not e_hifz),
+            session = LessonSession(schedule_entry_id=entry.id, date=d, teacher_id=entry.teacher_id, is_exam=(i == 2 and entry is not e_hifz),
                                     teacher_checked_in_at=at(d, hh, mm + (12 if late else 1)),
                                     teacher_checked_out_at=at(d, hh + 1, mm + 15))
             db.add(session)
@@ -170,6 +171,54 @@ with Session(engine) as db:
             db.add(HifzRecord(student_id=s.id, date=d, kind=HifzKind.REPEAT, score=rnd.randint(65, 100), juz="1"))
         db.add(HifzExam(student_id=s.id, date=today - timedelta(days=10), title="1-жуз", juz_from=1, juz_to=1,
                         score=rnd.randint(75, 98)))
+
+    # Extra data for e2e/tests/ux-fixes only (Playwright sets E2E_EXTRA_DATA=1). Video recording
+    # runs without it, so the screens in the videos stay exactly as they were. No rnd here.
+    if os.environ.get("E2E_EXTRA_DATA") == "1":
+        db.add(Semester(name="2026 Жаз", start_date=date(2026, 2, 1), end_date=date(2026, 6, 30), is_active=False))
+        group3 = f.make_group(db, ilim, "Кары 3")
+        prep_group = f.make_group(db, hafiz_dep, "Даярдоо 1")  # another department's ordinary group
+        for name in ("Иманалиев Саид", "Жолдошев Бекзат"):
+            f.make_student(db, group3, name)
+        f.make_student(db, prep_group, "Курманов Алым")
+
+        extra_teachers = {}
+        for username, full_name in (("teacher3", "Жээнбеков Канат"), ("teacher4", "Токтоматов Нурлан"),
+                                    ("teacher5", "Эсенов Бакыт")):
+            profile = f.make_teacher(db, ilim, username)
+            profile.full_name = full_name
+            profile.user.must_change_password = False
+            extra_teachers[username] = profile
+        t3, t4, t5 = extra_teachers["teacher3"], extra_teachers["teacher4"], extra_teachers["teacher5"]
+
+        history = f.make_subject(db, ilim, "TAR1")
+        history.name = "Тарых"
+        sira = f.make_subject(db, ilim, "SIR1")
+        sira.name = "Сира"
+        tajwid = f.make_subject(db, hafiz_dep, "TJW1")
+        tajwid.name = "Тажвид"
+
+        # Replacement target (B5.R1–R4): teacher3 → teacher5; teacher4 is busy at the same pair (B5.R2).
+        a_rep = f.make_assignment(db, t3, history, group3, sem)
+        a_busy = f.make_assignment(db, t4, sira, group2, sem)
+        # Subject and group of another department on an ilim teacher (criterion 4).
+        a_cross = f.make_assignment(db, t3, tajwid, prep_group, sem)
+        # Scheduled assignment whose subject is renamed and whose group change is refused (criterion 28).
+        a_rename = f.make_assignment(db, t4, history, group3, sem, HourType.PRACTICE)
+        # Not in the timetable: edited freely (criterion 27) and turned into a duplicate (criterion 29).
+        f.make_assignment(db, t5, sira, group3, sem)
+        f.make_assignment(db, t5, history, group2, sem)
+        f.make_schedule_entry(db, a_rep, room2, slot3, d1)
+        f.make_schedule_entry(db, a_busy, room3, slot3, d1)
+        f.make_schedule_entry(db, a_cross, room2, slot2, d2)
+        f.make_schedule_entry(db, a_rename, room2, slot3, d3)
+
+        # Password-change accounts (B6): each test changes the password and sets it back, but the
+        # "recommend changing" banner disappears for good — so one account per device project.
+        for username in ("pwd_teacher_mobile", "pwd_teacher_desktop"):
+            f.make_teacher(db, ilim, username).user.must_change_password = True
+        db.add(User(username="pwd_rector", hashed_password=hash_password(PASSWORD), role=UserRole.RECTOR,
+                    must_change_password=True))
     db.commit()
 
 print(f"stand seeded for {today} ({dow_today.name})")

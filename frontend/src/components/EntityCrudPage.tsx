@@ -110,6 +110,13 @@ interface Props<T extends { id: number }> {
     confirmMessage: (id: number) => Promise<string>;
     remove: (id: number) => Promise<void>;
   };
+  /** Extra text for the "Save changes?" question, e.g. a warning about what the change will do.
+   *  `editingRow` is null when creating. */
+  confirmMessage?: (values: Record<string, unknown>, editingRow: T | null) => string | undefined;
+}
+
+function isBlank(value: unknown): boolean {
+  return value === "" || value === undefined || value === null;
 }
 
 export default function EntityCrudPage<T extends { id: number }>({
@@ -128,6 +135,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   searchPlaceholder,
   onRowClick,
   forceDelete,
+  confirmMessage,
 }: Props<T>) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -159,6 +167,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   const [editingRow, setEditingRow] = useState<T | null>(null);
   const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
@@ -166,6 +175,7 @@ export default function EntityCrudPage<T extends { id: number }>({
     setEditingRow(null);
     setFormValues({ ...defaultValues });
     setFormError(null);
+    setFieldErrors({});
     setDialogOpen(true);
   }
 
@@ -173,6 +183,7 @@ export default function EntityCrudPage<T extends { id: number }>({
     setEditingRow(row);
     setFormValues({ ...row });
     setFormError(null);
+    setFieldErrors({});
     setDialogOpen(true);
   }
 
@@ -182,6 +193,9 @@ export default function EntityCrudPage<T extends { id: number }>({
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey });
 
+  // Server validation errors name payload fields; show them with the labels the user sees.
+  const fieldLabels = Object.fromEntries(fields.map((f) => [f.name, f.label]));
+
   const createMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) => api.create!(payload),
     onSuccess: () => {
@@ -189,7 +203,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       setSnackbar(t("common.created"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_create"), t)),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_create"), t, fieldLabels)),
   });
 
   const updateMutation = useMutation({
@@ -199,7 +213,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       setSnackbar(t("common.saved"));
       closeDialog();
     },
-    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_save"), t)),
+    onError: (err) => setFormError(apiErrorMessage(err, t("common.failed_to_save"), t, fieldLabels)),
   });
 
   const deleteMutation = useMutation({
@@ -237,16 +251,36 @@ export default function EntityCrudPage<T extends { id: number }>({
     onError: (err) => setSnackbar(apiErrorMessage(err, t("common.failed_to_delete"), t)),
   });
 
+  function isFieldShown(field: FieldConfig): boolean {
+    return !field.hidden?.(formValues) && !(editingRow && field.editableOnCreateOnly);
+  }
+
+  function isFieldRequired(field: FieldConfig): boolean {
+    return Boolean(field.required) && !(field.requiredOnCreateOnly && editingRow);
+  }
+
   async function handleSubmit() {
-    const ok = await confirm({ message: t("common.confirm_save") });
+    // Check required fields before asking "Save changes?": otherwise the user confirms, and
+    // only then learns from the server that the form was incomplete.
+    const missing: Record<string, string> = {};
+    for (const field of fields) {
+      if (field.type === "checkbox" || !isFieldShown(field) || !isFieldRequired(field)) continue;
+      if (isBlank(formValues[field.name])) missing[field.name] = t("validation.required");
+    }
+    setFieldErrors(missing);
+    if (Object.keys(missing).length > 0) return;
+
+    const extra = confirmMessage?.(formValues, editingRow);
+    const ok = await confirm({ message: extra ? `${extra}. ${t("common.confirm_save")}` : t("common.confirm_save") });
     if (!ok) return;
     setFormError(null);
     const payload: Record<string, unknown> = {};
     for (const field of fields) {
-      if (field.hidden?.(formValues)) continue;
-      if (editingRow && field.editableOnCreateOnly) continue;
+      if (!isFieldShown(field)) continue;
       const raw = formValues[field.name];
-      payload[field.name] = raw === "" || raw === undefined ? null : raw;
+      // A switch is saved exactly as it is shown: an untouched one is off, not "unknown".
+      if (field.type === "checkbox") payload[field.name] = Boolean(raw);
+      else payload[field.name] = isBlank(raw) ? null : raw;
     }
     if (editingRow) {
       updateMutation.mutate(payload);
@@ -257,6 +291,12 @@ export default function EntityCrudPage<T extends { id: number }>({
 
   function setField(name: string, value: unknown) {
     setFormValues((prev) => ({ ...prev, [name]: value }));
+    setFieldErrors((prev) => {
+      if (!(name in prev)) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   }
 
   const busy = createMutation.isPending || updateMutation.isPending;
@@ -514,7 +554,8 @@ export default function EntityCrudPage<T extends { id: number }>({
             if (editingRow && field.editableOnCreateOnly) return null;
 
             const value = formValues[field.name] ?? "";
-            const isRequired = Boolean(field.required) && !(field.requiredOnCreateOnly && editingRow);
+            const isRequired = isFieldRequired(field);
+            const fieldError = fieldErrors[field.name];
 
             if (field.type === "select") {
               const options = field.options ?? [];
@@ -527,7 +568,15 @@ export default function EntityCrudPage<T extends { id: number }>({
                   isOptionEqualToValue={(opt, val) => opt.value === val.value}
                   getOptionLabel={(opt) => opt.label}
                   onChange={(_e, newValue) => setField(field.name, newValue ? newValue.value : "")}
-                  renderInput={(params) => <TextField {...params} label={field.label} required={isRequired} />}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={field.label}
+                      required={isRequired}
+                      error={Boolean(fieldError)}
+                      helperText={fieldError}
+                    />
+                  )}
                   fullWidth
                 />
               );
@@ -581,12 +630,17 @@ export default function EntityCrudPage<T extends { id: number }>({
                 type={field.type === "date" ? "date" : field.type === "time" ? "time" : field.type}
                 value={value}
                 required={isRequired}
+                error={Boolean(fieldError)}
                 multiline={field.multiline}
                 minRows={field.multiline ? 3 : undefined}
                 onChange={(e) =>
-                  setField(field.name, field.type === "number" ? Number(e.target.value) : e.target.value)
+                  setField(
+                    field.name,
+                    // A cleared number stays empty instead of turning into 0 (Number("") === 0).
+                    field.type === "number" && e.target.value !== "" ? Number(e.target.value) : e.target.value,
+                  )
                 }
-                helperText={editingRow ? field.editHelperText : undefined}
+                helperText={fieldError ?? (editingRow ? field.editHelperText : undefined)}
                 slotProps={{ inputLabel: { shrink: field.type === "date" || field.type === "time" ? true : undefined } }}
                 fullWidth
               />

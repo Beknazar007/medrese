@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -16,16 +16,24 @@ class LessonSession(Base):
     """
 
     __tablename__ = "lesson_sessions"
-    __table_args__ = (UniqueConstraint("schedule_entry_id", "date", name="uq_session_entry_date"),)
+    __table_args__ = (
+        UniqueConstraint("schedule_entry_id", "date", name="uq_session_entry_date"),
+        Index("ix_lesson_sessions_teacher_id_date", "teacher_id", "date"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     schedule_entry_id: Mapped[int] = mapped_column(ForeignKey("schedule_entries.id"), nullable=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
+    # Who actually taught this lesson. Copied from the schedule entry when the lesson is opened
+    # and never changed afterwards, so replacing the teacher of an assignment mid-semester
+    # leaves already-held lessons (journal, history, monitoring) with the teacher who held them.
+    teacher_id: Mapped[int] = mapped_column(ForeignKey("teacher_profiles.id"), nullable=False)
     teacher_checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     teacher_checked_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_exam: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     schedule_entry: Mapped["ScheduleEntry"] = relationship()
+    teacher: Mapped["TeacherProfile"] = relationship()
     attendance_records: Mapped[list["AttendanceRecord"]] = relationship(
         back_populates="session", cascade="all, delete-orphan"
     )

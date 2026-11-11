@@ -1,6 +1,6 @@
 import axios from "axios";
 
-type Translate = (key: string) => string;
+type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 // The backend's HTTPException detail strings are plain English (see app/api/v1/*.py and
 // app/core/deps.py) — this maps each known one to an i18n key so error snackbars/alerts
@@ -65,6 +65,8 @@ const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "Target period cannot exceed 400 days": "errors.hifz_target_too_long",
   "juz_to must be >= juz_from": "errors.hifz_juz_order",
   "page_to must be >= page_from": "errors.hifz_page_order",
+  "Cannot change the group or semester of an assignment that is in the timetable": "errors.assignment_scheduled_fields",
+  "The new teacher must be from the same department as the assignment": "errors.new_teacher_other_department",
 };
 
 const PATTERN_MESSAGE_KEYS: { pattern: RegExp; key: string }[] = [
@@ -76,22 +78,78 @@ function translateDetail(detail: string, t: Translate): string | null {
   const stripped = detail.replace(/^Value error,\s*/, "");
   const exactKey = EXACT_MESSAGE_KEYS[stripped];
   if (exactKey) return t(exactKey);
+  const busy = /^The new teacher already has classes at: (.+)$/.exec(stripped);
+  if (busy) {
+    // "<day_of_week>/<period number>, …" from the server, e.g. "1/2" = Monday, 2nd period.
+    const slots = busy[1]
+      .split(", ")
+      .map((slot) => {
+        const [day, period] = slot.split("/");
+        // Word order differs by language ("Дүй 2-сабак" / "Mon, period 2"), hence a template.
+        return t("errors.busy_slot", { day: t(`days.${day}`), n: period });
+      })
+      .join(", ");
+    return t("errors.new_teacher_busy", { slots });
+  }
   const patternMatch = PATTERN_MESSAGE_KEYS.find((p) => p.pattern.test(stripped));
   if (patternMatch) return t(patternMatch.key);
   return null;
 }
 
-export function apiErrorMessage(error: unknown, fallback: string, t: Translate): string {
+// Pydantic error `type` -> i18n key. Its English `msg` is never shown: unknown types fall back
+// to a generic, translated text.
+const VALIDATION_TYPE_KEYS: Record<string, string> = {
+  missing: "validation.required",
+  int_parsing: "validation.int",
+  int_type: "validation.int",
+  int_from_float: "validation.int",
+  float_parsing: "validation.number",
+  float_type: "validation.number",
+  date_parsing: "validation.date",
+  date_type: "validation.date",
+  date_from_datetime_parsing: "validation.date",
+  time_parsing: "validation.time",
+  time_type: "validation.time",
+  bool_parsing: "validation.bool",
+  bool_type: "validation.bool",
+  enum: "validation.choice",
+  literal_error: "validation.choice",
+  greater_than: "validation.range",
+  greater_than_equal: "validation.range",
+  less_than: "validation.range",
+  less_than_equal: "validation.range",
+  string_too_short: "validation.too_short",
+  string_too_long: "validation.too_long",
+};
+
+interface ValidationIssue {
+  loc?: unknown[];
+  type?: string;
+  msg?: string;
+}
+
+function validationIssueMessage(issue: ValidationIssue, t: Translate, fieldLabels?: Record<string, string>): string {
+  // Model-level validators (e.g. "end_date must be on or after start_date") already have translations.
+  const known = typeof issue.msg === "string" ? translateDetail(issue.msg, t) : null;
+  const message = known ?? t(VALIDATION_TYPE_KEYS[issue.type ?? ""] ?? "validation.generic");
+  const fieldName = [...(issue.loc ?? [])].reverse().find((part): part is string => typeof part === "string");
+  const label = fieldName ? fieldLabels?.[fieldName] : undefined;
+  return label ? t("validation.field_message", { field: label, message }) : message;
+}
+
+/** `fieldLabels` maps payload field names to the form's labels, so a 422 reads "Course: Enter a whole number". */
+export function apiErrorMessage(
+  error: unknown,
+  fallback: string,
+  t: Translate,
+  fieldLabels?: Record<string, string>,
+): string {
   if (axios.isAxiosError(error)) {
     const detail = error.response?.data?.detail;
     if (typeof detail === "string") return translateDetail(detail, t) ?? detail;
     if (Array.isArray(detail)) {
-      return detail
-        .map((d) => {
-          const msg = d.msg ?? JSON.stringify(d);
-          return translateDetail(msg, t) ?? msg;
-        })
-        .join("; ");
+      const messages = detail.map((d: ValidationIssue) => validationIssueMessage(d, t, fieldLabels));
+      return [...new Set(messages)].join("; ");
     }
   }
   return fallback;

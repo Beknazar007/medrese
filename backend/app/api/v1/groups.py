@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import accessible_department_ids, assert_department_access, get_current_user, require_role
 from app.db.session import get_db
+from app.models.assignment import TeachingAssignment
 from app.models.enums import UserRole
 from app.models.group import Group
 from app.models.user import User
@@ -18,7 +19,15 @@ def list_groups(db: Session = Depends(get_db), current_user: User = Depends(get_
     dept_ids = accessible_department_ids(current_user)
     stmt = select(Group)
     if dept_ids is not None:
-        stmt = stmt.where(Group.department_id.in_(dept_ids))
+        visible = Group.department_id.in_(dept_ids)
+        if current_user.role == UserRole.TEACHER and current_user.teacher_profile is not None:
+            # A rector may assign a teacher a group of another department; without it here the
+            # teacher's own timetable would show a blank name for that lesson.
+            own = select(TeachingAssignment.group_id).where(
+                TeachingAssignment.teacher_id == current_user.teacher_profile.id
+            )
+            visible = or_(visible, Group.id.in_(own))
+        stmt = stmt.where(visible)
     return list(db.scalars(stmt).all())
 
 

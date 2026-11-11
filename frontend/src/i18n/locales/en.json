@@ -209,7 +209,8 @@
     "field_group": "Group",
     "field_semester": "Semester",
     "field_type": "Hour type",
-    "empty_hint": "No teaching assignments yet — assign a teacher to a subject+group+semester first, then build the timetable."
+    "empty_hint": "No teaching assignments yet — assign a teacher to a subject+group+semester first, then build the timetable.",
+    "teacher_replace_warning": "The teacher will be replaced in all upcoming lessons"
   },
   "schedule": {
     "title": "Schedule",
@@ -544,7 +545,25 @@
     "role_not_permitted": "You are not permitted to perform this action",
     "hifz_student_not_in_group": "One of the selected students is not in this group",
     "period_end_before_start": "The end of the period is before its start",
-    "period_too_long": "The period cannot be longer than 400 days"
+    "period_too_long": "The period cannot be longer than 400 days",
+    "assignment_scheduled_fields": "This assignment is already in the timetable — remove it from the timetable first to change the group or semester",
+    "new_teacher_busy": "The new teacher is busy at: {{slots}}",
+    "new_teacher_other_department": "The new teacher must be from the same department",
+    "busy_slot": "{{day}}, period {{n}}"
   },
-  "app_short_title": "Medrese"
+  "app_short_title": "Medrese",
+  "validation": {
+    "required": "This field is required",
+    "int": "Enter a whole number",
+    "number": "Enter a number",
+    "date": "Enter a valid date",
+    "time": "Enter a valid time",
+    "bool": "Choose yes or no",
+    "choice": "Choose a value from the list",
+    "range": "The value is out of the allowed range",
+    "too_short": "The text is too short",
+    "too_long": "The text is too long",
+    "generic": "Some fields are filled in incorrectly — please check them",
+    "field_message": "{{field}}: {{message}}"
+  }
 }

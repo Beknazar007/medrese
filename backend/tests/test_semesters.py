@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.semesters import _deactivate_other_semesters
 from app.models.semester import Semester
+from tests.factories import make_dean, make_department, make_rector, make_teacher
+
+URL = "/api/v1/semesters"
 
 
 def _make_semester(db: Session, name: str, is_active: bool) -> Semester:
@@ -37,3 +40,53 @@ def test_deactivate_others_leaves_a_single_active_semester_among_many(db: Sessio
     assert [s.id for s in active] == [b.id]
     assert db.get(Semester, a.id).is_active is False
     assert db.get(Semester, c.id).is_active is False
+
+
+# --- HTTP: the "active" switch left untouched (B4, criteria 19, 20, 23) ---
+
+
+def test_create_semester_without_or_with_null_is_active_is_inactive_and_keeps_current_active(db: Session, client_as):
+    current = _make_semester(db, "Current", is_active=True)
+    client = client_as(make_rector(db))
+    dates = {"start_date": "2027-01-10", "end_date": "2027-06-01"}
+
+    missing = client.post(URL, json={"name": "No switch", **dates})
+    null = client.post(URL, json={"name": "Null switch", "is_active": None, **dates})
+
+    assert missing.status_code == 201, missing.text
+    assert null.status_code == 201, null.text
+    assert missing.json()["is_active"] is False
+    assert null.json()["is_active"] is False
+    db.refresh(current)
+    assert current.is_active is True
+
+
+def test_create_active_semester_deactivates_others(db: Session, client_as):
+    current = _make_semester(db, "Current", is_active=True)
+    client = client_as(make_rector(db))
+
+    response = client.post(
+        URL, json={"name": "Next", "start_date": "2027-01-10", "end_date": "2027-06-01", "is_active": True}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["is_active"] is True
+    db.refresh(current)
+    assert current.is_active is False
+
+
+def test_dean_and_teacher_get_403_on_semester_writes(db: Session, client_as):
+    semester = _make_semester(db, "Current", is_active=True)
+    department = make_department(db)
+    dean = make_dean(db, department)
+    teacher = make_teacher(db, department)
+    payload = {"name": "X", "start_date": "2027-01-10", "end_date": "2027-06-01"}
+
+    for user in (dean, teacher.user):
+        client = client_as(user)
+        assert client.post(URL, json=payload).status_code == 403
+        assert client.patch(f"{URL}/{semester.id}", json={"name": "Y"}).status_code == 403
+        assert client.delete(f"{URL}/{semester.id}").status_code == 403
+
+    db.refresh(semester)
+    assert semester.name == "Current"
