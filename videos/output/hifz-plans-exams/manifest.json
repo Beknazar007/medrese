@@ -9,12 +9,12 @@
       "device": "mobile",
       "file": "videos/output/hifz-plans-exams/hafiz-ky.mp4",
       "subtitles": "videos/output/hifz-plans-exams/hafiz-ky.srt",
-      "duration_s": 38.0,
+      "duration_s": 32.4,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/hifz-plans-exams.md",
-      "scenario_hash": "e99899d972e5f5fe752c576546edae8e5a3eb88a28514cd1d71ff19517559db9",
-      "app_version": "0.0.0",
+      "scenario_hash": "1d5a5293841192845370c26b505d61c030ad9698e0537a8faebb9acd3fefc138",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -22,7 +22,7 @@
         "videos/output/hifz-plans-exams/frames/hafiz-ky-middle.png",
         "videos/output/hifz-plans-exams/frames/hafiz-ky-end.png"
       ],
-      "created_at": "2026-11-10T14:46:16+06:00"
+      "created_at": "2026-11-11T15:05:22+06:00"
     },
     {
       "id": "hifz-plans-exams-hafiz-ru",
@@ -32,12 +32,12 @@
       "device": "mobile",
       "file": "videos/output/hifz-plans-exams/hafiz-ru.mp4",
       "subtitles": "videos/output/hifz-plans-exams/hafiz-ru.srt",
-      "duration_s": 38.6,
+      "duration_s": 34.9,
       "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
       "voice_note": null,
       "scenario": "videos/scenarios/hifz-plans-exams.md",
-      "scenario_hash": "e99899d972e5f5fe752c576546edae8e5a3eb88a28514cd1d71ff19517559db9",
-      "app_version": "0.0.0",
+      "scenario_hash": "1d5a5293841192845370c26b505d61c030ad9698e0537a8faebb9acd3fefc138",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "not_needed",
       "frames": [
@@ -45,7 +45,7 @@
         "videos/output/hifz-plans-exams/frames/hafiz-ru-middle.png",
         "videos/output/hifz-plans-exams/frames/hafiz-ru-end.png"
       ],
-      "created_at": "2026-11-10T14:47:20+06:00"
+      "created_at": "2026-11-11T15:06:21+06:00"
     }
   ]
 }

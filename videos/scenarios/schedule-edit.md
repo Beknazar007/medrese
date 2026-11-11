@@ -47,10 +47,6 @@ feature: schedule-edit · role: rector · version: 0.0.0 · device: desktop
   target: role=dialog >> role=button[name="@common.add"]
   pause: 0.6
   say: added
-- id: 9b
-  action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.5
 - id: 10
   action: click
   target: main >> tbody >> tr >> nth=2 >> td >> nth=7 >> text=Кары 1

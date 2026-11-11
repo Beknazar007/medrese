@@ -9,12 +9,12 @@
       "device": "mobile",
       "file": "videos/output/change-password/teacher-ky.mp4",
       "subtitles": "videos/output/change-password/teacher-ky.srt",
-      "duration_s": 27.6,
+      "duration_s": 28.7,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/change-password.md",
-      "scenario_hash": "d4bd949e64b3cadd65a151017310e5e0770475e80b8579a9007b4df3ab024b19",
-      "app_version": "0.0.0",
+      "scenario_hash": "fc7b2e9f43b4507a25e694258ab527c6149861e0cb271cfdc5277c69b07eab2e",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -22,7 +22,7 @@
         "videos/output/change-password/frames/teacher-ky-middle.png",
         "videos/output/change-password/frames/teacher-ky-end.png"
       ],
-      "created_at": "2026-11-10T14:10:31+06:00"
+      "created_at": "2026-11-11T14:24:22+06:00"
     },
     {
       "id": "change-password-teacher-ru",
@@ -32,12 +32,12 @@
       "device": "mobile",
       "file": "videos/output/change-password/teacher-ru.mp4",
       "subtitles": "videos/output/change-password/teacher-ru.srt",
-      "duration_s": 25.4,
+      "duration_s": 27.3,
       "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
       "voice_note": null,
       "scenario": "videos/scenarios/change-password.md",
-      "scenario_hash": "d4bd949e64b3cadd65a151017310e5e0770475e80b8579a9007b4df3ab024b19",
-      "app_version": "0.0.0",
+      "scenario_hash": "fc7b2e9f43b4507a25e694258ab527c6149861e0cb271cfdc5277c69b07eab2e",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "not_needed",
       "frames": [
@@ -45,7 +45,7 @@
         "videos/output/change-password/frames/teacher-ru-middle.png",
         "videos/output/change-password/frames/teacher-ru-end.png"
       ],
-      "created_at": "2026-11-10T14:11:20+06:00"
+      "created_at": "2026-11-11T14:25:12+06:00"
     }
   ]
 }

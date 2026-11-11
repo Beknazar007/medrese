@@ -20,7 +20,7 @@ feature: teacher-notes · role: teacher · version: 0.0.0 · device: mobile
   say: open_class
 - id: 4
   action: click
-  target: tr:has-text("Бакиров Нурислам") >> role=button[name="@students.notes_title"]
+  target: div[data-testid=attendance-card]:has-text("Бакиров Нурислам") >> role=button[name="@students.notes_title"]
   pause: 1.0
   say: icon
 - id: 5
@@ -44,10 +44,6 @@ feature: teacher-notes · role: teacher · version: 0.0.0 · device: mobile
   target: role=dialog >> role=button[name="@journal.note_add"]
   pause: 0.8
   say: add
-- id: 9
-  action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.0
 - id: 10
   action: highlight
   target: {ky: "role=dialog >> text=Бүгүн сабакка жакшы", ru: "role=dialog >> text=Сегодня хорошо"}
@@ -78,7 +74,7 @@ feature: teacher-notes · role: teacher · version: 0.0.0 · device: mobile
 | earlier | Мурунку эскертмелер ушул жерде көрүнөт. | Здесь видны прежние заметки. |
 | write | Эскертмеңизди жазыңыз. | Напишите заметку. |
 | visibility | Жеке эскертмени сиз гана көрөсүз. Жалпысын кафедра башчысы жана ректор да көрөт. | Личную видите только вы. Общую видят ещё завкафедрой и ректор. |
-| add | «Кошуу» баскычын басып, ырастаңыз. | Нажмите «Добавить» и подтвердите. |
+| add | «Кошуу» баскычын басыңыз. | Нажмите «Добавить». |
 | saved | Эскертме сакталды. | Заметка сохранена. |
 | profile | Окуучунун атын бассаңыз, анын профили ачылат. | Если нажать на имя ученика, откроется его профиль. |
 | outro | Бул жерде анын маалыматы жана сабактарынын тарыхы бар. | Здесь его данные и история занятий. |

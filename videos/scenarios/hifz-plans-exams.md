@@ -46,12 +46,14 @@ feature: hifz-plans-exams · role: hafiz · version: 0.0.0 · device: mobile
 - id: 9
   action: click
   target: role=dialog >> role=button[name="@hifz.target_add"]
+  # «Сакталды» covers the dialog's close button for 4 s (finding B12); the recorder's mouse stays over it,
+  # which pauses the toast timer — step 9c moves the mouse away first.
   pause: 0.6
   say: plan_saved
-- id: 9b
+- id: 9c
   action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.0
+  target: role=dialog >> h2
+  pause: 0.3
 - id: 10
   action: click
   target: role=dialog >> role=button[name="@journal.close"]
@@ -82,10 +84,6 @@ feature: hifz-plans-exams · role: hafiz · version: 0.0.0 · device: mobile
   target: role=dialog >> role=button[name="@hifz.exam_add"]
   pause: 0.6
   say: exam_saved
-- id: 15b
-  action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.5
 ```
 
 ## Озвучка
@@ -95,10 +93,10 @@ feature: hifz-plans-exams · role: hafiz · version: 0.0.0 · device: mobile
 | plans_icon | «Сабак» өтмөгүндө окуучунун картасындагы «Пландар» белгисин басыңыз. | Во вкладке «Урок» нажмите значок «Планы» на карточке ученика. |
 | plans_list | Мурунку пландар жогоруда. | Вверху — прежние планы. |
 | plan_add | Жаңы план үчүн жуз жана беттерди жазыңыз. | Для нового плана впишите джуз и страницы. |
-| plan_saved | «План кошуу» баскычын басып, ырастаңыз. | Нажмите «Добавить план» и подтвердите. |
+| plan_saved | «План кошуу» баскычын басыңыз. | Нажмите «Добавить план». |
 | exams_icon | Экзамен үчүн «Экзамендер» белгисин басыңыз. | Для экзамена нажмите значок «Экзамены». |
 | exam_fill | Бааны, аталышын жана жузду жазыңыз. | Впишите оценку, название и джуз. |
-| exam_saved | «Экзамен кошуу» баскычын басып, ырастаңыз. Экзамен журналда көрүнөт. | Нажмите «Добавить экзамен» и подтвердите. Экзамен появится в журнале. |
+| exam_saved | «Экзамен кошуу» баскычын басыңыз. Экзамен журналда көрүнөт. | Нажмите «Добавить экзамен». Экзамен появится в журнале. |
 
 Данные: стенд `e2e/fixtures/seed.py`, реальных имён нет.
 

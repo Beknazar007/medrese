@@ -3,7 +3,7 @@
   "title": "Исправление недочётов, найденных при записи видео (B7–B11)",
   "branch": "feature/ux-fixes-2",
   "next": "publisher",
-  "waiting_for": "tag_confirm",
+  "waiting_for": null,
   "review_iteration": 1,
   "version": "1.0.0",
   "artifacts": {
@@ -55,7 +55,7 @@
       "version": "1.0.0",
       "commit": "Release v1.0.0",
       "tag": "v1.0.0",
-      "tag_pushed": false
+      "tag_pushed": true
     }
   },
   "history": [
@@ -106,6 +106,12 @@
       "at": "2026-11-11T12:00+06:00",
       "result": "v1.0.0 (первая версия, тегов не было): CHANGELOG.md создан (ux-fixes B1–B6+замена преподавателя, ux-fixes-2 B7–B11, инфраструктура agents-setup), миграция 3b9e6d1f2a40 уже применена Render; версии 1.0.0 в frontend/package.json, package-lock.json, backend/pyproject.toml; build ok; коммит «Release v1.0.0» локально; push main и тег v1.0.0 — ждут явного «да» человека",
       "next": "tag_confirm → publisher (режим 2)"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-11T13:10+06:00",
+      "result": "tag_confirm открыты («залей их в прод по порядку»); v1.0.0 запушен, Deploy зелёный, фронтенд на Cloudflare и бэкенд на Render обновлены",
+      "next": "publisher"
     }
   ]
 }

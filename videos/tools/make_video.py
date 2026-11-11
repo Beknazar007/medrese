@@ -246,16 +246,26 @@ def elevenlabs_tts(text: str, voice: dict, path: Path) -> None:
         sys.exit(f"ElevenLabs {e.code}: {e.read().decode(errors='replace')[:300]}")
 
 
+VOICE_CACHE = ROOT / "videos" / ".voice-cache"
+
+
 async def synthesize(lines: dict[str, str], voice: dict, out_dir: Path) -> dict[str, Path]:
+    # Re-recording a video after a UI change keeps most lines word for word: take those from the cache
+    # instead of paying ElevenLabs for them again. The key covers everything that changes the sound.
+    VOICE_CACHE.mkdir(parents=True, exist_ok=True)
     paths = {}
     for key, text in lines.items():
-        path = out_dir / f"{key}.mp3"
-        if voice["provider"] == "elevenlabs":
-            elevenlabs_tts(text, voice, path)
-        else:
-            import edge_tts
+        ident = json.dumps([voice["provider"], voice.get("voice"), voice.get("voice_id"), voice.get("model"), voice.get("language_code"), text], ensure_ascii=False)
+        cached = VOICE_CACHE / f"{hashlib.sha256(ident.encode('utf-8')).hexdigest()[:16]}.mp3"
+        if not cached.exists():
+            if voice["provider"] == "elevenlabs":
+                elevenlabs_tts(text, voice, cached)
+            else:
+                import edge_tts
 
-            await edge_tts.Communicate(text, voice["voice"]).save(str(path))
+                await edge_tts.Communicate(text, voice["voice"]).save(str(cached))
+        path = out_dir / f"{key}.mp3"
+        shutil.copyfile(cached, path)
         paths[key] = path
     return paths
 
@@ -383,18 +393,46 @@ def record(sc: Scenario, lang: str, base_url: str, clips: dict[str, Path], clip_
     return video, cues
 
 
-def mix(ffmpeg: str, video: Path, cues, clips: dict[str, Path], srt: Path, out: Path) -> None:
+BED = TOOLS / "audio" / "bed.mp3"
+# Background music under the narration: the Aiken video-kit track (ElevenLabs Music, our own account),
+# chosen by the owner on 2026-11-11 — ⚠ ТРЕБУЕТ ПРОВЕРКИ УСТАЗОМ before publishing (instrumental).
+# Kept far below the voice and pushed down further while someone speaks, so words stay clear.
+BED_VOLUME = 0.22  # same level as the Aiken video kit
+
+
+def bed_filter(voice: str, bed_input: int, length: float, out: str) -> list[str]:
+    """Filter-graph pieces that loop the bed to `length`, fade it, duck it under `voice` and mix both into `out`."""
+    fade_out = max(length - 2.0, 0)
+    return [
+        # Same format on both sides, or sidechaincompress cannot pair the streams (mono voice vs stereo bed).
+        f"[{voice}]aformat=sample_rates=44100:channel_layouts=stereo,asplit=2[vmix][vkey]",
+        f"[{bed_input}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume={BED_VOLUME},"
+        f"atrim=0:{length:.2f},afade=t=in:d=1.5,afade=t=out:st={fade_out:.2f}:d=2[bedraw]",
+        "[bedraw][vkey]sidechaincompress=threshold=0.015:ratio=6:attack=30:release=600[bed]",
+        f"[vmix][bed]amix=inputs=2:normalize=0:duration=first[{out}]",
+    ]
+
+
+def mix(ffmpeg: str, video: Path, cues, clips: dict[str, Path], srt: Path, out: Path, bed: Path | None = None, length: float = 0) -> None:
     args = [ffmpeg, "-y", "-loglevel", "error", "-i", str(video)]
     for _, _, key in cues:
         args += ["-i", str(clips[key])]
     args += ["-i", str(srt)]
     parts = [f"[{i + 1}:a]adelay={int(start * 1000)}:all=1[a{i}]" for i, (start, _, _) in enumerate(cues)]
-    parts.append("".join(f"[a{i}]" for i in range(len(cues))) + f"amix=inputs={len(cues)}:normalize=0[aout]")
+    voice_out = "voice" if bed else "aout"
+    # apad + atrim make the voice track as long as the picture, so the bed runs to the last frame.
+    pad = f",apad,atrim=0:{length:.2f}" if bed else ""
+    parts.append("".join(f"[a{i}]" for i in range(len(cues))) + f"amix=inputs={len(cues)}:normalize=0{pad}[{voice_out}]")
+    if bed:
+        args += ["-stream_loop", "-1", "-i", str(bed)]
+        parts += bed_filter("voice", len(cues) + 2, length, "aout")
     args += [
         "-filter_complex", ";".join(parts),
         "-map", "0:v", "-map", "[aout]", "-map", f"{len(cues) + 1}:s",
         "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "23",
         "-c:a", "aac", "-b:a", "128k", "-c:s", "mov_text", "-metadata:s:s:0", "language=" + ("kir" if "-ky" in out.stem else "rus"),
+        # A looped bed is endless: bound the output by the picture so ffmpeg always finishes.
+        *(["-t", f"{length:.2f}"] if bed else []),
         "-movflags", "+faststart", str(out),
     ]
     subprocess.run(args, check=True)
@@ -416,6 +454,7 @@ def main() -> None:
     ap.add_argument("--lang", default="ky,ru")
     ap.add_argument("--role", help="only this role from the scenario file")
     ap.add_argument("--base-url", help="use an already running local stand instead of starting one")
+    ap.add_argument("--no-bed", action="store_true", help="narration only, without the background ambience")
     args = ap.parse_args()
 
     if args.base_url and not re.match(r"https?://(localhost|127\.0\.0\.1)(:\d+)?", args.base_url):
@@ -473,7 +512,8 @@ def main() -> None:
                         encoding="utf-8",
                     )
                     mp4 = out_dir / f"{sc.role}-{lang}.mp4"
-                    mix(ffmpeg, raw, cues, clips, srt, mp4)
+                    bed = None if args.no_bed or not BED.exists() else BED
+                    mix(ffmpeg, raw, cues, clips, srt, mp4, bed, duration(ffprobe, raw))
 
                 length = duration(ffprobe, mp4)
                 entry = {
