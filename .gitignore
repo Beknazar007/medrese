@@ -21,3 +21,4 @@ videos/tools/.venv/
 videos/output/**/*.mp4
 videos/output/**/frames/
 videos/output/_voice_samples/
+videos/.voice-cache/

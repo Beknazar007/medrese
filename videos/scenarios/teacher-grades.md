@@ -25,7 +25,7 @@ feature: teacher-grades · role: teacher · version: 0.0.0 · device: mobile
   say: exam
 - id: 5
   action: highlight
-  target: role=columnheader[name="@journal.col_grade"]
+  target: div[data-testid=attendance-card] >> nth=0 >> label=@journal.col_grade
   pause: 1.0
   say: column
 - id: 6
@@ -35,18 +35,18 @@ feature: teacher-grades · role: teacher · version: 0.0.0 · device: mobile
   say: attendance
 - id: 7
   action: fill
-  target: tr:has-text("Асанов Эмир") >> input[type=number]
+  target: div[data-testid=attendance-card]:has-text("Асанов Эмир") >> input[type=number]
   value: "85"
   pause: 0.8
   say: score
 - id: 8
   action: fill
-  target: tr:has-text("Бакиров Нурислам") >> input[type=number]
+  target: div[data-testid=attendance-card]:has-text("Бакиров Нурислам") >> input[type=number]
   value: "92"
   pause: 0.8
 - id: 9
   action: fill
-  target: tr:has-text("Жумабеков Адил") >> input[type=number]
+  target: div[data-testid=attendance-card]:has-text("Жумабеков Адил") >> input[type=number]
   value: "74"
   pause: 0.8
   say: next
@@ -63,7 +63,7 @@ feature: teacher-grades · role: teacher · version: 0.0.0 · device: mobile
 | intro | Бул видеодо сынак сабагында баа коюуну көрсөтөбүз. | Покажем, как поставить оценки на экзаменационном уроке. |
 | open_class | «Менин классым» бөлүмүн ачыңыз. Бүгүнкү сабак өзү ачылат. | Откройте «Мой класс». Сегодняшний урок откроется сам. |
 | exam | Баа сынак сабагында гана коюлат. «Бул — сынак» белгисин басыңыз. | Оценки ставятся только за экзамен. Отметьте «Это экзамен». |
-| column | Баа үчүн тилке пайда болду. | Появилась колонка для оценки. |
+| column | Ар бир окуучуда баа үчүн талаа пайда болду. | У каждого ученика появилось поле для оценки. |
 | attendance | Адегенде ким келгенин белгилеңиз. | Сначала отметьте, кто пришёл. |
 | score | Ар бир окуучуга нөлдөн жүзгө чейин баа жазыңыз. | Впишите каждому оценку от нуля до ста. |
 | next | Калган окуучуларга да ушундай жазасыз. | Остальным — так же. |

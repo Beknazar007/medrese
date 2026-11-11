@@ -9,12 +9,12 @@
       "device": "mobile",
       "file": "videos/output/teacher-summary/teacher-ky.mp4",
       "subtitles": "videos/output/teacher-summary/teacher-ky.srt",
-      "duration_s": 23.7,
+      "duration_s": 22.6,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/teacher-summary.md",
       "scenario_hash": "e3e252e8130fc25410dba7a57f17feaba9fc3bf94acbd003b20321fb15514895",
-      "app_version": "0.0.0",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -22,7 +22,7 @@
         "videos/output/teacher-summary/frames/teacher-ky-middle.png",
         "videos/output/teacher-summary/frames/teacher-ky-end.png"
       ],
-      "created_at": "2026-11-10T14:08:53+06:00"
+      "created_at": "2026-11-11T15:01:33+06:00"
     },
     {
       "id": "teacher-summary-teacher-ru",
@@ -32,12 +32,12 @@
       "device": "mobile",
       "file": "videos/output/teacher-summary/teacher-ru.mp4",
       "subtitles": "videos/output/teacher-summary/teacher-ru.srt",
-      "duration_s": 23.2,
+      "duration_s": 23.4,
       "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
       "voice_note": null,
       "scenario": "videos/scenarios/teacher-summary.md",
       "scenario_hash": "e3e252e8130fc25410dba7a57f17feaba9fc3bf94acbd003b20321fb15514895",
-      "app_version": "0.0.0",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "not_needed",
       "frames": [
@@ -45,7 +45,7 @@
         "videos/output/teacher-summary/frames/teacher-ru-middle.png",
         "videos/output/teacher-summary/frames/teacher-ru-end.png"
       ],
-      "created_at": "2026-11-10T14:09:37+06:00"
+      "created_at": "2026-11-11T15:02:13+06:00"
     }
   ]
 }

@@ -9,12 +9,12 @@
       "device": "desktop",
       "file": "videos/output/timeslots/rector-ky.mp4",
       "subtitles": "videos/output/timeslots/rector-ky.srt",
-      "duration_s": 28.9,
+      "duration_s": 26.2,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/timeslots.md",
-      "scenario_hash": "94f7e14824ce7473e6000fbb98963db129c325a686d60ff3be8fb2ec6eb1da18",
-      "app_version": "0.0.0",
+      "scenario_hash": "5c47d9db0377a9863cedfc414cdba099e21ebfc5749428fa1a7c0981edde567f",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -22,7 +22,7 @@
         "videos/output/timeslots/frames/rector-ky-middle.png",
         "videos/output/timeslots/frames/rector-ky-end.png"
       ],
-      "created_at": "2026-11-10T15:29:27+06:00"
+      "created_at": "2026-11-11T14:38:28+06:00"
     },
     {
       "id": "timeslots-rector-ru",
@@ -32,12 +32,12 @@
       "device": "desktop",
       "file": "videos/output/timeslots/rector-ru.mp4",
       "subtitles": "videos/output/timeslots/rector-ru.srt",
-      "duration_s": 28.7,
+      "duration_s": 26.4,
       "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
       "voice_note": null,
       "scenario": "videos/scenarios/timeslots.md",
-      "scenario_hash": "94f7e14824ce7473e6000fbb98963db129c325a686d60ff3be8fb2ec6eb1da18",
-      "app_version": "0.0.0",
+      "scenario_hash": "5c47d9db0377a9863cedfc414cdba099e21ebfc5749428fa1a7c0981edde567f",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "not_needed",
       "frames": [
@@ -45,7 +45,7 @@
         "videos/output/timeslots/frames/rector-ru-middle.png",
         "videos/output/timeslots/frames/rector-ru-end.png"
       ],
-      "created_at": "2026-11-10T15:30:20+06:00"
+      "created_at": "2026-11-11T14:39:09+06:00"
     }
   ]
 }

@@ -46,10 +46,6 @@ feature: timeslots · role: rector · version: 0.0.0 · device: desktop
   pause: 0.6
   say: save
   id: 8
-- action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.5
-  id: 9
 - action: wait
   pause: 1.5
   say: outro
@@ -65,7 +61,7 @@ feature: timeslots · role: rector · version: 0.0.0 · device: desktop
 | add | Жаңысы үчүн «Кошуу» баскычын басыңыз. | Для новой записи нажмите «Добавить». |
 | fill | Сабактын номерин жазыңыз. | Впишите номер пары. |
 | dates | Башталыш жана аяктоо убактысын коюңуз. | Укажите время начала и конца. |
-| save | «Сактоо» баскычын басып, ырастаңыз. | Нажмите «Сохранить» и подтвердите. |
+| save | «Сактоо» баскычын басыңыз. | Нажмите «Сохранить». |
 | outro | Даяр! Жазуу тизмеге кошулду. | Готово! Запись добавлена в список. |
 
 Данные: стенд `e2e/fixtures/seed.py`; новые записи — выдуманные.

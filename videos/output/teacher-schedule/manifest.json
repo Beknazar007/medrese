@@ -1,0 +1,51 @@
+{
+  "feature": "teacher-schedule",
+  "videos": [
+    {
+      "id": "teacher-schedule-teacher-ky",
+      "feature": "teacher-schedule",
+      "role": "teacher",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/teacher-schedule/teacher-ky.mp4",
+      "subtitles": "videos/output/teacher-schedule/teacher-ky.srt",
+      "duration_s": 30.4,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/teacher-schedule.md",
+      "scenario_hash": "92dcbe4c2bd7244af4524aa653fc9535fcef494eb5711c0b8096fb6610232787",
+      "app_version": "1.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/teacher-schedule/frames/teacher-ky-start.png",
+        "videos/output/teacher-schedule/frames/teacher-ky-middle.png",
+        "videos/output/teacher-schedule/frames/teacher-ky-end.png"
+      ],
+      "created_at": "2026-11-11T14:22:16+06:00"
+    },
+    {
+      "id": "teacher-schedule-teacher-ru",
+      "feature": "teacher-schedule",
+      "role": "teacher",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/teacher-schedule/teacher-ru.mp4",
+      "subtitles": "videos/output/teacher-schedule/teacher-ru.srt",
+      "duration_s": 33.6,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/teacher-schedule.md",
+      "scenario_hash": "92dcbe4c2bd7244af4524aa653fc9535fcef494eb5711c0b8096fb6610232787",
+      "app_version": "1.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/teacher-schedule/frames/teacher-ru-start.png",
+        "videos/output/teacher-schedule/frames/teacher-ru-middle.png",
+        "videos/output/teacher-schedule/frames/teacher-ru-end.png"
+      ],
+      "created_at": "2026-11-11T14:23:13+06:00"
+    }
+  ]
+}

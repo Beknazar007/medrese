@@ -49,10 +49,6 @@ feature: excuses · role: rector · version: 0.0.0 · device: desktop
   target: role=dialog >> role=button[name="@common.save"]
   pause: 0.6
   say: save
-- id: 9c
-  action: click
-  target: role=dialog >> role=button[name="@common.yes"]
-  pause: 1.5
 - id: 10
   action: highlight
   target: tr:has-text("Жумабеков Адил")
@@ -70,7 +66,7 @@ feature: excuses · role: rector · version: 0.0.0 · device: desktop
 | student | Окуучуну тандаңыз. | Выберите ученика. |
 | dates | Кайсы күндөн кайсы күнгө чейин экенин белгилеңиз. | Укажите, с какого по какой день. |
 | reason | Себебин жазыңыз. | Напишите причину. |
-| save | «Сактоо» баскычын басып, ырастаңыз. | Нажмите «Сохранить» и подтвердите. |
+| save | «Сактоо» баскычын басыңыз. | Нажмите «Сохранить». |
 | outro | Ушул күндөрү мугалимдин журналында окуучу өзү «себеби бар» деп белгиленет. | В эти дни ученик в журнале учителя сам будет отмечен «уважительная причина». |
 
 Данные: стенд `e2e/fixtures/seed.py`, реальных имён нет.

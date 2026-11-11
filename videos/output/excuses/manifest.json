@@ -9,12 +9,12 @@
       "device": "desktop",
       "file": "videos/output/excuses/rector-ky.mp4",
       "subtitles": "videos/output/excuses/rector-ky.srt",
-      "duration_s": 38.6,
+      "duration_s": 36.0,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/excuses.md",
-      "scenario_hash": "e8282313932503c7ac44b94f68296d77f117ca9ac241423e8c1af1dc3649eb9a",
-      "app_version": "0.0.0",
+      "scenario_hash": "81d2028bd245e92e4eeafb5b10747e253456d1e3ccceea89a7cb41d1584ce20c",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -22,7 +22,7 @@
         "videos/output/excuses/frames/rector-ky-middle.png",
         "videos/output/excuses/frames/rector-ky-end.png"
       ],
-      "created_at": "2026-11-10T14:55:46+06:00"
+      "created_at": "2026-11-11T14:32:13+06:00"
     },
     {
       "id": "excuses-rector-ru",
@@ -32,12 +32,12 @@
       "device": "desktop",
       "file": "videos/output/excuses/rector-ru.mp4",
       "subtitles": "videos/output/excuses/rector-ru.srt",
-      "duration_s": 40.2,
+      "duration_s": 38.1,
       "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
       "voice_note": null,
       "scenario": "videos/scenarios/excuses.md",
-      "scenario_hash": "e8282313932503c7ac44b94f68296d77f117ca9ac241423e8c1af1dc3649eb9a",
-      "app_version": "0.0.0",
+      "scenario_hash": "81d2028bd245e92e4eeafb5b10747e253456d1e3ccceea89a7cb41d1584ce20c",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "not_needed",
       "frames": [
@@ -45,7 +45,7 @@
         "videos/output/excuses/frames/rector-ru-middle.png",
         "videos/output/excuses/frames/rector-ru-end.png"
       ],
-      "created_at": "2026-11-10T14:56:54+06:00"
+      "created_at": "2026-11-11T14:33:21+06:00"
     }
   ]
 }

@@ -2,29 +2,6 @@
   "feature": "semesters",
   "videos": [
     {
-      "id": "semesters-rector-ru",
-      "feature": "semesters",
-      "role": "rector",
-      "lang": "ru",
-      "device": "desktop",
-      "file": "videos/output/semesters/rector-ru.mp4",
-      "subtitles": "videos/output/semesters/rector-ru.srt",
-      "duration_s": 35.0,
-      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
-      "voice_note": null,
-      "scenario": "videos/scenarios/semesters.md",
-      "scenario_hash": "0dc13c27c1c98c054f7d8dc21d151ec8c4766ae012e524ffc7eeb0b990ee4e49",
-      "app_version": "0.0.0",
-      "religious_review": "not_needed",
-      "native_speaker_review": "not_needed",
-      "frames": [
-        "videos/output/semesters/frames/rector-ru-start.png",
-        "videos/output/semesters/frames/rector-ru-middle.png",
-        "videos/output/semesters/frames/rector-ru-end.png"
-      ],
-      "created_at": "2026-11-10T15:50:16+06:00"
-    },
-    {
       "id": "semesters-rector-ky",
       "feature": "semesters",
       "role": "rector",
@@ -32,12 +9,12 @@
       "device": "desktop",
       "file": "videos/output/semesters/rector-ky.mp4",
       "subtitles": "videos/output/semesters/rector-ky.srt",
-      "duration_s": 32.7,
+      "duration_s": 29.9,
       "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
       "voice_note": null,
       "scenario": "videos/scenarios/semesters.md",
-      "scenario_hash": "0dc13c27c1c98c054f7d8dc21d151ec8c4766ae012e524ffc7eeb0b990ee4e49",
-      "app_version": "0.0.0",
+      "scenario_hash": "3123f6d04cbca7b9e58319b7e0648701f291db5899fd041404378efc9540a721",
+      "app_version": "1.0.0",
       "religious_review": "not_needed",
       "native_speaker_review": "required",
       "frames": [
@@ -45,7 +22,30 @@
         "videos/output/semesters/frames/rector-ky-middle.png",
         "videos/output/semesters/frames/rector-ky-end.png"
       ],
-      "created_at": "2026-11-10T15:56:34+06:00"
+      "created_at": "2026-11-11T14:36:42+06:00"
+    },
+    {
+      "id": "semesters-rector-ru",
+      "feature": "semesters",
+      "role": "rector",
+      "lang": "ru",
+      "device": "desktop",
+      "file": "videos/output/semesters/rector-ru.mp4",
+      "subtitles": "videos/output/semesters/rector-ru.srt",
+      "duration_s": 33.0,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/semesters.md",
+      "scenario_hash": "3123f6d04cbca7b9e58319b7e0648701f291db5899fd041404378efc9540a721",
+      "app_version": "1.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/semesters/frames/rector-ru-start.png",
+        "videos/output/semesters/frames/rector-ru-middle.png",
+        "videos/output/semesters/frames/rector-ru-end.png"
+      ],
+      "created_at": "2026-11-11T14:37:44+06:00"
     }
   ]
 }

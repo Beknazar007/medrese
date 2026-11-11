@@ -31,7 +31,7 @@ feature: teacher-attendance · role: teacher · version: 0.0.0 · device: mobile
   say: checkin
 - id: 6
   action: highlight
-  target: tr:has-text("Асанов Эмир") >> .MuiToggleButtonGroup-root
+  target: div[data-testid=attendance-card]:has-text("Асанов Эмир") >> .MuiToggleButtonGroup-root
   pause: 1.0
   say: letters
 - id: 7
@@ -41,12 +41,12 @@ feature: teacher-attendance · role: teacher · version: 0.0.0 · device: mobile
   say: all_present
 - id: 8
   action: click
-  target: tr:has-text("Жумабеков Адил") >> role=button[name="@journal.attendance_absent"]
+  target: div[data-testid=attendance-card]:has-text("Жумабеков Адил") >> role=button[name="@journal.attendance_absent"]
   pause: 1.0
   say: absent
 - id: 9
   action: click
-  target: tr:has-text("Мамбетов Алихан") >> role=button[name="@journal.attendance_late"]
+  target: div[data-testid=attendance-card]:has-text("Мамбетов Алихан") >> role=button[name="@journal.attendance_late"]
   pause: 1.0
   say: late
 - id: 10
@@ -79,9 +79,9 @@ feature: teacher-attendance · role: teacher · version: 0.0.0 · device: mobile
 | my_class | «Менин классым» бөлүмүн тандаңыз. | Выберите «Мой класс». |
 | today | Бүгүнкү сабак өзү ачылат. Башка сабакты ушул жерден тандасаңыз болот. | Сегодняшний урок открывается сам. Другой урок можно выбрать здесь. |
 | checkin | Сабакты ачкан убакыт сиздин келген убактыңыз болуп жазылат. | Время, когда вы открыли урок, записывается как время прихода. |
-| letters | Ар бир окуучунун жанында төрт тамга бар: К — келди, Ж — келген жок, О — кечикти, С — себеби бар. | У каждого ученика четыре буквы: К — пришёл, Ж — отсутствует, О — опоздал, С — уважительная причина. |
+| letters | Ар бир окуучунун төрт баскычы бар: К — келди, Ж — келген жок, О — кечикти, С — себеби бар. Үстүндө ар бир тамганын мааниси жазылган. | У каждого ученика четыре кнопки: П — пришёл, Н — нет на уроке, О — опоздал, У — уважительная причина. Сверху подсказка, что значит каждая буква. |
 | all_present | Көпчүлүгү келсе, «Баарын келди деп белгилөө» баскычын басыңыз. | Если пришли почти все, нажмите «Отметить всех присутствующими». |
-| absent | Келбеген окуучуга Ж тамгасын басыңыз. | Тому, кого нет, нажмите букву Ж. |
+| absent | Келбеген окуучуга Ж тамгасын басыңыз. | Тому, кого нет, нажмите букву Н. |
 | late | Кечиккен окуучуга О тамгасын басыңыз. | Опоздавшему — букву О. |
 | autosave | Сактоо баскычы жок: баары өзү сакталат. | Кнопки «Сохранить» нет: всё сохраняется само. |
 | finish | Сабак бүткөндө «Сабакты аяктоо» баскычын басыңыз. | Когда урок закончится, нажмите «Завершить урок». |
