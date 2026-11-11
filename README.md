@@ -51,11 +51,15 @@ npm run dev
 
 Opens on http://localhost:5173 (or the next free port — check the terminal output).
 
+## Docker
+
+`cp .env.example .env`, put a random `JWT_SECRET_KEY` there, then `docker compose up -d --build` — app on http://localhost:8080, API on :8000. First rector: `docker compose exec backend python -m app.seed`.
+
 ## Deploy
 
 | Part | Where | How it gets deployed |
 |---|---|---|
-| Frontend | Cloudflare Pages, project `medrese` (https://medrese.pages.dev) | Automatic from `main` after CI passes (`frontend-deploy` job, secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`). Manual fallback: `cd frontend && npm run build && npx wrangler pages deploy dist --project-name medrese --branch main` |
+| Frontend | Cloudflare Pages, project `medrese` (https://medrese.pages.dev) | On a release tag `vX.Y.Z` (`.github/workflows/deploy.yml`: checks again, then wrangler; secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`). Pushes to `main` no longer deploy it. Manual fallback: `cd frontend && npm run build && npx wrangler pages deploy dist --project-name medrese --branch main` |
 | Backend | Render, https://medrese-backend.onrender.com | Render auto-deploy from `main`, "After CI Checks Pass" (`.github/workflows/ci.yml`) |
 | Database | Neon Postgres | `alembic upgrade head` in Render's start command, before `uvicorn` |
 

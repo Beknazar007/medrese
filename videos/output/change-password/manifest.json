@@ -1,0 +1,51 @@
+{
+  "feature": "change-password",
+  "videos": [
+    {
+      "id": "change-password-teacher-ky",
+      "feature": "change-password",
+      "role": "teacher",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/change-password/teacher-ky.mp4",
+      "subtitles": "videos/output/change-password/teacher-ky.srt",
+      "duration_s": 27.6,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/change-password.md",
+      "scenario_hash": "d4bd949e64b3cadd65a151017310e5e0770475e80b8579a9007b4df3ab024b19",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/change-password/frames/teacher-ky-start.png",
+        "videos/output/change-password/frames/teacher-ky-middle.png",
+        "videos/output/change-password/frames/teacher-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:10:31+06:00"
+    },
+    {
+      "id": "change-password-teacher-ru",
+      "feature": "change-password",
+      "role": "teacher",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/change-password/teacher-ru.mp4",
+      "subtitles": "videos/output/change-password/teacher-ru.srt",
+      "duration_s": 25.4,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/change-password.md",
+      "scenario_hash": "d4bd949e64b3cadd65a151017310e5e0770475e80b8579a9007b4df3ab024b19",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/change-password/frames/teacher-ru-start.png",
+        "videos/output/change-password/frames/teacher-ru-middle.png",
+        "videos/output/change-password/frames/teacher-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:11:20+06:00"
+    }
+  ]
+}

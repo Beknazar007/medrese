@@ -1,0 +1,51 @@
+{
+  "feature": "schedule-edit",
+  "videos": [
+    {
+      "id": "schedule-edit-rector-ky",
+      "feature": "schedule-edit",
+      "role": "rector",
+      "lang": "ky",
+      "device": "desktop",
+      "file": "videos/output/schedule-edit/rector-ky.mp4",
+      "subtitles": "videos/output/schedule-edit/rector-ky.srt",
+      "duration_s": 45.7,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/schedule-edit.md",
+      "scenario_hash": "85d87e5edc76f923756c2886f3e6eb82ac4c500622a628b35a9fabc913176887",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/schedule-edit/frames/rector-ky-start.png",
+        "videos/output/schedule-edit/frames/rector-ky-middle.png",
+        "videos/output/schedule-edit/frames/rector-ky-end.png"
+      ],
+      "created_at": "2026-11-10T15:44:25+06:00"
+    },
+    {
+      "id": "schedule-edit-rector-ru",
+      "feature": "schedule-edit",
+      "role": "rector",
+      "lang": "ru",
+      "device": "desktop",
+      "file": "videos/output/schedule-edit/rector-ru.mp4",
+      "subtitles": "videos/output/schedule-edit/rector-ru.srt",
+      "duration_s": 43.8,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/schedule-edit.md",
+      "scenario_hash": "85d87e5edc76f923756c2886f3e6eb82ac4c500622a628b35a9fabc913176887",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/schedule-edit/frames/rector-ru-start.png",
+        "videos/output/schedule-edit/frames/rector-ru-middle.png",
+        "videos/output/schedule-edit/frames/rector-ru-end.png"
+      ],
+      "created_at": "2026-11-10T15:45:46+06:00"
+    }
+  ]
+}

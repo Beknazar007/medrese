@@ -15,3 +15,9 @@ frontend/node_modules/
 frontend/dist/
 
 .DS_Store
+
+# Video pipeline: media is rebuilt from scenarios; .srt and manifest.json stay in git
+videos/tools/.venv/
+videos/output/**/*.mp4
+videos/output/**/frames/
+videos/output/_voice_samples/

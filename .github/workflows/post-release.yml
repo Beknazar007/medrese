@@ -1,0 +1,71 @@
+name: Post-release videos
+
+# Started by hand (Actions → Post-release videos → Run workflow) after a release.
+# Records how-to videos from videos/scenarios/ on a throwaway stand with made-up people and
+# attaches them to the run as an artifact. It publishes nothing and commits nothing:
+# a person watches the videos, sets "approved": true in videos/registry.json, and only then
+# videos/tools/publish_telegram.py posts them. User-guide text is written by the docs agent
+# locally (/pipeline), not here.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Release tag to record (vX.Y.Z)"
+        required: true
+      scenarios:
+        description: "Scenario files, space-separated (empty = every videos/scenarios/*.md)"
+        required: false
+        default: ""
+      lang:
+        description: "Languages"
+        required: false
+        default: "ky,ru"
+
+jobs:
+  videos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pip install -e "backend[dev]"
+      - run: npm ci
+        working-directory: frontend
+      - name: Video tools
+        run: |
+          python -m venv videos/tools/.venv
+          videos/tools/.venv/bin/python -m pip install -r videos/tools/requirements.txt
+          videos/tools/.venv/bin/python -m playwright install --with-deps chromium
+      - name: Record
+        env:
+          PYTHON: python
+          SCENARIOS: ${{ inputs.scenarios }}
+          LANGS: ${{ inputs.lang }}
+        run: |
+          mkdir -p e2e/.stand
+          files="$SCENARIOS"
+          [ -z "$files" ] && files=$(ls videos/scenarios/*.md | grep -v '/_template.md$')
+          for f in $files; do
+            videos/tools/.venv/bin/python videos/tools/make_video.py "$f" --lang "$LANGS"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ inputs.ref }}
+          path: videos/output
+          retention-days: 30
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stand-log
+          path: e2e/.stand/*.log

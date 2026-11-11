@@ -1,20 +1,54 @@
+# Local stand: database + backend + frontend.
+#   docker compose up -d db        — only Postgres (for `uvicorn --reload` / `npm run dev`)
+#   docker compose up -d --build   — the whole app: http://localhost:8080, API http://localhost:8000
+# Values come from .env next to this file (copy .env.example). Never point it at the production database.
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: medrese
-      POSTGRES_PASSWORD: medrese
-      POSTGRES_DB: medrese
+      POSTGRES_USER: ${POSTGRES_USER:-medrese}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medrese}
+      POSTGRES_DB: ${POSTGRES_DB:-medrese}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - medrese_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medrese"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medrese}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Inside compose the database is the `db` service, not localhost.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-medrese}:${POSTGRES_PASSWORD:-medrese}@db:5432/${POSTGRES_DB:-medrese}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-480}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
+      SEED_RECTOR_USERNAME: ${SEED_RECTOR_USERNAME:-rector}
+      SEED_RECTOR_PASSWORD: ${SEED_RECTOR_PASSWORD:-change-me}
+      SEED_RECTOR_FULL_NAME: ${SEED_RECTOR_FULL_NAME:-Rector}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
 
 volumes:
   medrese_db_data:

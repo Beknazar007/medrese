@@ -1,0 +1,51 @@
+{
+  "feature": "hifz-lesson",
+  "videos": [
+    {
+      "id": "hifz-lesson-hafiz-ky",
+      "feature": "hifz-lesson",
+      "role": "hafiz",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/hifz-lesson/hafiz-ky.mp4",
+      "subtitles": "videos/output/hifz-lesson/hafiz-ky.srt",
+      "duration_s": 31.7,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-lesson.md",
+      "scenario_hash": "b88437b26968e47e68d7b29d0ffd6f0d5288ba0a64b3b20230c46eab257427b7",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/hifz-lesson/frames/hafiz-ky-start.png",
+        "videos/output/hifz-lesson/frames/hafiz-ky-middle.png",
+        "videos/output/hifz-lesson/frames/hafiz-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:39:05+06:00"
+    },
+    {
+      "id": "hifz-lesson-hafiz-ru",
+      "feature": "hifz-lesson",
+      "role": "hafiz",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/hifz-lesson/hafiz-ru.mp4",
+      "subtitles": "videos/output/hifz-lesson/hafiz-ru.srt",
+      "duration_s": 36.5,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-lesson.md",
+      "scenario_hash": "b88437b26968e47e68d7b29d0ffd6f0d5288ba0a64b3b20230c46eab257427b7",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/hifz-lesson/frames/hafiz-ru-start.png",
+        "videos/output/hifz-lesson/frames/hafiz-ru-middle.png",
+        "videos/output/hifz-lesson/frames/hafiz-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:40:11+06:00"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "feature": "hifz-gradebook",
+  "videos": [
+    {
+      "id": "hifz-gradebook-hafiz-ky",
+      "feature": "hifz-gradebook",
+      "role": "hafiz",
+      "lang": "ky",
+      "device": "mobile",
+      "file": "videos/output/hifz-gradebook/hafiz-ky.mp4",
+      "subtitles": "videos/output/hifz-gradebook/hafiz-ky.srt",
+      "duration_s": 39.4,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-gradebook.md",
+      "scenario_hash": "a5795f717900f00e378b8a7e1b2ab6975ce7c73f84a8aea1f840d0fed08d4a64",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/hifz-gradebook/frames/hafiz-ky-start.png",
+        "videos/output/hifz-gradebook/frames/hafiz-ky-middle.png",
+        "videos/output/hifz-gradebook/frames/hafiz-ky-end.png"
+      ],
+      "created_at": "2026-11-10T14:41:28+06:00"
+    },
+    {
+      "id": "hifz-gradebook-hafiz-ru",
+      "feature": "hifz-gradebook",
+      "role": "hafiz",
+      "lang": "ru",
+      "device": "mobile",
+      "file": "videos/output/hifz-gradebook/hafiz-ru.mp4",
+      "subtitles": "videos/output/hifz-gradebook/hafiz-ru.srt",
+      "duration_s": 41.3,
+      "voice": "elevenlabs:eleven_v3:MWyJiWDobXN8FX3CJTdE",
+      "voice_note": null,
+      "scenario": "videos/scenarios/hifz-gradebook.md",
+      "scenario_hash": "a5795f717900f00e378b8a7e1b2ab6975ce7c73f84a8aea1f840d0fed08d4a64",
+      "app_version": "0.0.0",
+      "religious_review": "not_needed",
+      "native_speaker_review": "not_needed",
+      "frames": [
+        "videos/output/hifz-gradebook/frames/hafiz-ru-start.png",
+        "videos/output/hifz-gradebook/frames/hafiz-ru-middle.png",
+        "videos/output/hifz-gradebook/frames/hafiz-ru-end.png"
+      ],
+      "created_at": "2026-11-10T14:42:41+06:00"
+    }
+  ]
+}
