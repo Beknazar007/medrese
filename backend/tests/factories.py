@@ -7,6 +7,7 @@ from app.models.assignment import TeachingAssignment
 from app.models.department import Department
 from app.models.enums import DayOfWeek, GroupType, HourType, UserRole
 from app.models.group import Group
+from app.models.lesson_session import LessonSession
 from app.models.room import Room
 from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
@@ -117,3 +118,35 @@ def make_schedule_entry(
     db.add(entry)
     db.flush()
     return entry
+
+
+def make_user(db: Session, username: str, role: UserRole) -> User:
+    user = User(username=username, hashed_password=hash_password("password"), role=role)
+    db.add(user)
+    db.flush()
+    return user
+
+
+def make_rector(db: Session, username: str = "rector") -> User:
+    return make_user(db, username, UserRole.RECTOR)
+
+
+def make_dean(db: Session, department: Department, username: str = "dean") -> User:
+    dean = make_user(db, username, UserRole.DEAN)
+    department.head_user_id = dean.id
+    db.flush()
+    db.refresh(dean)
+    return dean
+
+
+def make_session(
+    db: Session, entry: ScheduleEntry, on_date: date, teacher_id: int | None = None
+) -> LessonSession:
+    """A lesson held on a past date — bypasses get_or_create_session's "only while the lesson
+    is running" rule, which tests of history and monitoring don't care about."""
+    session = LessonSession(
+        schedule_entry_id=entry.id, date=on_date, teacher_id=teacher_id if teacher_id is not None else entry.teacher_id
+    )
+    db.add(session)
+    db.flush()
+    return session

@@ -82,6 +82,8 @@ export default function StudentsPage() {
           { name: "is_active", label: t("students.active"), type: "checkbox" },
           { name: "bio", label: t("students.bio"), type: "text", multiline: true },
         ]}
+        // A new student is active, and the switch must show that before anyone touches it.
+        defaultValues={{ is_active: true }}
         emptyHint={t("students.empty_hint")}
       />
       {profileStudentId !== null && (

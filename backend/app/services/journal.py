@@ -82,7 +82,10 @@ def get_or_create_session(
         raise SessionDateNotOpenable()
 
     session = LessonSession(
-        schedule_entry_id=schedule_entry.id, date=on_date, teacher_checked_in_at=datetime.now(timezone.utc)
+        schedule_entry_id=schedule_entry.id,
+        date=on_date,
+        teacher_id=schedule_entry.teacher_id,
+        teacher_checked_in_at=datetime.now(timezone.utc),
     )
     db.add(session)
     db.flush()
@@ -239,7 +242,7 @@ def student_history(
             LessonSession.date,
             TeachingAssignment.subject_id,
             Subject.name,
-            TeachingAssignment.teacher_id,
+            LessonSession.teacher_id,
             TeacherProfile.full_name,
             TeachingAssignment.hour_type,
             TeachingAssignment.semester_id,
@@ -251,7 +254,9 @@ def student_history(
         .join(ScheduleEntry, ScheduleEntry.id == LessonSession.schedule_entry_id)
         .join(TeachingAssignment, TeachingAssignment.id == ScheduleEntry.assignment_id)
         .join(Subject, Subject.id == TeachingAssignment.subject_id)
-        .join(TeacherProfile, TeacherProfile.id == TeachingAssignment.teacher_id)
+        # The lesson's own teacher, not the assignment's current one: after a mid-semester
+        # replacement, earlier lessons still belong to whoever held them.
+        .join(TeacherProfile, TeacherProfile.id == LessonSession.teacher_id)
         .outerjoin(
             GradeRecord,
             and_(GradeRecord.session_id == LessonSession.id, GradeRecord.student_id == student_id),
@@ -264,7 +269,7 @@ def student_history(
         .order_by(LessonSession.date.desc())
     )
     if teacher_id is not None:
-        stmt = stmt.where(TeachingAssignment.teacher_id == teacher_id)
+        stmt = stmt.where(LessonSession.teacher_id == teacher_id)
 
     return [
         StudentHistoryRow(

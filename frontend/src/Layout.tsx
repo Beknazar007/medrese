@@ -33,6 +33,7 @@ import {
   ListSubheader,
   MenuItem,
   Select,
+  Snackbar,
   Toolbar,
   Typography,
   alpha,
@@ -73,6 +74,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [dismissedNow, setDismissedNow] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
 
   // A teacher only sees the journal(s) they actually use: the hifz journal for hafiz groups,
   // "my class" for everything else. Until both lists load, show both rather than flicker.
@@ -357,7 +359,17 @@ export default function Layout() {
       <ChangePasswordDialog
         open={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
-        onChanged={dismissBanner}
+        onChanged={() => {
+          dismissBanner();
+          setPasswordChanged(true);
+        }}
+      />
+      {/* Shown here, not in the dialog: the dialog closes on success and would take the message with it. */}
+      <Snackbar
+        open={passwordChanged}
+        autoHideDuration={4000}
+        onClose={() => setPasswordChanged(false)}
+        message={t("password.changed")}
       />
     </Box>
   );

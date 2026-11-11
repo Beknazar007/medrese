@@ -37,6 +37,8 @@ export default function AssignmentsPage() {
     .filter((g) => inScope(g.department_id))
     .map((g) => ({ value: g.id, label: g.name }));
   const semesterOptions = (semesters ?? []).map((s) => ({ value: s.id, label: s.name }));
+  // The semester picked in the filter wins over the active one: the user is looking at that semester.
+  const defaultSemesterId = semesterId || semesters?.find((s) => s.is_active)?.id;
 
   return (
     <EntityCrudPage<TeachingAssignment>
@@ -46,11 +48,16 @@ export default function AssignmentsPage() {
       api={{
         list: assignmentsApi.list,
         create: (p) => assignmentsApi.create(p as Omit<TeachingAssignment, "id">),
+        update: (id, p) => assignmentsApi.update(id, p as Partial<Omit<TeachingAssignment, "id">>),
         remove: assignmentsApi.remove,
       }}
       canCreate={canWrite}
-      canEdit={false}
+      canEdit={canWrite}
       canDelete={canWrite}
+      defaultValues={defaultSemesterId ? { semester_id: defaultSemesterId } : undefined}
+      confirmMessage={(values, editingRow) =>
+        editingRow && values.teacher_id !== editingRow.teacher_id ? t("assignments.teacher_replace_warning") : undefined
+      }
       extraToolbar={
         <TextField
           select

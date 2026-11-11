@@ -87,7 +87,9 @@ export default function ScheduleGridPage() {
   const { data: assignments } = useQuery({
     queryKey: ["assignments", effectiveSemesterId],
     queryFn: () => assignmentsApi.list(effectiveSemesterId ? { semester_id: effectiveSemesterId } : undefined),
-    enabled: canWrite && Boolean(effectiveSemesterId),
+    // A teacher needs their own assignments too: the subject name of each lesson comes from them.
+    // Without an active semester they get all of them, matching the timetable they see.
+    enabled: (canWrite && Boolean(effectiveSemesterId)) || user?.role === "TEACHER",
   });
 
   const mobileDay = useMemo<DayOfWeek>(() => {

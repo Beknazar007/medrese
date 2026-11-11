@@ -2,21 +2,98 @@
   "feature": "ux-fixes",
   "title": "Исправление недочётов, найденных при записи видео (B1–B6)",
   "branch": "feature/ux-fixes",
-  "next": "architect",
-  "waiting_for": "spec_approval",
-  "review_iteration": 0,
+  "next": "release",
+  "waiting_for": "pr_merge",
+  "review_iteration": 2,
   "version": null,
   "artifacts": {
     "spec": "specs/ux-fixes.md",
-    "plan": null,
-    "review": null,
-    "e2e": [],
+    "plan": "specs/ux-fixes.plan.md",
+    "review": "reviews/ux-fixes.md",
+    "e2e": [
+      "e2e/tests/ux-fixes/teacher.spec.ts",
+      "e2e/tests/ux-fixes/rector.spec.ts",
+      "e2e/tests/ux-fixes/dean.spec.ts",
+      "e2e/tests/ux-fixes/stand.ts"
+    ],
     "user_guide": [],
     "scenario": null,
-    "videos": null
+    "videos": null,
+    "code": {
+      "branch": "feature/ux-fixes",
+      "committed": false,
+      "migration": "backend/alembic/versions/3b9e6d1f2a40_teacher_replacement_history.py",
+      "new_files": [
+        "backend/app/models/assignment_teacher_change.py",
+        "backend/app/services/assignments.py",
+        "backend/tests/test_assignments.py",
+        "backend/tests/test_teacher_replacement.py",
+        "backend/tests/test_subjects.py",
+        "backend/tests/test_students_create.py",
+        "backend/tests/test_reference_lists.py"
+      ]
+    }
   },
   "history": [
-    {"agent": "human", "at": "2026-11-10T00:00+06:00", "result": "фича создана: недочёты B1–B6 из docs/user-guide/features.md («Иди дальше»)", "next": "pm"},
-    {"agent": "pm", "at": "2026-11-10T12:00+06:00", "result": "спека-черновик specs/ux-fixes.md: B1–B6, 39 критериев; нужен новый PATCH /assignments; 4 открытых вопроса (правка назначения в расписании, смена предмета после уроков, даты семестра, хафиз-расписание)", "next": "architect"}
+    {
+      "agent": "human",
+      "at": "2026-11-10T00:00+06:00",
+      "result": "фича создана: недочёты B1–B6 из docs/user-guide/features.md («Иди дальше»)",
+      "next": "pm"
+    },
+    {
+      "agent": "pm",
+      "at": "2026-11-10T12:00+06:00",
+      "result": "спека-черновик specs/ux-fixes.md: B1–B6, 39 критериев; нужен новый PATCH /assignments; 4 открытых вопроса (правка назначения в расписании, смена предмета после уроков, даты семестра, хафиз-расписание)",
+      "next": "architect"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-10T13:00+06:00",
+      "result": "spec_approval открыты («Утверждено»); открытые вопросы — по предложениям спеки",
+      "next": "architect"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-10T13:10+06:00",
+      "result": "дополнение к спеке: замена преподавателя у назначения в расписании (B5.R1–R6)",
+      "next": "architect"
+    },
+    {
+      "agent": "architect",
+      "at": "2026-11-10T14:00+06:00",
+      "result": "план specs/ux-fixes.plan.md: PATCH /assignments с заменой преподавателя; миграция (lesson_sessions.teacher_id + assignment_teacher_changes) ради истории B5.R3; B1 — расширение /subjects,/groups для учителя; хафиз-группы есть в /schedule; объём L",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-10T18:49+06:00",
+      "result": "итерация 1: план шаги 1–9 выполнены (B1–B6, B5.R1–R6), миграция 3b9e6d1f2a40 проверена upgrade/downgrade на временном локальном Postgres; pytest 114 passed, lint ok, build ok, e2e login 8 passed; изменения не закоммичены (коммит — по команде человека)",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-10T18:55+06:00",
+      "result": "итерация 1: НУЖНЫ ИСПРАВЛЕНИЯ — 0 блокеров, 1 важное (IntegrityError при гонке в replace_teacher → 500 вместо 409 'This slot is already booked'), 4 мелочи; pytest 114 passed, lint ok, build ok",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-10T18:54+06:00",
+      "result": "итерация 2: ревью №1 (IntegrityError при замене → rollback + 409 «This slot is already booked», тест гонки), №2 (selectinload в teacher_session_log), №3 (шаблон errors.busy_slot, en «Mon, period 2») исправлены; №4–5 не трогал по указанию; pytest 115 passed, lint ok, build ok; без коммита",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-10T19:30+06:00",
+      "result": "итерация 2: ОДОБРЕНО — замечания 1–3 исправлены (409 при гонке + тест, selectinload в teacher_session_log, errors.busy_slot); остались 2 мелочи (проверка ky-текстов носителем, описать границу дня замены в docs); pytest 115 passed, lint ok, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-10T20:30+06:00",
+      "result": "e2e ux-fixes: 46 тестов (teacher 14, rector 22, dean 10 passed; 16 skip — по проекту mobile/desktop); весь набор 54 passed, 0 failed, вкл. login 8; seed.py дополнен данными под E2E_EXTRA_DATA=1 (видео не затронуто); багов нет; без коммита",
+      "next": "release"
+    }
   ]
 }

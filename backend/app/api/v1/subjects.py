@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.deps import accessible_department_ids, assert_department_access, get_current_user, require_role
 from app.db.session import get_db
+from app.models.assignment import TeachingAssignment
 from app.models.enums import UserRole
 from app.models.subject import Subject
 from app.models.user import User
@@ -18,7 +19,15 @@ def list_subjects(db: Session = Depends(get_db), current_user: User = Depends(ge
     dept_ids = accessible_department_ids(current_user)
     stmt = select(Subject)
     if dept_ids is not None:
-        stmt = stmt.where(Subject.department_id.in_(dept_ids))
+        visible = Subject.department_id.in_(dept_ids)
+        if current_user.role == UserRole.TEACHER and current_user.teacher_profile is not None:
+            # A rector may assign a teacher a subject of another department; without it here the
+            # teacher's own timetable would show a blank name for that lesson.
+            own = select(TeachingAssignment.subject_id).where(
+                TeachingAssignment.teacher_id == current_user.teacher_profile.id
+            )
+            visible = or_(visible, Subject.id.in_(own))
+        stmt = stmt.where(visible)
     return list(db.scalars(stmt).all())
 
 
@@ -51,7 +60,9 @@ def update_subject(
         raise HTTPException(status_code=404, detail="Subject not found")
     assert_department_access(current_user, subject.department_id)
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    # exclude_none: null in a NOT NULL column (e.g. name) means "not sent", not "erase" —
+    # writing it would fail with a 500. Cleared hours were already turned into 0 by the schema.
+    for field, value in payload.model_dump(exclude_unset=True, exclude_none=True).items():
         setattr(subject, field, value)
     db.commit()
     db.refresh(subject)

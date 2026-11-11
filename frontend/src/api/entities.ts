@@ -54,6 +54,8 @@ export const assignmentsApi = {
     (await api.get<TeachingAssignment[]>("/assignments", { params })).data,
   create: async (payload: Omit<TeachingAssignment, "id">): Promise<TeachingAssignment> =>
     (await api.post<TeachingAssignment>("/assignments", payload)).data,
+  update: async (id: number, payload: Partial<Omit<TeachingAssignment, "id">>): Promise<TeachingAssignment> =>
+    (await api.patch<TeachingAssignment>(`/assignments/${id}`, payload)).data,
   remove: async (id: number): Promise<void> => {
     await api.delete(`/assignments/${id}`);
   },
