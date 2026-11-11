@@ -2,10 +2,10 @@
   "feature": "ux-fixes",
   "title": "Исправление недочётов, найденных при записи видео (B1–B6)",
   "branch": "feature/ux-fixes",
-  "next": "release",
-  "waiting_for": "pr_merge",
+  "next": "publisher",
+  "waiting_for": "tag_confirm",
   "review_iteration": 2,
-  "version": null,
+  "version": "1.0.0",
   "artifacts": {
     "spec": "specs/ux-fixes.md",
     "plan": "specs/ux-fixes.plan.md",
@@ -32,6 +32,13 @@
         "backend/tests/test_students_create.py",
         "backend/tests/test_reference_lists.py"
       ]
+    },
+    "changelog": "CHANGELOG.md",
+    "release": {
+      "version": "1.0.0",
+      "commit": "Release v1.0.0",
+      "tag": "v1.0.0",
+      "tag_pushed": false
     }
   },
   "history": [
@@ -94,6 +101,12 @@
       "at": "2026-11-10T20:30+06:00",
       "result": "e2e ux-fixes: 46 тестов (teacher 14, rector 22, dean 10 passed; 16 skip — по проекту mobile/desktop); весь набор 54 passed, 0 failed, вкл. login 8; seed.py дополнен данными под E2E_EXTRA_DATA=1 (видео не затронуто); багов нет; без коммита",
       "next": "release"
+    },
+    {
+      "agent": "release",
+      "at": "2026-11-11T12:00+06:00",
+      "result": "v1.0.0 (первая версия, тегов не было): CHANGELOG.md создан (ux-fixes B1–B6+замена преподавателя, ux-fixes-2 B7–B11, инфраструктура agents-setup), миграция 3b9e6d1f2a40 уже применена Render; версии 1.0.0 в frontend/package.json, package-lock.json, backend/pyproject.toml; build ok; коммит «Release v1.0.0» локально; push main и тег v1.0.0 — ждут явного «да» человека",
+      "next": "tag_confirm → publisher (режим 2)"
     }
   ]
 }
