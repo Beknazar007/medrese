@@ -20,6 +20,11 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MeOut(UserOut):
+    # Only /auth/me carries the name: UserOut is also the /users contract, which stays unchanged.
+    full_name: str | None = None
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str

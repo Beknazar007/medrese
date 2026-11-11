@@ -15,16 +15,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { useSingleFlight } from "../../hooks/useSingleFlight";
 import { hifzApi } from "../../api/entities";
 import type { HifzExam } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
-import { todayIso } from "./hifzUtils";
+import { fmtDate, todayIso } from "./hifzUtils";
 
 export default function HifzExamsDialog({
   student,
   onClose,
   onError,
+  onSaved,
   onChanged,
   readOnly = false,
   period,
@@ -32,6 +34,8 @@ export default function HifzExamsDialog({
   student: { id: number; name: string };
   onClose: () => void;
   onError: (msg: string) => void;
+  /** Without a "Save changes?" question this message is the only sign the exam was saved. */
+  onSaved?: (msg: string) => void;
   onChanged?: () => void;
   readOnly?: boolean;
   /** The gradebook's current period: picks the default date for a new exam. */
@@ -41,6 +45,7 @@ export default function HifzExamsDialog({
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const runOnce = useSingleFlight();
   const [editingId, setEditingId] = useState<number | null>(null);
   // Default a new exam to the period's last day when that's in the past, else today.
   const defaultDate = () =>
@@ -95,6 +100,7 @@ export default function HifzExamsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-exams", student.id] });
       onChanged?.();
+      onSaved?.(t("hifz.saved"));
     },
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
@@ -105,6 +111,7 @@ export default function HifzExamsDialog({
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-exams", student.id] });
       onChanged?.();
+      onSaved?.(t("hifz.saved"));
     },
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
@@ -118,11 +125,12 @@ export default function HifzExamsDialog({
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
+  // An exam is easy to edit back, so it's saved without a question; runOnce stops a double tap
+  // from creating it twice. Errors are reported by the mutations' onError.
   async function handleSaveExam() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    if (editingId) updateMutation.mutate();
-    else createMutation.mutate();
+    await runOnce(() =>
+      (editingId ? updateMutation.mutateAsync() : createMutation.mutateAsync()).catch(() => {}),
+    );
   }
 
   async function handleDeleteExam(id: number) {
@@ -158,7 +166,7 @@ export default function HifzExamsDialog({
           >
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2">
-                {exam.date} — {exam.title}{" "}
+                {fmtDate(exam.date)} — {exam.title}{" "}
                 {exam.score !== null ? `(${exam.score})` : ""}
               </Typography>
               {exam.comment && (

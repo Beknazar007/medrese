@@ -217,6 +217,19 @@ with Session(engine) as db:
         # "recommend changing" banner disappears for good — so one account per device project.
         for username in ("pwd_teacher_mobile", "pwd_teacher_desktop"):
             f.make_teacher(db, ilim, username).user.must_change_password = True
+
+        # ux-fixes-2, criterion 43: a 60-character name must be cut off in the menu and header.
+        long_name = f.make_teacher(db, ilim, "long_name_teacher")
+        long_name.full_name = "Абдыкадыров-Сатыбалдиев Мухаммедали Абдыжапарович уулу Бекту"
+        long_name.user.must_change_password = False
+        # ux-fixes-2, criterion 10: excused by the deanery today — locked buttons in both journals.
+        for s, reason in ((students[7], "Үй-бүлөлүк себеп (e2e)"), (hafiz_students[2], "Ооруканада (e2e)")):
+            db.add(StudentExcuse(student_id=s.id, date_from=today, date_to=today, reason=reason, created_by_id=dean.id))
+        # ux-fixes-2, criteria 32–34: fixed dates, so the expected text is the same on any run day.
+        db.add(HifzTarget(student_id=hafiz_students[1].id, kind=HifzKind.HIFZ, juz_from=2, juz_to=2, page_from=1, page_to=20,
+                          start_date=date(2026, 10, 27), end_date=date(2026, 11, 16), note="e2e план"))
+        db.add(HifzExam(student_id=hafiz_students[1].id, date=date(2026, 11, 5), title="2-жуз (e2e)", juz_from=2, juz_to=2,
+                        score=88))
         db.add(User(username="pwd_rector", hashed_password=hash_password(PASSWORD), role=UserRole.RECTOR,
                     must_change_password=True))
     db.commit()

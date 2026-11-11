@@ -35,6 +35,7 @@ import axios from "axios";
 import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConfirm } from "../context/ConfirmContext";
+import { useSingleFlight } from "../hooks/useSingleFlight";
 import { apiErrorMessage } from "../lib/errors";
 
 export type FieldType = "text" | "number" | "select" | "date" | "time" | "checkbox" | "image";
@@ -110,8 +111,9 @@ interface Props<T extends { id: number }> {
     confirmMessage: (id: number) => Promise<string>;
     remove: (id: number) => Promise<void>;
   };
-  /** Extra text for the "Save changes?" question, e.g. a warning about what the change will do.
-   *  `editingRow` is null when creating. */
+  /** A warning about what the change will do (e.g. a teacher replaced in all future lessons).
+   *  Saving asks "Save changes?" only when this returns text; ordinary saves go straight through,
+   *  since they are easy to fix. `editingRow` is null when creating. */
   confirmMessage?: (values: Record<string, unknown>, editingRow: T | null) => string | undefined;
 }
 
@@ -142,6 +144,7 @@ export default function EntityCrudPage<T extends { id: number }>({
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const runOnce = useSingleFlight();
   const { data, isLoading, error } = useQuery({
     queryKey: [...queryKey, listParams],
     queryFn: () => api.list(listParams),
@@ -260,8 +263,8 @@ export default function EntityCrudPage<T extends { id: number }>({
   }
 
   async function handleSubmit() {
-    // Check required fields before asking "Save changes?": otherwise the user confirms, and
-    // only then learns from the server that the form was incomplete.
+    // Check required fields before any request or question, so an incomplete form is
+    // highlighted right away instead of being rejected by the server.
     const missing: Record<string, string> = {};
     for (const field of fields) {
       if (field.type === "checkbox" || !isFieldShown(field) || !isFieldRequired(field)) continue;
@@ -270,23 +273,25 @@ export default function EntityCrudPage<T extends { id: number }>({
     setFieldErrors(missing);
     if (Object.keys(missing).length > 0) return;
 
-    const extra = confirmMessage?.(formValues, editingRow);
-    const ok = await confirm({ message: extra ? `${extra}. ${t("common.confirm_save")}` : t("common.confirm_save") });
-    if (!ok) return;
-    setFormError(null);
-    const payload: Record<string, unknown> = {};
-    for (const field of fields) {
-      if (!isFieldShown(field)) continue;
-      const raw = formValues[field.name];
-      // A switch is saved exactly as it is shown: an untouched one is off, not "unknown".
-      if (field.type === "checkbox") payload[field.name] = Boolean(raw);
-      else payload[field.name] = isBlank(raw) ? null : raw;
-    }
-    if (editingRow) {
-      updateMutation.mutate(payload);
-    } else {
-      createMutation.mutate(payload);
-    }
+    await runOnce(async () => {
+      const extra = confirmMessage?.(formValues, editingRow);
+      if (extra) {
+        const ok = await confirm({ message: `${extra}. ${t("common.confirm_save")}` });
+        if (!ok) return;
+      }
+      setFormError(null);
+      const payload: Record<string, unknown> = {};
+      for (const field of fields) {
+        if (!isFieldShown(field)) continue;
+        const raw = formValues[field.name];
+        // A switch is saved exactly as it is shown: an untouched one is off, not "unknown".
+        if (field.type === "checkbox") payload[field.name] = Boolean(raw);
+        else payload[field.name] = isBlank(raw) ? null : raw;
+      }
+      // Errors are shown by the mutations' onError; the catch only stops an unhandled rejection.
+      if (editingRow) await updateMutation.mutateAsync(payload).catch(() => {});
+      else await createMutation.mutateAsync(payload).catch(() => {});
+    });
   }
 
   function setField(name: string, value: unknown) {

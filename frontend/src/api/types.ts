@@ -10,6 +10,8 @@ export interface CurrentUser {
   is_active: boolean;
   must_change_password: boolean;
   headed_department_id: number | null;
+  /** Teacher's full name; null for accounts without a teacher profile (rector, dean). */
+  full_name: string | null;
 }
 
 export interface Department {

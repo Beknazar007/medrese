@@ -1,0 +1,98 @@
+{
+  "feature": "ux-fixes-2",
+  "title": "Исправление недочётов, найденных при записи видео (B7–B11)",
+  "branch": "feature/ux-fixes-2",
+  "next": "release",
+  "waiting_for": "pr_merge",
+  "review_iteration": 1,
+  "version": null,
+  "artifacts": {
+    "spec": "specs/ux-fixes-2.md",
+    "plan": "specs/ux-fixes-2.plan.md",
+    "review": "reviews/ux-fixes-2.md",
+    "e2e": [
+      "e2e/tests/ux-fixes-2/teacher.spec.ts",
+      "e2e/tests/ux-fixes-2/hafiz.spec.ts",
+      "e2e/tests/ux-fixes-2/rector.spec.ts",
+      "e2e/tests/ux-fixes-2/dean.spec.ts",
+      "e2e/tests/ux-fixes-2/stand.ts",
+      "e2e/fixtures/seed.py",
+      "e2e/fixtures/users.ts",
+      "e2e/playwright-report/index.html"
+    ],
+    "user_guide": [],
+    "scenario": null,
+    "videos": null,
+    "code": [
+      "backend/app/schemas/auth.py",
+      "backend/app/api/v1/auth.py",
+      "backend/tests/test_auth_me.py",
+      "frontend/src/api/types.ts",
+      "frontend/src/Layout.tsx",
+      "frontend/src/pages/UsersPage.tsx",
+      "frontend/src/lib/attendance.ts",
+      "frontend/src/components/AttendanceToggle.tsx",
+      "frontend/src/components/AttendanceLegend.tsx",
+      "frontend/src/pages/teacher/TeacherClassPage.tsx",
+      "frontend/src/pages/teacher/HifzJournalPage.tsx",
+      "frontend/src/hooks/useSingleFlight.ts",
+      "frontend/src/components/EntityCrudPage.tsx",
+      "frontend/src/pages/ScheduleGridPage.tsx",
+      "frontend/src/components/hifz/HifzExamsDialog.tsx",
+      "frontend/src/components/hifz/HifzGradebook.tsx",
+      "frontend/src/components/hifz/HifzAssignments.tsx",
+      "frontend/src/i18n/locales/ky.json",
+      "frontend/src/i18n/locales/ru.json",
+      "frontend/src/i18n/locales/en.json",
+      "e2e/tests/ux-fixes/stand.ts",
+      "e2e/tests/ux-fixes/rector.spec.ts",
+      "e2e/fixtures/app.ts",
+      "e2e/fixtures/users.ts",
+      "e2e/fixtures/seed.py"
+    ]
+  },
+  "history": [
+    {
+      "agent": "human",
+      "at": "2026-11-11T10:00+06:00",
+      "result": "фича создана: B7–B11 из docs/user-guide/features.md («Иди дальше»); B7 — буквы посещаемости должны меняться вместе с языком интерфейса",
+      "next": "pm"
+    },
+    {
+      "agent": "pm",
+      "at": "2026-11-11T11:00+06:00",
+      "result": "спека specs/ux-fixes-2.md (черновик): B7 буквы посещаемости через i18n (ky К/Ж/О/С, ru П/Н/О/У, en P/A/L/E), aria-label, легенда, кнопки ≥44×44; B8 таблица 20 мест подтверждений (8 убрать, 12 оставить); B9 перевод роли в /users; B10 даты планов/экзаменов хафиза; B11 full_name в /auth/me и в шапке; 6 открытых вопросов",
+      "next": "architect"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-11T11:10+06:00",
+      "result": "spec_approval открыты по заранее данному разрешению человека («я доверяю тебе… можешь запускать сразу»); решения по 6 вопросам записаны в спеке",
+      "next": "architect"
+    },
+    {
+      "agent": "architect",
+      "at": "2026-11-11T11:40+06:00",
+      "result": "план specs/ux-fixes-2.plan.md: без миграции; /auth/me → новая схема MeOut с full_name (TeacherProfile.full_name или null), UserOut и /users не меняются; B7 ключи journal.attendance_short_*, aria-label, 44×44, карточки на телефоне в «Менин классым», сетка 2×2 в хафиз-таблице, общий AttendanceLegend; B8 убрать confirm в 6 местах (EntityCrudPage — только при confirmMessage), хук useSingleFlight от двойного нажатия, onSaved-снэкбар для планов/экзаменов; B9 render роли с «—»; B10 fmtDate; обновить e2e/tests/ux-fixes/stand.ts и rector.spec.ts; объём M",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-11T13:30+06:00",
+      "result": "итерация 1: шаги 1–6 плана без отклонений; /auth/me + MeOut.full_name (9 тестов), B11 ФИО в шапке/меню, B9 роль словом с «—», B7 буквы через i18n + aria-label + 44×44 + карточки на телефоне + сетка 2×2 + AttendanceLegend, B8 confirm убран в 7 местах (C1, C5, C6, C10, C12, C14, C16) + useSingleFlight + onSaved-снэкбар, C17 вопрос с числом, B10 fmtDate; e2e: save/saveAndConfirm, en в LOCALES, long_name_teacher в seed; pytest 124 passed, lint ok, build ok, e2e зелёный; без коммитов (по указанию человека)",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-11T14:30+06:00",
+      "result": "итерация 1: ОДОБРЕНО; 0 блокеров, 0 важных, 4 мелочи (span 44px даёт кнопку 46px в сетке 2×2; ФИО в карточке не фокусируется с клавиатуры; en-дата в критерии 33 отменена решением 4; видео/руководства с «Ооба» — после релиза); pytest 124 passed, lint ok, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-11T10:22+06:00",
+      "result": "e2e ux-fixes-2: 4 файла, 62 теста (teacher 21, hafiz 22, rector 14, dean 5) × mobile/desktop; полный прогон 162 passed, 0 failed, 32 skipped (только телефон/только компьютер); покрыты B7–B11 (AC-1–3, 5–25, 27–45), AC-4/26/46–48 — ревью и CI; seed: освобождение на сегодня и план/экзамен с фиксированными датами; багов фичи нет, 2 замечания (снэкбар «Сакталды» закрывается вторым нажатием; todayIso через toISOString в TeacherClassPage — вне фичи)",
+      "next": "release"
+    }
+  ]
+}

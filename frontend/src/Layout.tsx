@@ -97,6 +97,8 @@ export default function Layout() {
   }
 
   const roleLabel = user ? t(`users.role_${user.role.toLowerCase()}`) : "";
+  // A teacher recognises their own name faster than a login; rector and dean have no name, so keep the login.
+  const displayName = user?.full_name || user?.username || "";
 
   const showRecommendBanner = Boolean(user?.must_change_password) && !bannerDismissed;
 
@@ -162,8 +164,8 @@ export default function Layout() {
     <List>
       {isMobile && (
         <Box sx={{ px: 2, pt: 0.5, pb: 1 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
-            {user?.username}
+          <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap title={displayName}>
+            {displayName}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {roleLabel}
@@ -262,8 +264,19 @@ export default function Layout() {
             <MenuItem value="ru">Русский</MenuItem>
             <MenuItem value="en">English</MenuItem>
           </Select>
-          <Typography variant="body2" sx={{ display: { xs: "none", md: "block" } }}>
-            {user?.username} · {roleLabel}
+          <Typography
+            variant="body2"
+            noWrap
+            title={`${displayName} · ${roleLabel}`}
+            sx={{
+              display: { xs: "none", md: "block" },
+              minWidth: 0,
+              maxWidth: { md: 240, lg: 360 },
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {displayName} · {roleLabel}
           </Typography>
           <IconButton
             color="inherit"

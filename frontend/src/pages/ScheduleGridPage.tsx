@@ -33,6 +33,7 @@ import { assignmentsApi, roomsApi, scheduleApi } from "../api/entities";
 import type { DayOfWeek, HourType, ScheduleEntry } from "../api/types";
 import { useAuth } from "../context/AuthContext";
 import { useConfirm } from "../context/ConfirmContext";
+import { useSingleFlight } from "../hooks/useSingleFlight";
 import { apiErrorMessage } from "../lib/errors";
 import { filledSx, GROUP_COLORS } from "../lib/palette";
 import SemesterSelect from "../components/SemesterSelect";
@@ -50,6 +51,7 @@ export default function ScheduleGridPage() {
   const canWrite = user?.role === "RECTOR" || user?.role === "DEAN";
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const runOnce = useSingleFlight();
 
   const DAYS: { value: DayOfWeek; label: string }[] = [1, 2, 3, 4, 5, 6, 7].map((d) => ({
     value: d as DayOfWeek,
@@ -238,16 +240,14 @@ export default function ScheduleGridPage() {
     onError: (err) => setSnackbar(apiErrorMessage(err, t("schedule.move_failed"), t)),
   });
 
+  // Adding a lesson is easy to undo (delete it), so no "Save changes?" question; runOnce keeps a
+  // double click from adding the lesson twice. Errors are shown by the mutations' onError.
   async function handleAddExisting() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    createMutation.mutate();
+    await runOnce(() => createMutation.mutateAsync().catch(() => {}));
   }
 
   async function handleAddNew() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    createAssignmentAndScheduleMutation.mutate();
+    await runOnce(() => createAssignmentAndScheduleMutation.mutateAsync().catch(() => {}));
   }
 
   async function handleRemoveEntry(entryId: number) {

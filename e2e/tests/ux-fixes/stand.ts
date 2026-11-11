@@ -29,7 +29,14 @@ export async function pick(page: Page, dialog: Locator, label: string, option: s
   await expect(box).toHaveValue(option);
 }
 
-/** Clicks "Save" in the form and answers "Yes" to "Save changes?"; returns the question's text. */
+/** Clicks "Save" in the form; ordinary saves go through without a "Save changes?" question (ux-fixes-2, B8). */
+export async function save(page: Page, lang: Lang = "ky") {
+  await formDialog(page, lang).getByRole("button", { name: tr("common.save", lang), exact: true }).click();
+  await expect(page.getByRole("dialog").filter({ hasText: tr("common.confirm_title", lang) })).toHaveCount(0);
+}
+
+/** Clicks "Save" and answers "Yes" to the question; returns its text. Only a teacher replacement
+ *  in an assignment still asks (ux-fixes-2, C2). */
 export async function saveAndConfirm(page: Page, lang: Lang = "ky"): Promise<string> {
   await formDialog(page, lang).getByRole("button", { name: tr("common.save", lang), exact: true }).click();
   const question = page.getByRole("dialog").filter({ hasText: tr("common.confirm_title", lang) });

@@ -17,3 +17,12 @@ export function countAttendance(statuses: (AttendanceStatus | null)[]): Record<A
   }
   return counts;
 }
+
+// Keys are built in one place so the toggle, the legend and the counters can't drift apart.
+export function attendanceLabelKey(status: AttendanceStatus): string {
+  return `journal.attendance_${status.toLowerCase()}`;
+}
+
+export function attendanceLetterKey(status: AttendanceStatus): string {
+  return `journal.attendance_short_${status.toLowerCase()}`;
+}

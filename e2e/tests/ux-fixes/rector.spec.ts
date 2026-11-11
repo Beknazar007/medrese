@@ -6,7 +6,7 @@
 import type { Page } from "@playwright/test";
 import { expect, loginAs, test, tr } from "../../fixtures/app";
 import { PASSWORD } from "../../fixtures/users";
-import { changePassword, expectPasswordChangedMessage, formDialog, pick, saveAndConfirm, standDays, uniq } from "./stand";
+import { changePassword, expectPasswordChangedMessage, formDialog, pick, save, saveAndConfirm, standDays, uniq } from "./stand";
 
 const ROLE = "rector" as const;
 const [D1] = standDays();
@@ -111,13 +111,13 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await dialog.getByLabel(tr("subjects.code")).fill(`NEG${uniq()}`);
     await pick(page, dialog, tr("subjects.department"), "Илим бөлүмү");
     await dialog.getByLabel(tr("subjects.practice_hours")).fill("-5");
-    await saveAndConfirm(page);
+    await save(page);
     const alert = dialog.getByRole("alert");
     await expect(alert).toHaveText(`${tr("subjects.practice_hours")}: ${tr("validation.range")}`);
     await expect(dialog).not.toContainText("Input should");
 
     await dialog.getByLabel(tr("subjects.practice_hours")).fill("2.5");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(alert).toHaveText(`${tr("subjects.practice_hours")}: ${tr("validation.int")}`);
     await expect(dialog).not.toContainText("Input should");
     await expect(dialog).toBeVisible();
@@ -132,7 +132,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await dialog.getByLabel(tr("subjects.code")).fill(code);
     await pick(page, dialog, tr("subjects.department"), "Илим бөлүмү");
     await dialog.getByLabel(tr("subjects.lecture_hours")).fill("36");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.created"), { exact: true })).toBeVisible();
     await expect(dialog).toBeHidden();
     const cells = row(page, code).getByRole("cell");
@@ -149,7 +149,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await dialog.getByLabel(tr("subjects.name")).fill("Саатсыз");
     await dialog.getByLabel(tr("subjects.code")).fill(code);
     await pick(page, dialog, tr("subjects.department"), "Илим бөлүмү");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.created"), { exact: true })).toBeVisible();
     const cells = row(page, code).getByRole("cell");
     for (const i of [3, 4, 5]) await expect(cells.nth(i)).toHaveText("0");
@@ -157,12 +157,12 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await row(page, code).getByRole("button", { name: tr("common.edit"), exact: true }).click();
     dialog = formDialog(page);
     await dialog.getByLabel(tr("subjects.practice_hours")).fill("7");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(cells.nth(4)).toHaveText("7");
 
     await row(page, code).getByRole("button", { name: tr("common.edit"), exact: true }).click();
     await dialog.getByLabel(tr("subjects.practice_hours")).fill("");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.saved"), { exact: true })).toBeVisible();
     await expect(dialog).toBeHidden();
     await expect(cells.nth(4)).toHaveText("0");
@@ -177,7 +177,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await dialog.getByLabel(tr("semesters.start")).fill("2027-02-01");
     await dialog.getByLabel(tr("semesters.end")).fill("2027-06-30");
     await expect(dialog.getByLabel(tr("semesters.active"))).not.toBeChecked();
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.created"), { exact: true })).toBeVisible();
     await expect(row(page, name).getByRole("cell", { name: tr("common.no"), exact: true })).toBeVisible();
     await expect(row(page, ACTIVE_SEMESTER).getByRole("cell", { name: tr("common.yes"), exact: true })).toBeVisible();
@@ -191,7 +191,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await expect(dialog.getByLabel(tr("students.active"))).toBeChecked();
     await dialog.getByLabel(tr("students.full_name")).fill(name);
     await pick(page, dialog, tr("students.group"), "Кары 1");
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.created"), { exact: true })).toBeVisible();
     await search(page, name);
     await expect(row(page, name).getByRole("cell", { name: tr("common.yes"), exact: true })).toBeVisible();
@@ -273,8 +273,8 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
       await openEditRow(page, "Токтоматов Нурлан", "Тарых", tr("hour_type.PRACTICE"));
       let dialog = formDialog(page);
       await pick(page, dialog, tr("assignments.field_subject"), "Сира (SIR1)");
-      const question = await saveAndConfirm(page);
-      expect(question).not.toContain(tr("assignments.teacher_replace_warning"));
+      // Only the subject changes: saved without a question (ux-fixes-2, C2).
+      await save(page);
       await expect(page.getByText(tr("common.saved"), { exact: true })).toBeVisible();
 
       await page.goto("/schedule");
@@ -286,7 +286,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
       await openEditRow(page, "Токтоматов Нурлан", "Сира", tr("hour_type.PRACTICE"));
       dialog = formDialog(page);
       await pick(page, dialog, tr("assignments.field_group"), "Кары 1");
-      await saveAndConfirm(page);
+      await save(page);
       await expect(dialog.getByRole("alert")).toHaveText(tr("errors.assignment_scheduled_fields"));
       await expect(dialog).toBeVisible();
     });
@@ -349,7 +349,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     await dialog.getByLabel(tr("semesters.start")).fill("2027-02-01");
     await dialog.getByLabel(tr("semesters.end")).fill("2027-06-30");
     await dialog.getByLabel(tr("semesters.active")).check();
-    await saveAndConfirm(page);
+    await save(page);
     await expect(page.getByText(tr("common.created"), { exact: true })).toBeVisible();
     await expect(row(page, name).getByRole("cell", { name: tr("common.yes"), exact: true })).toBeVisible();
     await expect(row(page, ACTIVE_SEMESTER).getByRole("cell", { name: tr("common.no"), exact: true })).toBeVisible();
@@ -357,7 +357,7 @@ test.describe(`ux-fixes — ${ROLE}`, () => {
     // Put the stand back: «2026 Күз» active again.
     await row(page, ACTIVE_SEMESTER).getByRole("button", { name: tr("common.edit"), exact: true }).click();
     await formDialog(page).getByLabel(tr("semesters.active")).check();
-    await saveAndConfirm(page);
+    await save(page);
     await expect(row(page, ACTIVE_SEMESTER).getByRole("cell", { name: tr("common.yes"), exact: true })).toBeVisible();
     await expect(row(page, name).getByRole("cell", { name: tr("common.no"), exact: true })).toBeVisible();
   });
@@ -379,7 +379,7 @@ test.describe(`ux-fixes — ${ROLE} — на русском`, () => {
     await dialog.getByLabel(tr("subjects.code", "ru")).fill(`RU${uniq()}`);
     await pick(page, dialog, tr("subjects.department", "ru"), "Илим бөлүмү");
     await dialog.getByLabel(tr("subjects.lab_hours", "ru")).fill("-1");
-    await saveAndConfirm(page, "ru");
+    await save(page, "ru");
     await expect(dialog.getByRole("alert")).toHaveText(`${tr("subjects.lab_hours", "ru")}: ${tr("validation.range", "ru")}`);
     for (const raw of ["Input should", "Field required", "value is not a valid"]) await expect(dialog).not.toContainText(raw);
   });

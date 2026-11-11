@@ -501,6 +501,7 @@ export default function HifzGradebook({
           onClose={() => setExamsStudent(null)}
           onChanged={refresh}
           onError={setSnackbar}
+          onSaved={setSnackbar}
         />
       )}
       {profileStudentId && <StudentProfileDialog studentId={profileStudentId} onClose={() => setProfileStudentId(null)} />}
