@@ -6,7 +6,7 @@ from app.core.deps import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import ChangePasswordRequest, Token, UserOut
+from app.schemas.auth import ChangePasswordRequest, MeOut, Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,10 +21,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return Token(access_token=token)
 
 
-@router.get("/me", response_model=UserOut)
-def me(current_user: User = Depends(get_current_user)) -> UserOut:
+@router.get("/me", response_model=MeOut)
+def me(current_user: User = Depends(get_current_user)) -> MeOut:
     headed = current_user.headed_department
-    return UserOut(
+    # Only teachers have a profile with a name; rector and dean accounts fall back to the username in the UI.
+    profile = current_user.teacher_profile
+    return MeOut(
         id=current_user.id,
         username=current_user.username,
         email=current_user.email,
@@ -32,6 +34,7 @@ def me(current_user: User = Depends(get_current_user)) -> UserOut:
         is_active=current_user.is_active,
         must_change_password=current_user.must_change_password,
         headed_department_id=headed.id if headed is not None else None,
+        full_name=profile.full_name if profile is not None else None,
     )
 
 

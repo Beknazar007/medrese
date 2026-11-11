@@ -32,6 +32,7 @@ import { useTranslation } from "react-i18next";
 import { hifzApi } from "../../api/entities";
 import type { HifzJournal, HifzKind, HifzTarget } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
+import { useSingleFlight } from "../../hooks/useSingleFlight";
 import { apiErrorMessage } from "../../lib/errors";
 import { LEVEL_CHIP, addDays, daysBetween, fmtDate, level, rangeText, targetStatus, todayIso, type TargetStatus } from "./hifzUtils";
 
@@ -269,6 +270,7 @@ function AssignmentFormDialog({
 }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  const runOnce = useSingleFlight();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const isNew = target === null;
@@ -332,9 +334,17 @@ function AssignmentFormDialog({
   const periodInvalid = !startDate || !endDate || endDate < startDate || daysBetween(startDate, endDate) > 400;
   const invalid = juzFrom.trim() === "" || periodInvalid || (isNew && selected.size === 0);
 
+  // One student's assignment is easy to edit back, so it's saved right away. Issuing to several
+  // students at once is a bulk action that is tedious to undo, so it still asks, with the count.
   async function handleSave() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (ok) mutation.mutate();
+    await runOnce(async () => {
+      if (isNew && selected.size > 1) {
+        const ok = await confirm({ message: t("hifz.assignment_issue_many_confirm", { count: selected.size }) });
+        if (!ok) return;
+      }
+      // Errors are reported by the mutation's onError; the catch only stops an unhandled rejection.
+      await mutation.mutateAsync().catch(() => {});
+    });
   }
 
   const student = target ? students.find((s) => s.id === target.student_id) : undefined;

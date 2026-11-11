@@ -31,11 +31,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { useSingleFlight } from "../../hooks/useSingleFlight";
 import { assignmentsApi, hifzApi, scheduleApi } from "../../api/entities";
 import type { AttendanceStatus, HifzKind, HifzRecordDetail, HifzRosterStudent, HifzTarget } from "../../api/types";
+import AttendanceLegend from "../../components/AttendanceLegend";
 import AttendanceToggle from "../../components/AttendanceToggle";
-import { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
-import { STATUS_INK } from "../../lib/palette";
+import { ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
@@ -43,7 +44,7 @@ import { useAuth } from "../../context/AuthContext";
 import HifzAssignments from "../../components/hifz/HifzAssignments";
 import HifzExamsDialog from "../../components/hifz/HifzExamsDialog";
 import HifzGradebook, { type GradebookView } from "../../components/hifz/HifzGradebook";
-import { todayIso as localTodayIso, weekRange } from "../../components/hifz/hifzUtils";
+import { fmtDate, todayIso as localTodayIso, weekRange } from "../../components/hifz/hifzUtils";
 
 // Local date, like todayDayOfWeek — toISOString() is UTC, which in Bishkek (UTC+6) is still
 // yesterday until 06:00 and made the page open the wrong day's lesson.
@@ -480,18 +481,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
             <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
               {t("journal.mark_all_present")}
             </Button>
-            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", fontSize: 13, color: "text.secondary" }}>
-              {ATTENDANCE_OPTIONS.map((status) => (
-                <span key={status}>
-                  {t(`journal.attendance_${status.toLowerCase()}`)}: <strong>{attendanceCounts[status]}</strong>
-                </span>
-              ))}
-              {attendanceCounts.UNSET > 0 && (
-                <span style={{ color: STATUS_INK.late }}>
-                  {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
-                </span>
-              )}
-            </Box>
+            <AttendanceLegend counts={attendanceCounts} />
           </Box>
 
           {/* Phones: one card per student. In the wide table the name column scrolled out of
@@ -514,7 +504,7 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                     </IconButton>
                   </Box>
                   <Box sx={{ mb: 1.25 }}>
-                    <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
+                    <AttendanceToggle fullWidth value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
                   </Box>
                   {(["hifz", "repeat"] as const).map((kind) => {
                     const numField = (field: "score" | "page_from" | "page_to", label: string, max: number) => (
@@ -597,7 +587,9 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
                               {r.full_name}
                             </TableCell>
                             <TableCell rowSpan={2} sx={{ verticalAlign: "top" }}>
-                              <AttendanceToggle value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
+                              {/* 2×2: the cell already spans the hifz and repeat rows, so stacking
+                                  44 px buttons costs no height and keeps the table from widening. */}
+                              <AttendanceToggle layout="grid" value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
                             </TableCell>
                           </>
                         )}
@@ -716,8 +708,12 @@ function HifzLessonTab({ onOpenJournal }: { onOpenJournal: (groupId: number) => 
         </>
       )}
 
-      {targetsStudent && <HifzTargetsDialog student={targetsStudent} onClose={() => setTargetsStudent(null)} onError={setSnackbar} />}
-      {examsStudent && <HifzExamsDialog student={examsStudent} onClose={() => setExamsStudent(null)} onError={setSnackbar} />}
+      {targetsStudent && (
+        <HifzTargetsDialog student={targetsStudent} onClose={() => setTargetsStudent(null)} onError={setSnackbar} onSaved={setSnackbar} />
+      )}
+      {examsStudent && (
+        <HifzExamsDialog student={examsStudent} onClose={() => setExamsStudent(null)} onError={setSnackbar} onSaved={setSnackbar} />
+      )}
 
       <Snackbar open={Boolean(snackbar)} autoHideDuration={3000} onClose={() => setSnackbar(null)} message={snackbar} />
     </Box>
@@ -728,15 +724,19 @@ function HifzTargetsDialog({
   student,
   onClose,
   onError,
+  onSaved,
 }: {
   student: { id: number; name: string };
   onClose: () => void;
   onError: (msg: string) => void;
+  /** Without a "Save changes?" question this message is the only sign the plan was saved. */
+  onSaved: (msg: string) => void;
 }) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const runOnce = useSingleFlight();
   const [editingId, setEditingId] = useState<number | null>(null);
   const [kind, setKind] = useState<HifzKind>("HIFZ");
   const [juzFrom, setJuzFrom] = useState<string>("");
@@ -790,6 +790,7 @@ function HifzTargetsDialog({
     onSuccess: () => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-targets", student.id] });
+      onSaved(t("hifz.saved"));
     },
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
@@ -799,6 +800,7 @@ function HifzTargetsDialog({
     onSuccess: () => {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["hifz-targets", student.id] });
+      onSaved(t("hifz.saved"));
     },
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
@@ -809,11 +811,12 @@ function HifzTargetsDialog({
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
+  // A plan is easy to edit back, so it's saved without a question; runOnce stops a double tap
+  // from creating it twice. Errors are reported by the mutations' onError.
   async function handleSaveTarget() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    if (editingId) updateMutation.mutate();
-    else createMutation.mutate();
+    await runOnce(() =>
+      (editingId ? updateMutation.mutateAsync() : createMutation.mutateAsync()).catch(() => {}),
+    );
   }
 
   async function handleDeleteTarget(id: number) {
@@ -835,7 +838,7 @@ function HifzTargetsDialog({
           <Box key={target.id} sx={{ display: "flex", alignItems: "center", gap: 1, borderBottom: "1px solid", borderColor: "divider", pb: 1 }}>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2">
-                {target.kind === "HIFZ" ? t("hifz.kind_hifz") : t("hifz.kind_repeat")} — {target.start_date} → {target.end_date}
+                {target.kind === "HIFZ" ? t("hifz.kind_hifz") : t("hifz.kind_repeat")} — {fmtDate(target.start_date)} — {fmtDate(target.end_date)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {t("hifz.col_juz")}: {target.juz_from ?? "—"}-{target.juz_to ?? "—"} · {t("hifz.col_page_from")}/{t("hifz.col_page_to")}:{" "}

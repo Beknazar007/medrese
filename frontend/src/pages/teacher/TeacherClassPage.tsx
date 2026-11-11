@@ -30,11 +30,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "../../hooks/useIsMobile";
+import { useSingleFlight } from "../../hooks/useSingleFlight";
 import { assignmentsApi, hifzApi, journalApi, notesApi, scheduleApi } from "../../api/entities";
 import AttendanceBar from "../../components/AttendanceBar";
+import AttendanceLegend from "../../components/AttendanceLegend";
 import AttendanceToggle from "../../components/AttendanceToggle";
-import { ATTENDANCE_OPTIONS, ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
-import { STATUS_FILL, STATUS_INK } from "../../lib/palette";
+import { ATTENDANCE_ROW_TINT, countAttendance } from "../../lib/attendance";
+import { STATUS_FILL } from "../../lib/palette";
 import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
@@ -406,20 +408,48 @@ export default function TeacherClassPage() {
             <Button size="small" startIcon={<DoneAllIcon />} onClick={markAllPresent}>
               {t("journal.mark_all_present")}
             </Button>
-            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", fontSize: 13, color: "text.secondary" }}>
-              {ATTENDANCE_OPTIONS.map((status) => (
-                <span key={status}>
-                  {t(`journal.attendance_${status.toLowerCase()}`)}: <strong>{attendanceCounts[status]}</strong>
-                </span>
-              ))}
-              {attendanceCounts.UNSET > 0 && (
-                <span style={{ color: STATUS_INK.late }}>
-                  {t("journal.unset")}: <strong>{attendanceCounts.UNSET}</strong>
-                </span>
-              )}
-            </Box>
+            <AttendanceLegend counts={attendanceCounts} />
           </Box>
 
+          {/* Phones: one card per student, name above full-width buttons. A table row could not
+              fit the name, four 44 px buttons and the note icon in 390 px without scrolling. */}
+          {isMobile ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
+              {roster.map((r) => (
+                <Paper
+                  key={r.student_id}
+                  variant="outlined"
+                  data-testid="attendance-card"
+                  sx={{ p: 1.5, bgcolor: r.attendance_status ? ATTENDANCE_ROW_TINT[r.attendance_status] : undefined }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}>
+                    <Typography
+                      onClick={() => setProfileStudentId(r.student_id)}
+                      sx={{ fontWeight: 600, flex: 1, minWidth: 0, overflowWrap: "anywhere", cursor: "pointer" }}
+                    >
+                      {r.full_name}
+                    </Typography>
+                    <IconButton aria-label={t("students.notes_title")} title={t("students.notes_title")} size="small" onClick={() => setNoteStudent({ id: r.student_id, name: r.full_name })}>
+                      <CommentIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <AttendanceToggle fullWidth value={r.attendance_status} excuseReason={r.excuse_reason} onChange={(value) => setAttendance(r.student_id, value)} />
+                  {isExam && (
+                    <TextField
+                      type="number"
+                      size="small"
+                      fullWidth
+                      label={t("journal.col_grade")}
+                      value={r.score ?? ""}
+                      onChange={(e) => setScore(r.student_id, e.target.value === "" ? null : Number(e.target.value))}
+                      slotProps={{ htmlInput: { min: 0, max: 100, inputMode: "numeric" }, inputLabel: { shrink: true } }}
+                      sx={{ mt: 1.25 }}
+                    />
+                  )}
+                </Paper>
+              ))}
+            </Box>
+          ) : (
           <TableContainer component={Paper} sx={{ overflowX: "auto", mb: 2 }}>
             <Table size="small" stickyHeader>
               <TableHead>
@@ -469,6 +499,7 @@ export default function TeacherClassPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          )}
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, minHeight: 40 }}>
             {saveFailed ? (
@@ -564,7 +595,7 @@ function NotesDialog({
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
-  const confirm = useConfirm();
+  const runOnce = useSingleFlight();
   const [body, setBody] = useState("");
   const [visibility, setVisibility] = useState<NoteVisibility>("PRIVATE");
 
@@ -582,10 +613,10 @@ function NotesDialog({
     onError: (err) => onError(apiErrorMessage(err, t("common.error"), t)),
   });
 
+  // A note is easy to fix, so it's added without a question; runOnce stops a double tap from
+  // adding it twice. Errors are reported by the mutation's onError.
   async function handleAddNote() {
-    const ok = await confirm({ message: t("common.confirm_save") });
-    if (!ok) return;
-    createMutation.mutate();
+    await runOnce(() => createMutation.mutateAsync().catch(() => {}));
   }
 
   return (

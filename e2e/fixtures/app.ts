@@ -1,9 +1,10 @@
 import { expect, test as base, type Page } from "@playwright/test";
 import ky from "../../frontend/src/i18n/locales/ky.json" with { type: "json" };
 import ru from "../../frontend/src/i18n/locales/ru.json" with { type: "json" };
+import en from "../../frontend/src/i18n/locales/en.json" with { type: "json" };
 import { EXTRA_USERS, PASSWORD, USERS, type ExtraUser, type Role } from "./users";
 
-const LOCALES = { ky, ru } as const;
+const LOCALES = { ky, ru, en } as const;
 export type Lang = keyof typeof LOCALES;
 
 /** Text of an i18n key, e.g. tr("login.submit") → «Кирүү». Locators use it so tests follow the real UI copy. */
