@@ -5,9 +5,7 @@ export interface DateRange {
   to: string;
 }
 
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+import { isoOf as toIso } from "./localDate";
 
 export function computeRange(preset: RangePreset): DateRange {
   const today = new Date();
