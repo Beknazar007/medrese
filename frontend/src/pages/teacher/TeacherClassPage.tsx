@@ -41,11 +41,9 @@ import StudentProfileDialog from "../../components/StudentProfileDialog";
 import type { AttendanceStatus, NoteVisibility, RosterStudent } from "../../api/types";
 import { useConfirm } from "../../context/ConfirmContext";
 import { apiErrorMessage } from "../../lib/errors";
+import { todayIso } from "../../lib/localDate";
 import { nameById, useGroups, useSubjects, useTimeSlots } from "../../hooks/useReferenceData";
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function todayDayOfWeek(): number {
   const js = new Date().getDay(); // 0 = Sunday

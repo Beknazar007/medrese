@@ -1,9 +1,9 @@
 import type { HifzKind, HifzTarget } from "../../api/types";
 
+import { isoOf, todayIso } from "../../lib/localDate";
+
 // Dates are plain "YYYY-MM-DD" strings in local time — they compare correctly as strings.
-const pad = (n: number) => String(n).padStart(2, "0");
-export const isoOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-export const todayIso = () => isoOf(new Date());
+export { isoOf, todayIso };
 export const parseIso = (s: string) => new Date(`${s}T00:00:00`); // local, not UTC
 
 export function addDays(s: string, n: number): string {
