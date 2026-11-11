@@ -20,7 +20,7 @@ jobs:
   frontend:
     name: deploy frontend (Cloudflare Pages)
     needs: checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: production
       url: https://medrese.pages.dev
