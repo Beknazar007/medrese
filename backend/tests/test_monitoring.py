@@ -8,6 +8,7 @@ from app.schemas.journal import AttendanceUpsert, GradeUpsert
 from app.services import journal as journal_service
 from app.services import monitoring as monitoring_service
 from tests.factories import (
+    bishkek,
     make_assignment,
     make_department,
     make_group,
@@ -49,7 +50,7 @@ def test_teacher_monitoring_counts_expected_conducted_and_missed(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
     )
 
     assert len(rows) == 1
@@ -68,7 +69,7 @@ def test_teacher_monitoring_clamps_to_today_so_future_lessons_arent_missed(db: S
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 12, 31),
-        today=date(2026, 9, 14),
+        now=bishkek(date(2026, 9, 14), 23, 59),
     )
 
     # Only the 7th and 14th have happened by "today" — the rest of the semester isn't missed yet.
@@ -85,7 +86,7 @@ def test_teacher_monitoring_filters_by_department(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
         department_id=other_department.id,
     )
     assert rows == []
@@ -95,7 +96,7 @@ def test_teacher_monitoring_filters_by_department(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
         department_id=department.id,
     )
     assert len(rows) == 1
@@ -115,7 +116,7 @@ def test_teacher_session_log_marks_conducted_and_missed_dates_with_timestamps(db
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 14),
-        today=date(2026, 9, 14),
+        now=bishkek(date(2026, 9, 14), 23, 59),
     )
 
     assert [r.date for r in rows] == [date(2026, 9, 14), date(2026, 9, 7)]
@@ -144,7 +145,7 @@ def test_teacher_session_log_auto_closes_a_session_the_teacher_never_checked_out
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 14),
-        today=date(2026, 9, 14),
+        now=bishkek(date(2026, 9, 14), 23, 59),
     )
 
     held = next(r for r in rows if r.date == date(2026, 9, 7))
@@ -167,7 +168,7 @@ def test_teacher_session_log_flags_a_check_in_more_than_15_minutes_late(db: Sess
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 14),
-        today=date(2026, 9, 14),
+        now=bishkek(date(2026, 9, 14), 23, 59),
     )
 
     on_time_row = next(r for r in rows if r.date == date(2026, 9, 7))
@@ -190,7 +191,7 @@ def test_teacher_monitoring_counts_late_lessons_per_teacher(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 14),
-        today=date(2026, 9, 14),
+        now=bishkek(date(2026, 9, 14), 23, 59),
     )
 
     assert rows[0].teacher_id == teacher.id
@@ -210,7 +211,7 @@ def test_teacher_monitoring_summary_totals_and_lists_top_missed(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
     )
 
     assert summary.expected_lessons == 4
@@ -233,7 +234,7 @@ def test_teacher_monitoring_summary_excludes_teachers_with_no_missed_lessons(db:
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
     )
 
     assert summary.missed_lessons == 0
@@ -273,7 +274,7 @@ def test_student_attendance_summary_counts_statuses_and_averages_grades(db: Sess
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
     )
 
     assert summary.present == 1
@@ -301,7 +302,7 @@ def test_student_attendance_summary_filters_by_department(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
         department_id=other_department.id,
     )
     assert other_summary.present == 0
@@ -311,7 +312,7 @@ def test_student_attendance_summary_filters_by_department(db: Session):
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
         department_id=department.id,
     )
     assert own_summary.present == 1

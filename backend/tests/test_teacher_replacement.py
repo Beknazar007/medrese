@@ -14,6 +14,7 @@ from app.services import assignments as assignment_service
 from app.services import journal as journal_service
 from app.services import monitoring as monitoring_service
 from tests.factories import (
+    bishkek,
     make_assignment,
     make_dean,
     make_department,
@@ -226,7 +227,7 @@ def test_monitoring_attributes_past_lessons_to_previous_teacher(db: Session):
         r.teacher_id: r
         for r in monitoring_service.teacher_monitoring(
             db, semester_id=w["semester"].id, date_from=date(2026, 9, 1), date_to=date(2026, 9, 30),
-            today=date(2026, 9, 30),
+            now=bishkek(date(2026, 9, 30), 23, 59),
         )
     }
     assert set(rows) == {w["old"].id, w["new"].id}
@@ -239,7 +240,7 @@ def test_monitoring_attributes_past_lessons_to_previous_teacher(db: Session):
             (r.date, r.conducted)
             for r in monitoring_service.teacher_session_log(
                 db, teacher_id=teacher_id, semester_id=w["semester"].id, date_from=date(2026, 9, 1),
-                date_to=date(2026, 9, 30), today=date(2026, 9, 30),
+                date_to=date(2026, 9, 30), now=bishkek(date(2026, 9, 30), 23, 59),
             )
         ]
 
