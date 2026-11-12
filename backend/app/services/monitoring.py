@@ -16,12 +16,14 @@ from app.models.assignment import TeachingAssignment
 from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.grade import GradeRecord
-from app.models.enums import LessonMarkKind
+from app.models.enums import GroupType, LessonMarkKind
+from app.models.hifz import HifzRecord
 from app.models.lesson_mark import LessonMark
 from app.models.lesson_session import LessonSession
 from app.models.non_working_day import NonWorkingDay
 from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
+from app.models.student import Student
 from app.models.teacher import TeacherProfile
 from app.models.user import User
 from app.schemas.monitoring import SessionStatus
@@ -60,6 +62,16 @@ def _is_late(
         return False
     expected_start = datetime.combine(session_date, start_time, tzinfo=BISHKEK_TZ)
     return (_as_aware(checked_in_at).astimezone(BISHKEK_TZ) - expected_start) > timedelta(minutes=threshold)
+
+
+def _finished_before_half(checked_out_at: datetime | None, on_date: date, start: time, end: time) -> bool:
+    """The teacher pressed "finish" before the middle of the pair. Auto-closing stamps the
+    pair's end, so it never counts here."""
+    if checked_out_at is None:
+        return False
+    pair_start = datetime.combine(on_date, start, tzinfo=BISHKEK_TZ)
+    middle = pair_start + (datetime.combine(on_date, end, tzinfo=BISHKEK_TZ) - pair_start) / 2
+    return _as_aware(checked_out_at) < middle
 
 
 def _pair_ended(on_date: date, end_time: time, now: datetime) -> bool:
@@ -137,6 +149,13 @@ class _Occurrence:
     session: LessonSession | None
     mark: LessonMark | None
     late: bool
+    no_student_marks: bool = False
+    early_finish: bool = False
+
+    @property
+    def attention(self) -> bool:
+        # Counted once even when both flags are set.
+        return self.no_student_marks or self.early_finish
 
     @property
     def expected(self) -> bool:
@@ -217,6 +236,33 @@ def _occurrences(
             .where(LessonMark.schedule_entry_id.in_(entry_ids), LessonMark.date >= start, LessonMark.date <= end)
         ).all()
     }
+    # "Requires attention": opened lessons with no attendance the teacher set (records created
+    # from the dean's excuses don't count), or — in hafiz groups — no hifz/repeat score either.
+    session_ids = [s.id for s in sessions.values()]
+    marked_session_ids = (
+        set(
+            db.scalars(
+                select(AttendanceRecord.session_id)
+                .where(AttendanceRecord.session_id.in_(session_ids), AttendanceRecord.excuse_id.is_(None))
+                .distinct()
+            ).all()
+        )
+        if session_ids
+        else set()
+    )
+    hafiz_group_ids = {e.assignment.group_id for e in entries if e.assignment.group.group_type == GroupType.HAFIZ}
+    hifz_days = (
+        set(
+            db.execute(
+                select(Student.group_id, HifzRecord.date)
+                .join(Student, Student.id == HifzRecord.student_id)
+                .where(Student.group_id.in_(hafiz_group_ids), HifzRecord.date >= start, HifzRecord.date <= end)
+                .distinct()
+            ).all()
+        )
+        if hafiz_group_ids
+        else set()
+    )
     changes = changes_by_assignment(db, {e.assignment_id for e in entries})
     holidays = non_working_dates(db, start, end)
     # Read once per request and applied to every lesson, so changing it re-evaluates the past.
@@ -247,18 +293,19 @@ def _occurrences(
                 status = _STATUS_BY_MARK[mark.kind]
             else:
                 status = SessionStatus.MISSED
-            result.append(
-                _Occurrence(
-                    entry=entry,
-                    date=d,
-                    teacher_id=responsible,
-                    status=status,
-                    session=session,
-                    mark=mark,
-                    late=session is not None
-                    and _is_late(session.teacher_checked_in_at, d, slot.start_time, threshold),
-                )
+            occurrence = _Occurrence(
+                entry=entry, date=d, teacher_id=responsible, status=status, session=session, mark=mark, late=False
             )
+            if session is not None:
+                occurrence.late = _is_late(session.teacher_checked_in_at, d, slot.start_time, threshold)
+                occurrence.no_student_marks = session.id not in marked_session_ids and (
+                    entry.assignment.group_id not in hafiz_group_ids
+                    or (entry.assignment.group_id, d) not in hifz_days
+                )
+                occurrence.early_finish = _finished_before_half(
+                    session.teacher_checked_out_at, d, slot.start_time, slot.end_time
+                )
+            result.append(occurrence)
     return result
 
 
@@ -272,6 +319,7 @@ class TeacherMonitoringRow:
     missed_lessons: int
     late_lessons: int
     conducted_percent: int | None
+    attention_lessons: int
 
 
 def _sort_key(row: TeacherMonitoringRow):
@@ -306,6 +354,7 @@ def teacher_monitoring(
         bucket["expected"] += occ.expected
         bucket["conducted"] += occ.conducted
         bucket["late"] += occ.late
+        bucket["attention"] += occ.attention
     if not totals:
         return []
 
@@ -320,6 +369,7 @@ def teacher_monitoring(
             missed_lessons=counts["expected"] - counts["conducted"],
             late_lessons=counts["late"],
             conducted_percent=conducted_percent(counts["conducted"], counts["expected"]),
+            attention_lessons=counts["attention"],
         )
         for tid, counts in totals.items()
         if tid in teachers
@@ -335,6 +385,7 @@ class TeacherMonitoringSummary:
     missed_lessons: int
     late_lessons: int
     conducted_percent: int | None
+    attention_lessons: int
     lowest_percent: list[TeacherMonitoringRow]
     # Deprecated: the old dashboard's "most missed" list. Kept only so a frontend released
     # before this backend keeps working; the new one reads lowest_percent.
@@ -363,6 +414,7 @@ def teacher_monitoring_summary(
         missed_lessons=sum(r.missed_lessons for r in rows),
         late_lessons=sum(r.late_lessons for r in rows),
         conducted_percent=conducted_percent(conducted, expected),
+        attention_lessons=sum(r.attention_lessons for r in rows),
         lowest_percent=[r for r in rows if r.conducted_percent is not None and r.conducted_percent < 100][:5],
         top_missed=sorted((r for r in rows if r.missed_lessons > 0), key=lambda r: r.missed_lessons, reverse=True)[
             :5
@@ -407,6 +459,8 @@ class TeacherSessionLogRow:
     late: bool
     mark: LessonMarkView | None
     can_mark: bool
+    no_student_marks: bool
+    early_finish: bool
 
 
 def teacher_session_log(
@@ -442,6 +496,8 @@ def teacher_session_log(
                 late=occ.late,
                 mark=mark_view(occ.mark) if occ.mark is not None else None,
                 can_mark=occ.can_mark,
+                no_student_marks=occ.no_student_marks,
+                early_finish=occ.early_finish,
             )
         )
     rows.sort(key=lambda r: r.date, reverse=True)

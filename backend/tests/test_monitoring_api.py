@@ -154,6 +154,8 @@ def test_responses_carry_percent_status_and_lowest_percent(db: Session, client_a
 
     summary = client.get("/api/v1/dashboard/teacher-monitoring-summary", params=_params(w)).json()
     assert summary["conducted_percent"] == 0
+    assert summary["attention_lessons"] == 0
+    assert all(r["attention_lessons"] == 0 for r in rows)
     assert [r["teacher_id"] for r in summary["lowest_percent"]] == [r["teacher_id"] for r in rows]
     assert "top_missed" in summary
 
@@ -161,6 +163,7 @@ def test_responses_carry_percent_status_and_lowest_percent(db: Session, client_a
     assert {r["status"] for r in log} == {"MISSED"}
     assert all(r["schedule_entry_id"] for r in log)
     assert all(r["conducted"] is False for r in log)
+    assert all(r["no_student_marks"] is False and r["early_finish"] is False for r in log)
 
 
 def test_endpoint_uses_bishkek_now(db: Session, client_as, monkeypatch):

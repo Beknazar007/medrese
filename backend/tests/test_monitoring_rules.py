@@ -6,9 +6,12 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
-from app.models.enums import AttendanceStatus, DayOfWeek
 from app.models.attendance import AttendanceRecord
+from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind
+from app.models.excuse import StudentExcuse
+from app.models.hifz import HifzRecord
 from app.models.timeslot import TimeSlot
+from app.services import journal as journal_service
 from app.services import monitoring as monitoring_service
 from app.services.monitoring import SessionStatus, TeacherMonitoringRow, conducted_percent
 from tests.factories import (
@@ -198,6 +201,7 @@ def test_teachers_with_nothing_expected_sort_last():
             missed_lessons=missed,
             late_lessons=0,
             conducted_percent=percent,
+            attention_lessons=0,
         )
 
     rows = [row("none", None, 0), row("full", 100, 0), row("low", 10, 1)]
@@ -381,3 +385,129 @@ def test_monitoring_does_not_n_plus_1(db: Session):
         return list_queries, log_queries
 
     assert queries_for(2) == queries_for(10)
+
+
+# --- «Requires attention» (spec 2.16–2.21) ---
+
+
+def _opened(db: Session, entry, on_date: date, check_in: tuple[int, int], check_out: tuple[int, int] | None = None):
+    session = make_session(db, entry, on_date)
+    session.teacher_checked_in_at = bishkek(on_date, *check_in).astimezone(timezone.utc)
+    if check_out is not None:
+        session.teacher_checked_out_at = bishkek(on_date, *check_out).astimezone(timezone.utc)
+    db.flush()
+    return session
+
+
+def _mark_present(db: Session, session, student):
+    db.add(AttendanceRecord(session_id=session.id, student_id=student.id, status=AttendanceStatus.PRESENT))
+    db.flush()
+
+
+def test_lesson_with_only_excuse_records_requires_attention(db: Session):
+    w = _World(db)
+    teacher = make_teacher(db, w.department)
+    entry = w.entry(teacher, make_time_slot(db))
+    student = make_student(db, entry.assignment.group)
+    excuse = StudentExcuse(student_id=student.id, date_from=MONDAY, date_to=MONDAY, reason="Ill")
+    db.add(excuse)
+    db.flush()
+    session = _opened(db, entry, MONDAY, (8, 5), (8, 50))
+    db.add(
+        AttendanceRecord(
+            session_id=session.id, student_id=student.id, status=AttendanceStatus.EXCUSED, excuse_id=excuse.id
+        )
+    )
+    db.flush()
+
+    now = bishkek(MONDAY, 23, 59)
+    [row] = w.rows(MONDAY, MONDAY, now)
+    assert (row.conducted_lessons, row.attention_lessons, row.conducted_percent) == (1, 1, 100)
+    [log_row] = w.log(teacher, MONDAY, MONDAY, now)
+    assert (log_row.no_student_marks, log_row.early_finish) == (True, False)
+
+    other = make_student(db, entry.assignment.group, full_name="Other")
+    _mark_present(db, session, other)
+    [row] = w.rows(MONDAY, MONDAY, now)
+    assert row.attention_lessons == 0
+
+
+def test_early_finish_requires_attention_but_auto_close_does_not(db: Session):
+    w = _World(db)
+    teacher = make_teacher(db, w.department)
+    slot = w.slot(time(10, 0), time(10, 40), order=4)  # middle is 10:20
+    early_entry = w.entry(teacher, slot, DayOfWeek.MONDAY)
+    auto_entry = w.entry(teacher, slot, DayOfWeek.TUESDAY)
+    late_finish_entry = w.entry(teacher, slot, DayOfWeek.WEDNESDAY)
+    student = make_student(db, early_entry.assignment.group)
+    tuesday, wednesday = date(2026, 9, 8), date(2026, 9, 9)
+
+    early = _opened(db, early_entry, MONDAY, (10, 2), (10, 15))
+    auto = _opened(db, auto_entry, tuesday, (10, 2))
+    on_time = _opened(db, late_finish_entry, wednesday, (10, 2), (10, 20))  # exactly the middle — fine
+    for session in (early, auto, on_time):
+        _mark_present(db, session, student)
+    db.refresh(auto)
+    assert journal_service.auto_close_if_ended(auto, now=bishkek(tuesday, 11, 0))
+    db.flush()
+
+    now = bishkek(wednesday, 23, 59)
+    [row] = w.rows(MONDAY, wednesday, now)
+    assert (row.conducted_lessons, row.attention_lessons) == (3, 1)
+    flags = {r.date: (r.no_student_marks, r.early_finish) for r in w.log(teacher, MONDAY, wednesday, now)}
+    assert flags == {MONDAY: (False, True), tuesday: (False, False), wednesday: (False, False)}
+
+
+def test_both_flags_count_once(db: Session):
+    w = _World(db)
+    teacher = make_teacher(db, w.department)
+    entry = w.entry(teacher, w.slot(time(10, 0), time(10, 40), order=4))
+    _opened(db, entry, MONDAY, (10, 2), (10, 15))
+
+    now = bishkek(MONDAY, 23, 59)
+    [row] = w.rows(MONDAY, MONDAY, now)
+    assert row.attention_lessons == 1
+    [log_row] = w.log(teacher, MONDAY, MONDAY, now)
+    assert (log_row.no_student_marks, log_row.early_finish) == (True, True)
+
+
+def test_summary_attention_equals_sum_of_rows(db: Session):
+    w = _World(db)
+    slot = make_time_slot(db)
+    t1 = make_teacher(db, w.department, "t1")
+    t2 = make_teacher(db, w.department, "t2")
+    _opened(db, w.entry(t1, slot, DayOfWeek.MONDAY), MONDAY, (8, 0))
+    _opened(db, w.entry(t2, slot, DayOfWeek.TUESDAY), date(2026, 9, 8), (8, 0))
+    now = bishkek(date(2026, 9, 30), 23, 59)
+    rows = w.rows(date(2026, 9, 1), date(2026, 9, 30), now)
+    summary = monitoring_service.teacher_monitoring_summary(
+        db, semester_id=w.semester.id, date_from=date(2026, 9, 1), date_to=date(2026, 9, 30), now=now
+    )
+    assert summary.attention_lessons == sum(r.attention_lessons for r in rows) == 2
+
+
+def test_hafiz_lesson_with_hifz_scores_needs_no_attendance(db: Session):
+    w = _World(db)
+    teacher = make_teacher(db, w.department)
+    slot = make_time_slot(db)
+    subject = make_subject(db, w.department, code="HFZ")
+    hafiz_group = make_group(db, w.department, name="H-1", group_type=GroupType.HAFIZ)
+    other_hafiz = make_group(db, w.department, name="H-2", group_type=GroupType.HAFIZ)
+    entry = make_schedule_entry(db, make_assignment(db, teacher, subject, hafiz_group, w.semester), w.room, slot)
+    student = make_student(db, hafiz_group)
+    stranger = make_student(db, other_hafiz, full_name="Stranger")
+    next_monday = date(2026, 9, 14)
+    for d in (MONDAY, next_monday):
+        _opened(db, entry, d, (8, 0))
+    # A score on the 7th in this group; on the 14th only another group's student and this
+    # group's student on a different day — neither helps.
+    db.add(HifzRecord(student_id=student.id, date=MONDAY, kind=HifzKind.HIFZ, score=90))
+    db.add(HifzRecord(student_id=stranger.id, date=next_monday, kind=HifzKind.REPEAT, score=80))
+    db.add(HifzRecord(student_id=student.id, date=date(2026, 9, 13), kind=HifzKind.REPEAT, score=80))
+    db.flush()
+
+    now = bishkek(date(2026, 9, 30), 23, 59)
+    flags = {r.date: r.no_student_marks for r in w.log(teacher, MONDAY, next_monday, now)}
+    assert flags == {MONDAY: False, next_monday: True}
+    [row] = w.rows(MONDAY, next_monday, now)
+    assert (row.attention_lessons, row.conducted_percent) == (1, 100)

@@ -27,6 +27,7 @@ class TeacherMonitoringRowOut(BaseModel):
     missed_lessons: int
     late_lessons: int
     conducted_percent: int | None
+    attention_lessons: int
 
     model_config = {"from_attributes": True}
 
@@ -37,6 +38,7 @@ class TeacherMonitoringSummaryOut(BaseModel):
     missed_lessons: int
     late_lessons: int
     conducted_percent: int | None
+    attention_lessons: int
     lowest_percent: list[TeacherMonitoringRowOut]
     # Deprecated: read by dashboards released before lowest_percent existed.
     top_missed: list[TeacherMonitoringRowOut]
@@ -82,6 +84,8 @@ class TeacherSessionLogRowOut(BaseModel):
     late: bool
     mark: LessonMarkOut | None
     can_mark: bool
+    no_student_marks: bool
+    early_finish: bool
 
     model_config = {"from_attributes": True}
 
