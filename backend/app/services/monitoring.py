@@ -17,6 +17,7 @@ from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.grade import GradeRecord
 from app.models.lesson_session import LessonSession
+from app.models.non_working_day import NonWorkingDay
 from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
 from app.models.teacher import TeacherProfile
@@ -60,6 +61,22 @@ def _is_late(
 
 def _pair_ended(on_date: date, end_time: time, now: datetime) -> bool:
     return datetime.combine(on_date, end_time, tzinfo=BISHKEK_TZ) <= now
+
+
+def non_working_dates(db: Session, start: date, end: date) -> set[date]:
+    """Every date in [start, end] covered by at least one non-working range."""
+    result: set[date] = set()
+    if start > end:
+        return result
+    for day in db.scalars(
+        select(NonWorkingDay).where(NonWorkingDay.start_date <= end, NonWorkingDay.end_date >= start)
+    ).all():
+        current = max(day.start_date, start)
+        last = min(day.end_date, end)
+        while current <= last:
+            result.add(current)
+            current += timedelta(days=1)
+    return result
 
 
 def _expected_dates(day_of_week: int, start: date, end: date) -> list[date]:
@@ -173,6 +190,7 @@ def _occurrences(
         ).all()
     }
     changes = changes_by_assignment(db, {e.assignment_id for e in entries})
+    holidays = non_working_dates(db, start, end)
     # Read once per request and applied to every lesson, so changing it re-evaluates the past.
     threshold = get_late_threshold(db)
 
@@ -191,6 +209,9 @@ def _occurrences(
                 status = SessionStatus.CONDUCTED
             elif not _pair_ended(d, slot.end_time, now):
                 # Not missed yet: the teacher may still open it.
+                continue
+            elif d in holidays:
+                # Nobody is expected to teach on a holiday; a lesson opened anyway counts above.
                 continue
             else:
                 status = SessionStatus.MISSED
