@@ -43,3 +43,11 @@ class GroupType(str, enum.Enum):
 class HifzKind(str, enum.Enum):
     HIFZ = "HIFZ"
     REPEAT = "REPEAT"
+
+
+class LessonMarkKind(str, enum.Enum):
+    """Why a missed lesson isn't really a miss, set by the rector or dean."""
+
+    FORGOT_TO_OPEN = "FORGOT_TO_OPEN"  # held, the teacher just didn't open it in the app
+    EXCUSED = "EXCUSED"
+    CANCELLED = "CANCELLED"

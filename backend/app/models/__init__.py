@@ -1,13 +1,25 @@
+from app.models.app_settings import AppSettings
 from app.models.assignment import TeachingAssignment
 from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.department import Department
-from app.models.enums import AttendanceStatus, DayOfWeek, GroupType, HifzKind, HourType, NoteVisibility, UserRole
+from app.models.enums import (
+    AttendanceStatus,
+    DayOfWeek,
+    GroupType,
+    HifzKind,
+    HourType,
+    LessonMarkKind,
+    NoteVisibility,
+    UserRole,
+)
 from app.models.excuse import StudentExcuse
 from app.models.grade import GradeRecord
 from app.models.group import Group
 from app.models.hifz import HifzExam, HifzRecord, HifzTarget
+from app.models.lesson_mark import LessonMark
 from app.models.lesson_session import LessonSession
+from app.models.non_working_day import NonWorkingDay
 from app.models.note import StudentNote
 from app.models.room import Room
 from app.models.schedule import ScheduleEntry
@@ -19,6 +31,7 @@ from app.models.timeslot import TimeSlot
 from app.models.user import User
 
 __all__ = [
+    "AppSettings",
     "TeachingAssignment",
     "AssignmentTeacherChange",
     "AttendanceRecord",
@@ -28,6 +41,7 @@ __all__ = [
     "GroupType",
     "HifzKind",
     "HourType",
+    "LessonMarkKind",
     "NoteVisibility",
     "UserRole",
     "GradeRecord",
@@ -35,7 +49,9 @@ __all__ = [
     "HifzExam",
     "HifzRecord",
     "HifzTarget",
+    "LessonMark",
     "LessonSession",
+    "NonWorkingDay",
     "StudentNote",
     "StudentExcuse",
     "Room",
