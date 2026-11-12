@@ -54,6 +54,20 @@ def assert_department_access(current_user: User, department_id: int) -> None:
     )
 
 
+def department_scope(current_user: User) -> int | None:
+    """Department filter for school-wide reports: None for RECTOR (everything), the headed
+    department's id for DEAN. A dean who heads no department gets 403 rather than None —
+    None would mean "the whole madrasa", which a dean must never see."""
+    if current_user.role == UserRole.RECTOR:
+        return None
+    if current_user.role == UserRole.DEAN and current_user.headed_department is not None:
+        return current_user.headed_department.id
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You do not have access to this department",
+    )
+
+
 def accessible_department_ids(current_user: User) -> Iterable[int] | None:
     """Returns None if the user can see all departments (RECTOR), otherwise a list of ids they may see.
     A TEACHER may read (not write) their own department's reference data — they need

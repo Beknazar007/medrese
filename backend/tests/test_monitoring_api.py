@@ -1,0 +1,139 @@
+"""HTTP-level rights and scoping of the monitoring and dashboard endpoints."""
+
+import pytest
+from sqlalchemy.orm import Session
+
+from app.models.enums import DayOfWeek, GroupType, UserRole
+from tests.factories import (
+    make_assignment,
+    make_dean,
+    make_department,
+    make_group,
+    make_rector,
+    make_room,
+    make_schedule_entry,
+    make_semester,
+    make_subject,
+    make_teacher,
+    make_time_slot,
+    make_user,
+)
+
+def _params(w, semester_id: int | None = None) -> dict:
+    return {
+        "semester_id": semester_id if semester_id is not None else w["semester"].id,
+        "date_from": "2026-09-01",
+        "date_to": "2026-09-30",
+    }
+
+
+def _world(db: Session):
+    dep_a = make_department(db, "A")
+    dep_b = make_department(db, "B")
+    teacher_a = make_teacher(db, dep_a, "teacher_a")
+    teacher_b = make_teacher(db, dep_b, "teacher_b")
+    hafiz = make_teacher(db, dep_a, "hafiz")
+    semester = make_semester(db)
+    room = make_room(db)
+    slot = make_time_slot(db)
+    for i, (teacher, dep, group_type, day) in enumerate(
+        [
+            (teacher_a, dep_a, GroupType.REGULAR, DayOfWeek.MONDAY),
+            (teacher_b, dep_b, GroupType.REGULAR, DayOfWeek.TUESDAY),
+            (hafiz, dep_a, GroupType.HAFIZ, DayOfWeek.WEDNESDAY),
+        ]
+    ):
+        subject = make_subject(db, dep, code=f"S{i}")
+        group = make_group(db, dep, name=f"G{i}", group_type=group_type)
+        make_schedule_entry(db, make_assignment(db, teacher, subject, group, semester), room, slot, day)
+    return {
+        "dep_a": dep_a,
+        "dep_b": dep_b,
+        "teacher_a": teacher_a,
+        "teacher_b": teacher_b,
+        "hafiz": hafiz,
+        "semester": semester,
+        "rector": make_rector(db),
+        "dean_a": make_dean(db, dep_a, "dean_a"),
+        "dean_none": make_user(db, "dean_none", UserRole.DEAN),
+    }
+
+
+def _urls(w) -> list[str]:
+    return [
+        "/api/v1/monitoring/teachers",
+        f"/api/v1/monitoring/teachers/{w['teacher_a'].id}/sessions",
+        "/api/v1/dashboard/teacher-monitoring-summary",
+        "/api/v1/dashboard/student-attendance-summary",
+    ]
+
+
+def test_rector_sees_all_departments(db: Session, client_as):
+    w = _world(db)
+    client = client_as(w["rector"])
+    for url in _urls(w):
+        assert client.get(url, params=_params(w)).status_code == 200, url
+    rows = client.get(_urls(w)[0], params=_params(w)).json()
+    assert {r["teacher_id"] for r in rows} == {w["teacher_a"].id, w["teacher_b"].id, w["hafiz"].id}
+    summary = client.get(_urls(w)[2], params=_params(w)).json()
+    assert summary["expected_lessons"] == sum(r["expected_lessons"] for r in rows)
+    other_log = client.get(
+        f"/api/v1/monitoring/teachers/{w['teacher_b'].id}/sessions", params=_params(w)
+    )
+    assert other_log.status_code == 200
+
+
+def test_dean_sees_only_own_department(db: Session, client_as):
+    w = _world(db)
+    client = client_as(w["dean_a"])
+    for url in _urls(w):
+        assert client.get(url, params=_params(w)).status_code == 200, url
+    rows = client.get(_urls(w)[0], params=_params(w)).json()
+    assert {r["teacher_id"] for r in rows} == {w["teacher_a"].id, w["hafiz"].id}
+    summary = client.get(_urls(w)[2], params=_params(w)).json()
+    assert summary["expected_lessons"] == sum(r["expected_lessons"] for r in rows)
+    assert summary["missed_lessons"] == sum(r["missed_lessons"] for r in rows)
+
+
+def test_dean_cannot_open_other_department_teacher_log(db: Session, client_as):
+    w = _world(db)
+    response = client_as(w["dean_a"]).get(
+        f"/api/v1/monitoring/teachers/{w['teacher_b'].id}/sessions", params=_params(w)
+    )
+    assert response.status_code == 403
+
+
+def test_dean_without_department_is_forbidden(db: Session, client_as):
+    w = _world(db)
+    client = client_as(w["dean_none"])
+    for url in _urls(w):
+        assert client.get(url, params=_params(w)).status_code == 403, url
+
+
+@pytest.mark.parametrize("who", ["teacher_a", "hafiz"])
+def test_teachers_are_forbidden(db: Session, client_as, who):
+    w = _world(db)
+    client = client_as(w[who].user)
+    for url in _urls(w):
+        assert client.get(url, params=_params(w)).status_code == 403, url
+
+
+def test_unknown_semester_is_404(db: Session, client_as):
+    w = _world(db)
+    client = client_as(w["rector"])
+    for url in _urls(w):
+        assert client.get(url, params=_params(w, semester_id=999)).status_code == 404, url
+
+
+def test_unknown_teacher_log_is_404(db: Session, client_as):
+    w = _world(db)
+    response = client_as(w["rector"]).get(
+        "/api/v1/monitoring/teachers/999/sessions", params=_params(w)
+    )
+    assert response.status_code == 404
+
+
+def test_dates_are_required(db: Session, client_as):
+    w = _world(db)
+    response = client_as(w["rector"]).get("/api/v1/monitoring/teachers", params={"semester_id": w["semester"].id})
+    assert response.status_code == 422
