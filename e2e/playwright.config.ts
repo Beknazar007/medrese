@@ -14,6 +14,9 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     baseURL: `http://localhost:${FRONTEND_PORT}`,
+    // The app takes "today" from the device clock, the stand from Bishkek time. GitHub runners are UTC, so from
+    // 18:00 to 24:00 UTC the browser was a day behind the stand and every "today's lesson" test failed.
+    timezoneId: "Asia/Bishkek",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

@@ -44,6 +44,17 @@ export const makeTheme = (mode: PaletteMode) => createTheme({
         },
       },
     },
+    MuiSnackbar: {
+      // At the bottom a message covered the full-screen dialogs' button bar («Жабуу», «Сактоо») for
+      // seconds right after saving (finding B12). Top, below the notch, covers nothing you press.
+      defaultProps: { anchorOrigin: { vertical: "top", horizontal: "center" } },
+      styleOverrides: {
+        anchorOriginTopCenter: ({ theme }) => ({
+          top: "calc(8px + env(safe-area-inset-top))",
+          [theme.breakpoints.up("sm")]: { top: "calc(24px + env(safe-area-inset-top))" },
+        }),
+      },
+    },
     MuiDialogActions: {
       styleOverrides: {
         // On a full-screen dialog the actions become a bottom bar of equal, thumb-sized buttons
