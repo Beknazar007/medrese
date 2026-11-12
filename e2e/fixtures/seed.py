@@ -144,9 +144,12 @@ with Session(engine) as db:
             start = slot1.start_time if entry.time_slot_id == slot1.id else (slot2 if entry.time_slot_id == slot2.id else slot3).start_time
             hh, mm = (9, 0) if start == time(0, 0) else (start.hour, start.minute)
             late = rnd.random() < 0.15
+            # Pair 1 runs all day on the stand: closing it at ~10:15 would be "finished before half
+            # time" in monitoring, so close it at the pair's end, as auto-closing does.
+            checked_out = at(d, 23, 59) if start == time(0, 0) else at(d, hh + 1, mm + 15)
             session = LessonSession(schedule_entry_id=entry.id, date=d, teacher_id=entry.teacher_id, is_exam=(i == 2 and entry is not e_hifz),
                                     teacher_checked_in_at=at(d, hh, mm + (12 if late else 1)),
-                                    teacher_checked_out_at=at(d, hh + 1, mm + 15))
+                                    teacher_checked_out_at=checked_out)
             db.add(session)
             db.flush()
             for s in roster:
