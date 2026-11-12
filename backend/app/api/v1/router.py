@@ -15,6 +15,7 @@ from app.api.v1 import (
     rooms,
     schedule,
     semesters,
+    settings,
     students,
     subjects,
     teachers,
@@ -42,3 +43,4 @@ api_router.include_router(notes.router)
 api_router.include_router(monitoring.router)
 api_router.include_router(hifz.router)
 api_router.include_router(reports.router)
+api_router.include_router(settings.router)

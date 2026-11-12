@@ -23,9 +23,9 @@ from app.models.teacher import TeacherProfile
 from app.schemas.monitoring import SessionStatus
 from app.services.assignments import changes_by_assignment, responsible_teacher_id
 from app.services.journal import auto_close_if_ended
+from app.services.settings import DEFAULT_LATE_THRESHOLD, get_late_threshold
 
 BISHKEK_TZ = ZoneInfo("Asia/Bishkek")
-DEFAULT_LATE_THRESHOLD = 15
 
 
 def now_bishkek() -> datetime:
@@ -173,7 +173,8 @@ def _occurrences(
         ).all()
     }
     changes = changes_by_assignment(db, {e.assignment_id for e in entries})
-    threshold = DEFAULT_LATE_THRESHOLD
+    # Read once per request and applied to every lesson, so changing it re-evaluates the past.
+    threshold = get_late_threshold(db)
 
     result: list[_Occurrence] = []
     for entry in entries:
