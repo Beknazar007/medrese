@@ -2,7 +2,7 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "developer",
+  "next": "verifier",
   "waiting_for": null,
   "review_iteration": 0,
   "verify_attempt": {
@@ -19,7 +19,8 @@
     "user_guide": [],
     "scenario": null,
     "videos": null,
-    "verify": null
+    "verify": null,
+    "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)"
   },
   "history": [
     {
@@ -45,6 +46,12 @@
       "at": "2026-11-13T02:10+06:00",
       "result": "план specs/monitoring-accuracy.plan.md: общий _occurrences для мониторинга/главной/журнала, now по Бишкеку, обрезка семестром; таблицы non_working_days, lesson_marks, app_settings (одна миграция, только шаг 2); новые адреса /non-working-days, /settings, /monitoring/lesson-marks; department_scope закрывает доступ декана без отделения; шаги 1–4 = шаг 1 спеки, 5–11 = шаг 2. Объём L",
       "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-13T03:40+06:00",
+      "result": "шаги 1–11 плана: department_scope, _occurrences (Бишкек, семестр, процент), схемы, фронтенд шага 1; миграция fbec5af838f4 (non_working_days, lesson_marks, app_settings), /settings, /non-working-days, /monitoring/lesson-marks, флаги внимания, фронтенд шага 2, seed e2e. pytest 198 passed, lint/build ok, e2e 167 passed / 33 skipped",
+      "next": "verifier (режим developer)"
     }
   ]
 }
