@@ -1,10 +1,15 @@
 """HTTP-level rights and scoping of the monitoring and dashboard endpoints."""
 
+from datetime import date, datetime, time, timezone
+
 import pytest
 from sqlalchemy.orm import Session
 
 from app.models.enums import DayOfWeek, GroupType, UserRole
+from app.models.timeslot import TimeSlot
+from app.services import monitoring as monitoring_service
 from tests.factories import (
+    bishkek,
     make_assignment,
     make_dean,
     make_department,
@@ -137,3 +142,49 @@ def test_dates_are_required(db: Session, client_as):
     w = _world(db)
     response = client_as(w["rector"]).get("/api/v1/monitoring/teachers", params={"semester_id": w["semester"].id})
     assert response.status_code == 422
+
+
+def test_responses_carry_percent_status_and_lowest_percent(db: Session, client_as, monkeypatch):
+    w = _world(db)
+    monkeypatch.setattr(monitoring_service, "now_bishkek", lambda: bishkek(date(2026, 11, 13), 12))
+    client = client_as(w["rector"])
+
+    rows = client.get("/api/v1/monitoring/teachers", params=_params(w)).json()
+    assert all(r["conducted_percent"] == 0 for r in rows)  # nothing was opened in September
+
+    summary = client.get("/api/v1/dashboard/teacher-monitoring-summary", params=_params(w)).json()
+    assert summary["conducted_percent"] == 0
+    assert [r["teacher_id"] for r in summary["lowest_percent"]] == [r["teacher_id"] for r in rows]
+    assert "top_missed" in summary
+
+    log = client.get(f"/api/v1/monitoring/teachers/{w['teacher_a'].id}/sessions", params=_params(w)).json()
+    assert {r["status"] for r in log} == {"MISSED"}
+    assert all(r["schedule_entry_id"] for r in log)
+    assert all(r["conducted"] is False for r in log)
+
+
+def test_endpoint_uses_bishkek_now(db: Session, client_as, monkeypatch):
+    """Spec 1.9 end to end: at 23:30 UTC on the 13th it is already 05:30 on the 14th in
+    Bishkek — Friday's pair has ended and counts, Saturday's 08:00 pair does not yet."""
+    dep = make_department(db, "Solo")
+    teacher = make_teacher(db, dep, "solo")
+    semester = make_semester(db)
+    room = make_room(db, "solo-room")
+    friday_slot = make_time_slot(db)
+    saturday_slot = TimeSlot(order=2, start_time=time(8, 0), end_time=time(8, 45))
+    db.add(saturday_slot)
+    db.flush()
+    for i, (day, slot) in enumerate([(DayOfWeek.FRIDAY, friday_slot), (DayOfWeek.SATURDAY, saturday_slot)]):
+        subject = make_subject(db, dep, code=f"SOLO{i}")
+        group = make_group(db, dep, name=f"SOLO{i}")
+        make_schedule_entry(db, make_assignment(db, teacher, subject, group, semester), room, slot, day)
+
+    monkeypatch.setattr(
+        monitoring_service, "now_bishkek", lambda: datetime(2026, 11, 13, 23, 30, tzinfo=timezone.utc)
+    )
+    params = {"semester_id": semester.id, "date_from": "2026-11-13", "date_to": "2026-11-14"}
+    client = client_as(make_rector(db))
+    [row] = client.get("/api/v1/monitoring/teachers", params=params).json()
+    assert (row["expected_lessons"], row["missed_lessons"]) == (1, 1)
+    log = client.get(f"/api/v1/monitoring/teachers/{teacher.id}/sessions", params=params).json()
+    assert [r["date"] for r in log] == ["2026-11-13"]

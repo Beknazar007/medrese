@@ -8,6 +8,7 @@ from app.core.deps import department_scope, require_role
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
+from app.schemas.monitoring import StudentAttendanceSummaryOut, TeacherMonitoringSummaryOut
 from app.services.monitoring import student_attendance_summary, teacher_monitoring_summary
 from app.services.workload import teacher_workload, unassigned_subjects
 
@@ -40,7 +41,7 @@ def get_unassigned_subjects(
     return unassigned_subjects(db, semester_id=semester_id, department_id=department_id)
 
 
-@router.get("/teacher-monitoring-summary")
+@router.get("/teacher-monitoring-summary", response_model=TeacherMonitoringSummaryOut)
 def get_teacher_monitoring_summary(
     semester_id: int,
     date_from: date,
@@ -55,7 +56,7 @@ def get_teacher_monitoring_summary(
     )
 
 
-@router.get("/student-attendance-summary")
+@router.get("/student-attendance-summary", response_model=StudentAttendanceSummaryOut)
 def get_student_attendance_summary(
     semester_id: int,
     date_from: date,

@@ -7,7 +7,6 @@ the single `_occurrences` pass below, so the three can never disagree.
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
-from enum import Enum
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_, select
@@ -21,6 +20,7 @@ from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
 from app.models.teacher import TeacherProfile
+from app.schemas.monitoring import SessionStatus
 from app.services.assignments import changes_by_assignment, responsible_teacher_id
 from app.services.journal import auto_close_if_ended
 
@@ -88,14 +88,6 @@ def conducted_percent(conducted: int, expected: int) -> int | None:
     if expected == 0:
         return None
     return (conducted * 200 + expected) // (2 * expected)
-
-
-class SessionStatus(str, Enum):
-    CONDUCTED = "CONDUCTED"
-    CONDUCTED_BY_MARK = "CONDUCTED_BY_MARK"
-    MISSED = "MISSED"
-    EXCUSED = "EXCUSED"
-    CANCELLED = "CANCELLED"
 
 
 _EXPECTED_STATUSES = {SessionStatus.CONDUCTED, SessionStatus.CONDUCTED_BY_MARK, SessionStatus.MISSED}

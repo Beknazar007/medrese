@@ -9,6 +9,7 @@ from app.models.enums import UserRole
 from app.models.semester import Semester
 from app.models.teacher import TeacherProfile
 from app.models.user import User
+from app.schemas.monitoring import TeacherMonitoringRowOut, TeacherSessionLogRowOut
 from app.services.monitoring import teacher_monitoring, teacher_session_log
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
@@ -21,7 +22,7 @@ def get_semester_or_404(db: Session, semester_id: int) -> Semester:
     return semester
 
 
-@router.get("/teachers")
+@router.get("/teachers", response_model=list[TeacherMonitoringRowOut])
 def get_teacher_monitoring(
     semester_id: int,
     date_from: date,
@@ -36,7 +37,7 @@ def get_teacher_monitoring(
     )
 
 
-@router.get("/teachers/{teacher_id}/sessions")
+@router.get("/teachers/{teacher_id}/sessions", response_model=list[TeacherSessionLogRowOut])
 def get_teacher_session_log(
     teacher_id: int,
     semester_id: int,
