@@ -16,11 +16,14 @@ from app.models.assignment import TeachingAssignment
 from app.models.assignment_teacher_change import AssignmentTeacherChange
 from app.models.attendance import AttendanceRecord
 from app.models.grade import GradeRecord
+from app.models.enums import LessonMarkKind
+from app.models.lesson_mark import LessonMark
 from app.models.lesson_session import LessonSession
 from app.models.non_working_day import NonWorkingDay
 from app.models.schedule import ScheduleEntry
 from app.models.semester import Semester
 from app.models.teacher import TeacherProfile
+from app.models.user import User
 from app.schemas.monitoring import SessionStatus
 from app.services.assignments import changes_by_assignment, responsible_teacher_id
 from app.services.journal import auto_close_if_ended
@@ -109,6 +112,18 @@ def conducted_percent(conducted: int, expected: int) -> int | None:
 
 _EXPECTED_STATUSES = {SessionStatus.CONDUCTED, SessionStatus.CONDUCTED_BY_MARK, SessionStatus.MISSED}
 _CONDUCTED_STATUSES = {SessionStatus.CONDUCTED, SessionStatus.CONDUCTED_BY_MARK}
+# Only a lesson that was never opened can carry a reason; an opened one (CONDUCTED) can't.
+_MARKABLE_STATUSES = {
+    SessionStatus.MISSED,
+    SessionStatus.EXCUSED,
+    SessionStatus.CANCELLED,
+    SessionStatus.CONDUCTED_BY_MARK,
+}
+_STATUS_BY_MARK = {
+    LessonMarkKind.FORGOT_TO_OPEN: SessionStatus.CONDUCTED_BY_MARK,
+    LessonMarkKind.EXCUSED: SessionStatus.EXCUSED,
+    LessonMarkKind.CANCELLED: SessionStatus.CANCELLED,
+}
 
 
 @dataclass
@@ -120,6 +135,7 @@ class _Occurrence:
     teacher_id: int
     status: SessionStatus
     session: LessonSession | None
+    mark: LessonMark | None
     late: bool
 
     @property
@@ -129,6 +145,10 @@ class _Occurrence:
     @property
     def conducted(self) -> bool:
         return self.status in _CONDUCTED_STATUSES
+
+    @property
+    def can_mark(self) -> bool:
+        return self.status in _MARKABLE_STATUSES
 
 
 def _occurrences(
@@ -189,6 +209,14 @@ def _occurrences(
             )
         ).all()
     }
+    marks = {
+        (m.schedule_entry_id, m.date): m
+        for m in db.scalars(
+            select(LessonMark)
+            .options(selectinload(LessonMark.marked_by))
+            .where(LessonMark.schedule_entry_id.in_(entry_ids), LessonMark.date >= start, LessonMark.date <= end)
+        ).all()
+    }
     changes = changes_by_assignment(db, {e.assignment_id for e in entries})
     holidays = non_working_dates(db, start, end)
     # Read once per request and applied to every lesson, so changing it re-evaluates the past.
@@ -200,6 +228,7 @@ def _occurrences(
         entry_changes = changes.get(entry.assignment_id, [])
         for d in _expected_dates(entry.day_of_week.value, start, end):
             session = sessions.get((entry.id, d))
+            mark = None
             # After a teacher replacement, each date counts for whoever was responsible then.
             responsible = responsible_teacher_id(entry, d, entry_changes, session.teacher_id if session else None)
             if teacher_id is not None and responsible != teacher_id:
@@ -212,7 +241,10 @@ def _occurrences(
                 continue
             elif d in holidays:
                 # Nobody is expected to teach on a holiday; a lesson opened anyway counts above.
+                # A mark set before the day was declared non-working is ignored too.
                 continue
+            elif (mark := marks.get((entry.id, d))) is not None:
+                status = _STATUS_BY_MARK[mark.kind]
             else:
                 status = SessionStatus.MISSED
             result.append(
@@ -222,6 +254,7 @@ def _occurrences(
                     teacher_id=responsible,
                     status=status,
                     session=session,
+                    mark=mark,
                     late=session is not None
                     and _is_late(session.teacher_checked_in_at, d, slot.start_time, threshold),
                 )
@@ -338,6 +371,29 @@ def teacher_monitoring_summary(
 
 
 @dataclass
+class LessonMarkView:
+    id: int
+    schedule_entry_id: int
+    date: date
+    kind: LessonMarkKind
+    comment: str | None
+    marked_by: str | None  # username; None once that account is deleted
+    marked_at: datetime
+
+
+def mark_view(mark: LessonMark) -> LessonMarkView:
+    return LessonMarkView(
+        id=mark.id,
+        schedule_entry_id=mark.schedule_entry_id,
+        date=mark.date,
+        kind=mark.kind,
+        comment=mark.comment,
+        marked_by=mark.marked_by.username if mark.marked_by is not None else None,
+        marked_at=mark.marked_at,
+    )
+
+
+@dataclass
 class TeacherSessionLogRow:
     date: date
     schedule_entry_id: int
@@ -349,6 +405,8 @@ class TeacherSessionLogRow:
     checked_in_at: datetime | None
     checked_out_at: datetime | None
     late: bool
+    mark: LessonMarkView | None
+    can_mark: bool
 
 
 def teacher_session_log(
@@ -382,10 +440,99 @@ def teacher_session_log(
                 checked_in_at=session.teacher_checked_in_at if session else None,
                 checked_out_at=session.teacher_checked_out_at if session else None,
                 late=occ.late,
+                mark=mark_view(occ.mark) if occ.mark is not None else None,
+                can_mark=occ.can_mark,
             )
         )
     rows.sort(key=lambda r: r.date, reverse=True)
     return rows
+
+
+class MarkTargetError(Exception):
+    """A lesson that can't carry a reason. `code` goes to the client as the error detail."""
+
+    code = "invalid_target"
+
+
+class WrongWeekday(MarkTargetError):
+    code = "wrong_weekday"
+
+
+class OutsideSemester(MarkTargetError):
+    code = "outside_semester"
+
+
+class LessonOpened(MarkTargetError):
+    code = "lesson_opened"
+
+
+class LessonNotEnded(MarkTargetError):
+    code = "lesson_not_ended"
+
+
+class OnNonWorkingDay(MarkTargetError):
+    code = "non_working_day"
+
+
+def validate_mark_target(db: Session, entry: ScheduleEntry, on_date: date, now: datetime | None = None) -> None:
+    """Raises unless the lesson would appear in the day-by-day log with can_mark — the same
+    rules as _occurrences, so the button and the server never disagree."""
+    current = _resolve_now(now)
+    if on_date.isoweekday() != entry.day_of_week.value:
+        raise WrongWeekday()
+    semester = db.get(Semester, entry.semester_id)
+    if semester is None or not (semester.start_date <= on_date <= semester.end_date):
+        raise OutsideSemester()
+    opened = db.scalar(
+        select(LessonSession.id).where(LessonSession.schedule_entry_id == entry.id, LessonSession.date == on_date)
+    )
+    if opened is not None:
+        raise LessonOpened()
+    if not _pair_ended(on_date, entry.time_slot.end_time, current):
+        raise LessonNotEnded()
+    if on_date in non_working_dates(db, on_date, on_date):
+        raise OnNonWorkingDay()
+
+
+def lesson_teacher_id(db: Session, entry: ScheduleEntry, on_date: date) -> int:
+    """Who answered for the entry's lesson on that date — the one whose department decides
+    whether a dean may mark it."""
+    session_teacher = db.scalar(
+        select(LessonSession.teacher_id).where(
+            LessonSession.schedule_entry_id == entry.id, LessonSession.date == on_date
+        )
+    )
+    changes = changes_by_assignment(db, [entry.assignment_id]).get(entry.assignment_id, [])
+    return responsible_teacher_id(entry, on_date, changes, session_teacher)
+
+
+def upsert_mark(
+    db: Session,
+    *,
+    entry: ScheduleEntry,
+    on_date: date,
+    kind: LessonMarkKind,
+    comment: str | None,
+    user: User,
+    now: datetime | None = None,
+) -> LessonMark:
+    validate_mark_target(db, entry, on_date, now)
+    mark = db.scalar(select(LessonMark).where(LessonMark.schedule_entry_id == entry.id, LessonMark.date == on_date))
+    if mark is None:
+        mark = LessonMark(schedule_entry_id=entry.id, date=on_date)
+        db.add(mark)
+    mark.kind = kind
+    mark.comment = comment
+    # Whoever sets the current reason is shown, not who set the first one.
+    mark.marked_by = user
+    mark.marked_at = datetime.now(timezone.utc)
+    db.flush()
+    return mark
+
+
+def delete_mark(db: Session, mark: LessonMark) -> None:
+    db.delete(mark)
+    db.flush()
 
 
 @dataclass

@@ -1,7 +1,11 @@
 from datetime import date, datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator, Field
+
+from app.models.enums import LessonMarkKind
 
 
 class SessionStatus(str, Enum):
@@ -40,6 +44,32 @@ class TeacherMonitoringSummaryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+def _blank_to_none(value: object) -> object:
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    return value
+
+
+class LessonMarkUpsert(BaseModel):
+    schedule_entry_id: int
+    date: date
+    kind: LessonMarkKind
+    comment: Annotated[str | None, BeforeValidator(_blank_to_none), Field(max_length=500)] = None
+
+
+class LessonMarkOut(BaseModel):
+    id: int
+    schedule_entry_id: int
+    date: date
+    kind: LessonMarkKind
+    comment: str | None
+    marked_by: str | None
+    marked_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class TeacherSessionLogRowOut(BaseModel):
     date: date
     schedule_entry_id: int
@@ -50,6 +80,8 @@ class TeacherSessionLogRowOut(BaseModel):
     checked_in_at: datetime | None
     checked_out_at: datetime | None
     late: bool
+    mark: LessonMarkOut | None
+    can_mark: bool
 
     model_config = {"from_attributes": True}
 

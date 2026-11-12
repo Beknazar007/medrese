@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -7,6 +7,7 @@ from app.core.deps import accessible_department_ids, assert_department_access, g
 from app.db.session import get_db
 from app.models.assignment import TeachingAssignment
 from app.models.enums import UserRole
+from app.models.lesson_mark import LessonMark
 from app.models.lesson_session import LessonSession
 from app.models.schedule import ScheduleEntry
 from app.models.teacher import TeacherProfile
@@ -155,6 +156,9 @@ def delete_schedule_entry(
     if force:
         for session in db.scalars(select(LessonSession).where(LessonSession.schedule_entry_id == entry.id)):
             db.delete(session)
+    # Reasons on missed lessons go with the entry. Deleted explicitly rather than relying on
+    # ON DELETE CASCADE, which SQLite (tests, e2e) doesn't enforce by default.
+    db.execute(delete(LessonMark).where(LessonMark.schedule_entry_id == entry.id))
     db.delete(entry)
     try:
         db.commit()
