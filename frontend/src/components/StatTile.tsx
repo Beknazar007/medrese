@@ -5,13 +5,14 @@ import { TONE_INK } from "../lib/palette";
 interface Props {
   label: string;
   value: ReactNode;
-  tone?: "neutral" | "good" | "warning";
+  tone?: "neutral" | "good" | "warning" | "bad";
 }
 
 const TONE_COLOR: Record<NonNullable<Props["tone"]>, string> = {
   neutral: TONE_INK.neutral,
   good: TONE_INK.good,
   warning: TONE_INK.warning,
+  bad: TONE_INK.bad,
 };
 
 export default function StatTile({ label, value, tone = "neutral" }: Props) {

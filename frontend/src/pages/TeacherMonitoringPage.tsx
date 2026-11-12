@@ -27,26 +27,12 @@ import DateRangePicker from "../components/DateRangePicker";
 import { nameById, useDepartments, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type DateRange } from "../lib/dateRanges";
 import { filledSx, STATUS_FILL, STATUS_INK } from "../lib/palette";
+import { percentColor, periodOutsideSemester } from "../lib/monitoring";
 import SemesterSelect from "../components/SemesterSelect";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
-
-const SCORE_GOOD = STATUS_FILL.present;
-const SCORE_WARNING = STATUS_FILL.late;
-const SCORE_CRITICAL = STATUS_FILL.absent;
-
-function performanceScore(row: TeacherMonitoringRow): number | null {
-  if (row.expected_lessons <= 0) return null;
-  return Math.max(0, Math.round(((row.conducted_lessons - row.late_lessons) / row.expected_lessons) * 100));
-}
-
-function scoreColor(score: number): string {
-  if (score >= 90) return SCORE_GOOD;
-  if (score >= 70) return SCORE_WARNING;
-  return SCORE_CRITICAL;
 }
 
 export default function TeacherMonitoringPage() {
@@ -62,6 +48,8 @@ export default function TeacherMonitoringPage() {
 
   const activeSemester = semesters?.find((s) => s.is_active);
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
+  const selectedSemester = semesters?.find((s) => s.id === effectiveSemesterId);
+  const outsideSemester = periodOutsideSemester(range, selectedSemester);
 
   const { data: rows, isLoading } = useQuery({
     queryKey: ["monitoring", "teachers", effectiveSemesterId, range.from, range.to],
@@ -94,14 +82,14 @@ export default function TeacherMonitoringPage() {
       {!effectiveSemesterId && <Alert severity="info">{t("common.pick_semester")}</Alert>}
 
       {effectiveSemesterId && !isLoading && (rows ?? []).length === 0 && (
-        <Alert severity="info">{t("monitoring.empty_hint")}</Alert>
+        <Alert severity="info">{t(outsideSemester ? "monitoring.out_of_semester" : "monitoring.empty_hint")}</Alert>
       )}
 
       {/* Phones: a card per teacher with the numbers as small labelled tiles. */}
       {isMobile && effectiveSemesterId && (rows ?? []).length > 0 && (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {(rows ?? []).map((row) => {
-            const score = performanceScore(row);
+            const percent = row.conducted_percent;
             const stats: { label: string; value: number | string; color?: string }[] = [
               { label: t("monitoring.col_expected"), value: row.expected_lessons },
               { label: t("monitoring.col_conducted"), value: row.conducted_lessons },
@@ -119,9 +107,10 @@ export default function TeacherMonitoringPage() {
                       {nameById(departments, row.department_id, (d) => d.name)}
                     </Typography>
                   </Box>
-                  {score !== null && <Chip size="small" sx={filledSx(scoreColor(score))} label={`${score}%`} />}
+                  {percent !== null && <Chip size="small" sx={filledSx(percentColor(percent))} label={`${percent}%`} />}
                 </Box>
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.75, mt: 1 }}>
+                {/* auto-fit: the tiles wrap to a second row instead of scrolling the page sideways. */}
+                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(64px, 1fr))", gap: 0.75, mt: 1 }}>
                   {stats.map((st) => (
                     <Box key={st.label} sx={{ bgcolor: "action.hover", borderRadius: 1, px: 0.75, py: 0.5, minWidth: 0 }}>
                       <Box sx={{ fontSize: 10.5, color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -147,7 +136,7 @@ export default function TeacherMonitoringPage() {
                 <TableCell align="right">{t("monitoring.col_conducted")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_missed")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_late")}</TableCell>
-                <TableCell align="right">{t("monitoring.col_score")}</TableCell>
+                <TableCell align="right">{t("monitoring.col_percent")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -176,14 +165,15 @@ export default function TeacherMonitoringPage() {
                     )}
                   </TableCell>
                   <TableCell align="right">
-                    {(() => {
-                      const score = performanceScore(row);
-                      return score === null ? (
-                        "—"
-                      ) : (
-                        <Chip size="small" sx={filledSx(scoreColor(score))} label={`${score}%`} />
-                      );
-                    })()}
+                    {row.conducted_percent === null ? (
+                      "—"
+                    ) : (
+                      <Chip
+                        size="small"
+                        sx={filledSx(percentColor(row.conducted_percent))}
+                        label={`${row.conducted_percent}%`}
+                      />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

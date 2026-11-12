@@ -189,6 +189,8 @@ export interface TeacherMonitoringRow {
   conducted_lessons: number;
   missed_lessons: number;
   late_lessons: number;
+  /** Conducted / expected × 100, rounded; null when nothing was expected. */
+  conducted_percent: number | null;
 }
 
 export interface TeacherMonitoringSummary {
@@ -196,7 +198,9 @@ export interface TeacherMonitoringSummary {
   conducted_lessons: number;
   missed_lessons: number;
   late_lessons: number;
-  top_missed: TeacherMonitoringRow[];
+  conducted_percent: number | null;
+  /** Up to five teachers below 100%, worst first. */
+  lowest_percent: TeacherMonitoringRow[];
 }
 
 export interface StudentAttendanceSummary {
@@ -207,10 +211,14 @@ export interface StudentAttendanceSummary {
   average_score: number | null;
 }
 
+export type SessionStatus = "CONDUCTED" | "CONDUCTED_BY_MARK" | "MISSED" | "EXCUSED" | "CANCELLED";
+
 export interface TeacherSessionLogRow {
   date: string;
+  schedule_entry_id: number;
   subject_name: string;
   group_name: string;
+  status: SessionStatus;
   conducted: boolean;
   checked_in_at: string | null;
   checked_out_at: string | null;
