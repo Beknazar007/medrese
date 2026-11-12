@@ -71,7 +71,8 @@ def caption(entry: dict) -> str:
         f"🎬 <b>{escape(scenario_title(entry['scenario']))}</b>",
         f"{LANG_LABEL.get(lang, lang)} · {ROLE_LABEL.get(lang, {}).get(entry['role'], entry['role'])} · v{entry['app_version']}",
     ]
-    news = whats_new(entry["app_version"])
+    # A re-recorded single video says only what changed for it; otherwise the whole CHANGELOG section of the version.
+    news = entry.get("news") or whats_new(entry["app_version"])
     if news:
         parts.append(("Эмне жаңы:" if lang == "ky" else "Что нового:") + "\n" + "\n".join(escape(n) for n in news))
     if entry.get("comment"):
