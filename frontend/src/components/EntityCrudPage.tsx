@@ -115,6 +115,13 @@ interface Props<T extends { id: number }> {
    *  Saving asks "Save changes?" only when this returns text; ordinary saves go straight through,
    *  since they are easy to fix. `editingRow` is null when creating. */
   confirmMessage?: (values: Record<string, unknown>, editingRow: T | null) => string | undefined;
+  /** Extra checks before saving: field name → message shown under that field. Wins over the
+   *  generic "required" text, so a page can phrase its own. */
+  validate?: (values: Record<string, unknown>) => Record<string, string>;
+  /** Question in the delete confirmation instead of the generic "Delete this record?". */
+  deleteConfirmText?: string;
+  /** On wide screens, show "Edit" / "Delete" as labelled buttons rather than bare icons. */
+  labeledActions?: boolean;
 }
 
 function isBlank(value: unknown): boolean {
@@ -138,6 +145,9 @@ export default function EntityCrudPage<T extends { id: number }>({
   onRowClick,
   forceDelete,
   confirmMessage,
+  validate,
+  deleteConfirmText,
+  labeledActions = false,
 }: Props<T>) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -270,6 +280,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       if (field.type === "checkbox" || !isFieldShown(field) || !isFieldRequired(field)) continue;
       if (isBlank(formValues[field.name])) missing[field.name] = t("validation.required");
     }
+    Object.assign(missing, validate?.(formValues) ?? {});
     setFieldErrors(missing);
     if (Object.keys(missing).length > 0) return;
 
@@ -508,7 +519,30 @@ export default function EntityCrudPage<T extends { id: number }>({
                       ))}
                       {(canEdit || canDelete) && (
                         <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
-                          {canEdit && api.update && (
+                          {labeledActions && canEdit && api.update && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<EditIcon />}
+                              sx={{ minHeight: 40, mr: 1 }}
+                              onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                            >
+                              {t("common.edit")}
+                            </Button>
+                          )}
+                          {labeledActions && canDelete && api.remove && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              startIcon={<DeleteIcon />}
+                              sx={{ minHeight: 40 }}
+                              onClick={(e) => { e.stopPropagation(); setPendingDeleteId(row.id); }}
+                            >
+                              {t("common.remove")}
+                            </Button>
+                          )}
+                          {!labeledActions && canEdit && api.update && (
                             <IconButton
                               size="small"
                               aria-label={t("common.edit")}
@@ -518,7 +552,7 @@ export default function EntityCrudPage<T extends { id: number }>({
                               <EditIcon fontSize="small" />
                             </IconButton>
                           )}
-                          {canDelete && api.remove && (
+                          {!labeledActions && canDelete && api.remove && (
                             <IconButton
                               size="small"
                               aria-label={t("common.remove")}
@@ -661,7 +695,7 @@ export default function EntityCrudPage<T extends { id: number }>({
       </Dialog>
 
       <Dialog open={pendingDeleteId !== null} onClose={() => setPendingDeleteId(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>{t("common.confirm_delete")}</DialogTitle>
+        <DialogTitle>{deleteConfirmText ?? t("common.confirm_delete")}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setPendingDeleteId(null)}>{t("common.cancel")}</Button>
           <Button

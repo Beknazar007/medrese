@@ -191,6 +191,8 @@ export interface TeacherMonitoringRow {
   late_lessons: number;
   /** Conducted / expected × 100, rounded; null when nothing was expected. */
   conducted_percent: number | null;
+  /** Opened lessons without student marks or finished before half time. */
+  attention_lessons: number;
 }
 
 export interface TeacherMonitoringSummary {
@@ -199,6 +201,7 @@ export interface TeacherMonitoringSummary {
   missed_lessons: number;
   late_lessons: number;
   conducted_percent: number | null;
+  attention_lessons: number;
   /** Up to five teachers below 100%, worst first. */
   lowest_percent: TeacherMonitoringRow[];
 }
@@ -213,6 +216,30 @@ export interface StudentAttendanceSummary {
 
 export type SessionStatus = "CONDUCTED" | "CONDUCTED_BY_MARK" | "MISSED" | "EXCUSED" | "CANCELLED";
 
+export type LessonMarkKind = "FORGOT_TO_OPEN" | "EXCUSED" | "CANCELLED";
+
+export interface LessonMark {
+  id: number;
+  schedule_entry_id: number;
+  date: string;
+  kind: LessonMarkKind;
+  comment: string | null;
+  /** Username of who set the current reason; null if that account was deleted. */
+  marked_by: string | null;
+  marked_at: string;
+}
+
+export interface NonWorkingDay {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+}
+
+export interface AppSettings {
+  late_threshold_minutes: number;
+}
+
 export interface TeacherSessionLogRow {
   date: string;
   schedule_entry_id: number;
@@ -223,6 +250,11 @@ export interface TeacherSessionLogRow {
   checked_in_at: string | null;
   checked_out_at: string | null;
   late: boolean;
+  mark: LessonMark | null;
+  /** The lesson was never opened, so a reason can be set, changed or removed. */
+  can_mark: boolean;
+  no_student_marks: boolean;
+  early_finish: boolean;
 }
 
 export interface StudentNote {

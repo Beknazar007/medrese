@@ -1,3 +1,4 @@
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import {
   Alert,
   Box,
@@ -22,17 +23,66 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monitoringApi } from "../api/entities";
-import type { TeacherMonitoringRow } from "../api/types";
+import type { SessionStatus, TeacherMonitoringRow, TeacherSessionLogRow } from "../api/types";
 import DateRangePicker from "../components/DateRangePicker";
+import LessonMarkDialog from "../components/LessonMarkDialog";
 import { nameById, useDepartments, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type DateRange } from "../lib/dateRanges";
 import { filledSx, STATUS_FILL, STATUS_INK } from "../lib/palette";
-import { percentColor, periodOutsideSemester } from "../lib/monitoring";
+import { MARK_REASON_KEYS, percentColor, periodOutsideSemester } from "../lib/monitoring";
 import SemesterSelect from "../components/SemesterSelect";
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+const STATUS_LABEL_KEYS: Record<SessionStatus, string> = {
+  CONDUCTED: "monitoring.status_conducted",
+  CONDUCTED_BY_MARK: "monitoring.status_conducted_by_mark",
+  MISSED: "monitoring.status_missed",
+  EXCUSED: "monitoring.reason_excused",
+  CANCELLED: "monitoring.reason_cancelled",
+};
+
+function rowStatus(row: TeacherSessionLogRow): SessionStatus {
+  // An older backend has no `status` yet — fall back to the conducted flag.
+  return row.status ?? (row.conducted ? "CONDUCTED" : "MISSED");
+}
+
+function LogChips({ row }: { row: TeacherSessionLogRow }) {
+  const { t } = useTranslation();
+  const status = rowStatus(row);
+  const color = status === "CONDUCTED" || status === "CONDUCTED_BY_MARK" ? "success" : status === "MISSED" ? "error" : "default";
+  return (
+    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+      <Chip
+        size="small"
+        color={color}
+        variant={status === "CONDUCTED_BY_MARK" ? "outlined" : "filled"}
+        label={t(STATUS_LABEL_KEYS[status])}
+      />
+      {row.late && <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={t("monitoring.status_late")} />}
+      {row.no_student_marks && (
+        <Chip size="small" variant="outlined" sx={{ borderColor: STATUS_INK.late, color: STATUS_INK.late }} label={t("monitoring.flag_no_marks")} />
+      )}
+      {row.early_finish && (
+        <Chip size="small" variant="outlined" sx={{ borderColor: STATUS_INK.late, color: STATUS_INK.late }} label={t("monitoring.flag_early_finish")} />
+      )}
+    </Box>
+  );
+}
+
+function MarkDetails({ row }: { row: TeacherSessionLogRow }) {
+  const { t } = useTranslation();
+  if (!row.mark) return null;
+  return (
+    <Box sx={{ mt: 0.5, fontSize: 12.5, color: "text.secondary" }}>
+      <Box sx={{ color: "text.primary" }}>{t(MARK_REASON_KEYS[row.mark.kind])}</Box>
+      {row.mark.comment && <Box sx={{ overflowWrap: "anywhere" }}>{row.mark.comment}</Box>}
+      <Box>{t("monitoring.mark_by", { name: row.mark.marked_by ?? "—", date: formatDateTime(row.mark.marked_at) })}</Box>
+    </Box>
+  );
 }
 
 export default function TeacherMonitoringPage() {
@@ -45,6 +95,7 @@ export default function TeacherMonitoringPage() {
   const [semesterId, setSemesterId] = useState<number | "">("");
   const [range, setRange] = useState<DateRange>(() => computeRange("week"));
   const [drillDownTeacher, setDrillDownTeacher] = useState<TeacherMonitoringRow | null>(null);
+  const [markingRow, setMarkingRow] = useState<TeacherSessionLogRow | null>(null);
 
   const activeSemester = semesters?.find((s) => s.is_active);
   const effectiveSemesterId = semesterId || activeSemester?.id || "";
@@ -69,6 +120,20 @@ export default function TeacherMonitoringPage() {
     enabled: Boolean(drillDownTeacher) && Boolean(effectiveSemesterId),
   });
 
+  const markButton = (row: TeacherSessionLogRow, fullWidth: boolean) =>
+    row.can_mark ? (
+      <Button
+        variant="outlined"
+        size={fullWidth ? "medium" : "small"}
+        startIcon={<EditNoteIcon />}
+        fullWidth={fullWidth}
+        sx={{ minHeight: fullWidth ? 44 : 36, whiteSpace: "nowrap" }}
+        onClick={() => setMarkingRow(row)}
+      >
+        {t("monitoring.mark_reason")}
+      </Button>
+    ) : null;
+
   return (
     <Box>
       <Box sx={{ display: "flex", gap: 2, mb: 2, alignItems: "center", flexWrap: "wrap" }}>
@@ -90,11 +155,13 @@ export default function TeacherMonitoringPage() {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {(rows ?? []).map((row) => {
             const percent = row.conducted_percent;
+            const attention = row.attention_lessons ?? 0;
             const stats: { label: string; value: number | string; color?: string }[] = [
               { label: t("monitoring.col_expected"), value: row.expected_lessons },
               { label: t("monitoring.col_conducted"), value: row.conducted_lessons },
               { label: t("monitoring.col_missed"), value: row.missed_lessons, color: row.missed_lessons > 0 ? "error.main" : undefined },
               { label: t("monitoring.col_late"), value: row.late_lessons, color: row.late_lessons > 0 ? STATUS_INK.late : undefined },
+              { label: t("monitoring.col_attention"), value: attention, color: attention > 0 ? STATUS_INK.late : undefined },
             ];
             return (
               <Paper key={row.teacher_id} variant="outlined" sx={{ p: 1.5, cursor: "pointer" }} onClick={() => setDrillDownTeacher(row)}>
@@ -136,6 +203,7 @@ export default function TeacherMonitoringPage() {
                 <TableCell align="right">{t("monitoring.col_conducted")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_missed")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_late")}</TableCell>
+                <TableCell align="right">{t("monitoring.col_attention")}</TableCell>
                 <TableCell align="right">{t("monitoring.col_percent")}</TableCell>
               </TableRow>
             </TableHead>
@@ -165,6 +233,13 @@ export default function TeacherMonitoringPage() {
                     )}
                   </TableCell>
                   <TableCell align="right">
+                    {(row.attention_lessons ?? 0) > 0 ? (
+                      <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={row.attention_lessons} />
+                    ) : (
+                      row.attention_lessons ?? "—"
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
                     {row.conducted_percent === null ? (
                       "—"
                     ) : (
@@ -188,19 +263,12 @@ export default function TeacherMonitoringPage() {
           {isMobile && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {(sessionLog ?? []).map((row) => (
-                <Paper key={`${row.date}-${row.subject_name}`} variant="outlined" sx={{ p: 1.25 }}>
+                <Paper key={`${row.date}-${row.schedule_entry_id}`} variant="outlined" sx={{ p: 1.25 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
                       {row.date}
                     </Typography>
-                    <Box sx={{ display: "flex", gap: 0.5 }}>
-                      <Chip
-                        size="small"
-                        color={row.conducted ? "success" : "error"}
-                        label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
-                      />
-                      {row.late && <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={t("monitoring.status_late")} />}
-                    </Box>
+                    <LogChips row={row} />
                   </Box>
                   <Typography variant="body2">
                     {row.subject_name} · {row.group_name}
@@ -209,6 +277,8 @@ export default function TeacherMonitoringPage() {
                     {t("monitoring.log_col_checkin")}: {formatDateTime(row.checked_in_at)} · {t("monitoring.log_col_checkout")}:{" "}
                     {formatDateTime(row.checked_out_at)}
                   </Typography>
+                  <MarkDetails row={row} />
+                  {row.can_mark && <Box sx={{ mt: 1 }}>{markButton(row, true)}</Box>}
                 </Paper>
               ))}
             </Box>
@@ -224,26 +294,22 @@ export default function TeacherMonitoringPage() {
                   <TableCell>{t("monitoring.log_col_status")}</TableCell>
                   <TableCell>{t("monitoring.log_col_checkin")}</TableCell>
                   <TableCell>{t("monitoring.log_col_checkout")}</TableCell>
+                  <TableCell>{t("monitoring.log_col_actions")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {(sessionLog ?? []).map((row) => (
-                  <TableRow key={`${row.date}-${row.subject_name}`} hover>
+                  <TableRow key={`${row.date}-${row.schedule_entry_id}`} hover>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{row.date}</TableCell>
                     <TableCell>{row.subject_name}</TableCell>
                     <TableCell>{row.group_name}</TableCell>
-                    <TableCell sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-                      <Chip
-                        size="small"
-                        color={row.conducted ? "success" : "error"}
-                        label={row.conducted ? t("monitoring.status_conducted") : t("monitoring.status_missed")}
-                      />
-                      {row.late && (
-                        <Chip size="small" sx={filledSx(STATUS_FILL.late)} label={t("monitoring.status_late")} />
-                      )}
+                    <TableCell>
+                      <LogChips row={row} />
+                      <MarkDetails row={row} />
                     </TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDateTime(row.checked_in_at)}</TableCell>
                     <TableCell sx={{ whiteSpace: "nowrap" }}>{formatDateTime(row.checked_out_at)}</TableCell>
+                    <TableCell>{markButton(row, false)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -255,6 +321,14 @@ export default function TeacherMonitoringPage() {
           <Button onClick={() => setDrillDownTeacher(null)}>{t("common.close")}</Button>
         </DialogActions>
       </Dialog>
+
+      {markingRow && (
+        <LessonMarkDialog
+          key={`${markingRow.schedule_entry_id}-${markingRow.date}`}
+          row={markingRow}
+          onClose={() => setMarkingRow(null)}
+        />
+      )}
     </Box>
   );
 }

@@ -245,6 +245,11 @@ export default function DashboardPage() {
                       tone={teacherSummary.late_lessons > 0 ? "warning" : "good"}
                     />
                     <StatTile
+                      label={t("monitoring.col_attention")}
+                      value={teacherSummary.attention_lessons ?? "—"}
+                      tone={(teacherSummary.attention_lessons ?? 0) > 0 ? "warning" : "good"}
+                    />
+                    <StatTile
                       label={t("monitoring.col_percent")}
                       value={teacherSummary.conducted_percent === null ? "—" : `${teacherSummary.conducted_percent}%`}
                       tone={percentTone(teacherSummary.conducted_percent)}

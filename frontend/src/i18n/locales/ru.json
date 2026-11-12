@@ -16,6 +16,7 @@
     "groups": "Группы",
     "assignments": "Назначения",
     "semesters": "Семестры",
+    "non_working_days": "Нерабочие дни",
     "rooms": "Аудитории",
     "timeslots": "Пары",
     "schedule": "Расписание",
@@ -193,7 +194,9 @@
     "order": "№ пары",
     "start": "Начало",
     "end": "Конец",
-    "empty_hint": "Пар пока нет. Ректор может добавить (например, 1-я пара = 08:00-08:50)."
+    "empty_hint": "Пар пока нет. Ректор может добавить (например, 1-я пара = 08:00-08:50).",
+    "late_threshold": "Порог опоздания, мин",
+    "late_threshold_error": "Укажите число от 0 до 60."
   },
   "assignments": {
     "title": "Назначения",
@@ -348,6 +351,7 @@
     "col_missed": "Пропущено",
     "col_late": "Опоздания",
     "col_percent": "Проведено %",
+    "col_attention": "Требует внимания",
     "empty_hint": "Нет запланированных занятий за этот период.",
     "out_of_semester": "Выбранный период не входит в даты семестра.",
     "log_title": "Занятия: {{name}}",
@@ -359,7 +363,19 @@
     "log_col_checkout": "Закончил",
     "status_conducted": "Проведено",
     "status_missed": "Пропущено",
-    "status_late": "Опоздал"
+    "status_late": "Опоздал",
+    "log_col_actions": "Причина",
+    "mark_reason": "Отметить причину",
+    "reason_forgot": "Проведён, учитель забыл открыть",
+    "reason_excused": "Уважительная причина",
+    "reason_cancelled": "Урок отменён",
+    "status_conducted_by_mark": "Проведён (по отметке)",
+    "mark_comment": "Комментарий",
+    "mark_by": "Отметил(а): {{name}}, {{date}}",
+    "remove_mark": "Снять отметку",
+    "remove_mark_confirm": "Снять эту отметку?",
+    "flag_no_marks": "Студенты не отмечены",
+    "flag_early_finish": "Завершён до середины пары"
   },
   "hifz": {
     "title": "Журнал хафиз",
@@ -556,7 +572,14 @@
     "assignment_scheduled_fields": "Это назначение уже стоит в расписании — чтобы сменить группу или семестр, сначала уберите его из расписания",
     "new_teacher_busy": "Новый преподаватель в это время занят: {{slots}}",
     "new_teacher_other_department": "Новый преподаватель должен быть с той же кафедры",
-    "busy_slot": "{{day}} {{n}}-я пара"
+    "busy_slot": "{{day}} {{n}}-я пара",
+    "mark_lesson_opened": "Урок был открыт, причину ставить нельзя.",
+    "mark_lesson_not_ended": "Пара ещё не закончилась.",
+    "mark_outside_semester": "Эта дата не входит в даты семестра.",
+    "mark_non_working_day": "Это нерабочий день.",
+    "mark_wrong_weekday": "В этот день такого урока нет.",
+    "lesson_mark_not_found": "Отметка не найдена.",
+    "non_working_day_not_found": "Нерабочий день не найден."
   },
   "app_short_title": "Медресе",
   "validation": {
@@ -572,5 +595,15 @@
     "too_long": "Слишком длинный текст",
     "generic": "Поля заполнены неверно — проверьте их",
     "field_message": "{{field}}: {{message}}"
+  },
+  "non_working_days": {
+    "title": "Нерабочие дни",
+    "name": "Название",
+    "start": "Начало",
+    "end": "Конец",
+    "empty_hint": "Нерабочих дней пока нет. Добавьте праздники и каникулы.",
+    "delete_confirm": "Удалить этот нерабочий день?",
+    "error_end_before_start": "Конец не может быть раньше начала.",
+    "error_name_required": "Укажите название."
   }
 }

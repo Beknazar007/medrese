@@ -11,8 +11,12 @@ import type {
   HifzRosterStudent,
   HifzSessionDetail,
   HifzTarget,
+  AppSettings,
+  LessonMark,
+  LessonMarkKind,
   LessonSession,
   LessonSessionDetail,
+  NonWorkingDay,
   Room,
   ScheduleEntry,
   Semester,
@@ -48,6 +52,12 @@ export const semestersApi = crud<Semester>("/semesters");
 export const roomsApi = crud<Room>("/rooms");
 export const timeSlotsApi = crud<TimeSlot>("/timeslots");
 export const excusesApi = crud<Excuse>("/excuses");
+export const nonWorkingDaysApi = crud<NonWorkingDay>("/non-working-days");
+
+export const settingsApi = {
+  get: async (): Promise<AppSettings> => (await api.get<AppSettings>("/settings")).data,
+  update: async (payload: AppSettings): Promise<AppSettings> => (await api.patch<AppSettings>("/settings", payload)).data,
+};
 
 export const assignmentsApi = {
   list: async (params?: Record<string, unknown>): Promise<TeachingAssignment[]> =>
@@ -179,6 +189,15 @@ export const monitoringApi = {
     params: { semester_id: number; date_from: string; date_to: string },
   ): Promise<TeacherSessionLogRow[]> =>
     (await api.get<TeacherSessionLogRow[]>(`/monitoring/teachers/${teacherId}/sessions`, { params })).data,
+  upsertMark: async (payload: {
+    schedule_entry_id: number;
+    date: string;
+    kind: LessonMarkKind;
+    comment: string | null;
+  }): Promise<LessonMark> => (await api.put<LessonMark>("/monitoring/lesson-marks", payload)).data,
+  removeMark: async (markId: number): Promise<void> => {
+    await api.delete(`/monitoring/lesson-marks/${markId}`);
+  },
 };
 
 export const hifzApi = {

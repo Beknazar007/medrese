@@ -1,4 +1,4 @@
-import type { Semester } from "../api/types";
+import type { LessonMarkKind, Semester } from "../api/types";
 import type { DateRange } from "./dateRanges";
 import { STATUS_FILL } from "./palette";
 
@@ -23,3 +23,10 @@ export function periodOutsideSemester(range: DateRange, semester: Semester | und
   if (!semester) return false;
   return range.to < semester.start_date || range.from > semester.end_date;
 }
+
+/** i18n keys of the three reasons a missed lesson can be marked with. */
+export const MARK_REASON_KEYS: Record<LessonMarkKind, string> = {
+  FORGOT_TO_OPEN: "monitoring.reason_forgot",
+  EXCUSED: "monitoring.reason_excused",
+  CANCELLED: "monitoring.reason_cancelled",
+};
