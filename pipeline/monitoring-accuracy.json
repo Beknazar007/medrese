@@ -1,0 +1,50 @@
+{
+  "feature": "monitoring-accuracy",
+  "title": "Точный мониторинг учителей",
+  "branch": "feature/monitoring-accuracy",
+  "next": "developer",
+  "waiting_for": null,
+  "review_iteration": 0,
+  "verify_attempt": {
+    "developer": 0,
+    "qa": 0,
+    "video-producer": 0
+  },
+  "version": null,
+  "artifacts": {
+    "spec": "specs/monitoring-accuracy.md",
+    "plan": "specs/monitoring-accuracy.plan.md",
+    "review": null,
+    "e2e": [],
+    "user_guide": [],
+    "scenario": null,
+    "videos": null,
+    "verify": null
+  },
+  "history": [
+    {
+      "agent": "human",
+      "at": "2026-11-13T01:10+06:00",
+      "result": "запрос: сделать оба шага (исправить подсчёт + учесть причины)",
+      "next": "pm"
+    },
+    {
+      "agent": "pm",
+      "at": "2026-11-13T01:45+06:00",
+      "result": "спека-черновик specs/monitoring-accuracy.md: шаг 1 (подсчёт, семестр, процент, Бишкек) + шаг 2 (нерабочие дни, отметки причин, «требует внимания», порог опоздания); 7 открытых вопросов с рекомендациями",
+      "next": "spec_approval → architect"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-13T01:25+06:00",
+      "result": "spec_approval открыты: «утверждено», рекомендации по вопросам 1–7 приняты",
+      "next": "architect"
+    },
+    {
+      "agent": "architect",
+      "at": "2026-11-13T02:10+06:00",
+      "result": "план specs/monitoring-accuracy.plan.md: общий _occurrences для мониторинга/главной/журнала, now по Бишкеку, обрезка семестром; таблицы non_working_days, lesson_marks, app_settings (одна миграция, только шаг 2); новые адреса /non-working-days, /settings, /monitoring/lesson-marks; department_scope закрывает доступ декана без отделения; шаги 1–4 = шаг 1 спеки, 5–11 = шаг 2. Объём L",
+      "next": "developer"
+    }
+  ]
+}
