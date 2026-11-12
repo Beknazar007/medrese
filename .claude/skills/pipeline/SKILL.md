@@ -22,11 +22,12 @@ argument-hint: <feature> [описание новой фичи]
   "next": "architect",
   "waiting_for": null,
   "review_iteration": 0,
+  "verify_attempt": {"developer": 0, "qa": 0, "video-producer": 0},
   "version": null,
   "artifacts": {
     "spec": "specs/excuse-photos.md",
     "plan": null, "review": null, "e2e": [], "user_guide": [],
-    "scenario": null, "videos": null
+    "scenario": null, "videos": null, "verify": null
   },
   "history": [
     {"agent": "pm", "at": "2026-11-10T14:05+06:00", "result": "спека-черновик", "next": "architect"}
@@ -43,19 +44,35 @@ argument-hint: <feature> [описание новой фичи]
 | — (новая фича) | | создать файл, `next: pm` |
 | pm | спека-черновик | ворота `spec_approval` → architect |
 | architect | план | developer |
-| developer | код и тесты | reviewer (`review_iteration` + 1) |
+| developer | код и тесты | verifier (режим developer) |
+| verifier (developer) | подтверждено | reviewer (`review_iteration` + 1) |
+| verifier (любой режим) | не подтверждено, попытка 1 | тот же агент с расхождениями (`verify_attempt.<режим>` = 1) |
+| verifier (любой режим) | не подтверждено, попытка 2 | ворота `human_decision` |
 | reviewer | одобрено | qa |
 | reviewer | замечания, итерация < 3 | developer |
 | reviewer | замечания, итерация = 3 | ворота `human_decision` |
-| qa | баги | developer (затем снова reviewer) |
-| qa | всё зелёное | ворота `pr_merge` → release |
+| qa | баги или всё зелёное | verifier (режим qa) |
+| verifier (qa) | подтверждено, баги | developer (затем verifier, reviewer, qa) |
+| verifier (qa) | подтверждено, всё зелёное | ворота `pr_merge` → release |
 | release | версия и CHANGELOG | ворота `tag_confirm` → publisher (режим 2) |
 | publisher (режим 2) | список устаревших видео | docs |
 | docs | инструкция обновлена | video-scriptwriter |
 | video-scriptwriter | сценарий | video-producer |
-| video-producer | видео | publisher (режим 1: только регистрация) |
+| video-producer | видео | verifier (режим video-producer) |
+| verifier (video-producer) | подтверждено | publisher (режим 1: только регистрация) |
 | publisher (регистрация) | записи `draft` | ворота `video_approval` → publisher (режим 1: публикация) |
 | publisher (публикация) | пробный прогон показан, после «да» — `--send` в Telegram | `next: done` |
+
+## Двойная проверка
+
+Работа developer, qa и video-producer проверяется дважды, прежде чем уйти дальше:
+1. **Проход 1** — сам агент по списку своего режима из `.claude/agents/verifier.md` (раздел «Самопроверка» в его файле). В ответе есть строка `Самопроверка (проход 1)`. Её нет или там ✗ без объяснения — верни агенту, не запуская verifier.
+2. **Проход 2** — агент `verifier`, независимо:
+   - новый запуск `Agent` с `subagent_type: "verifier"` — **не** `fork` и не продолжение агента через `SendMessage`: у проверяющего не должно быть контекста того, кто делал работу;
+   - в промпт передай только: путь к файлу состояния, режим, номер попытки, ветку, пути к спеке / плану / сценарию и блок «Результат ответа» агента как **список утверждений для проверки**. Не пересказывай, как агент работал, и не пиши, что «всё уже проверено».
+   - тип `verifier` не виден в этой сессии (его добавили после её начала) — запусти `general-purpose` с первой строкой «Следуй .claude/agents/verifier.md» и тем же промптом.
+
+Номер попытки, который передаёшь verifier, — `verify_attempt.<режим>` + 1 (счётчик хранит число неудачных проверок подряд). Отрицательный результат verifier с попыткой 1 возвращает работу тому же агенту вместе со списком расхождений из `reviews/<feature>.verify.md`; после исправления — снова verifier (попытка 2). Две неудачи подряд — ворота `human_decision`. «Поправки к отчёту» (результат верен, отчёт неточен) работу не возвращают: в следующие шаги и человеку передавай значения из `reviews/<feature>.verify.md`, а не из отчёта агента. Подтверждение сбрасывает `verify_attempt.<режим>` в 0: следующий круг (например, developer после замечаний reviewer) снова начинается с попытки 1.
 
 ## Как проверять ворота
 
@@ -80,7 +97,7 @@ argument-hint: <feature> [описание новой фичи]
 ## Нельзя
 
 - Ставить `Статус: утверждено`, `approved`, `religious_review: "approved"`, пушить, мержить, ставить тег без явного «да» в разговоре.
-- Пропускать агента или ворота, даже если человек торопится, — сначала спроси.
+- Пропускать агента или ворота, даже если человек торопится, — сначала спроси. Это касается и verifier: без его «ПОДТВЕРЖДЕНО» работа developer, qa, video-producer дальше не идёт.
 - Передавать дальше фрагменты с `⚠ ТРЕБУЕТ ПРОВЕРКИ УСТАЗОМ` как готовые: напомни о них человеку на каждой остановке.
 
 `/pipeline` без аргументов — покажи все `pipeline/*.json`: фича, `next`, `waiting_for`.

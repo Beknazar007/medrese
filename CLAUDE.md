@@ -75,10 +75,12 @@ videos/tools/.venv/Scripts/python videos/tools/make_video.py videos/scenarios/<f
 Агенты связаны в цепочку командой `/pipeline <feature> [описание]` (`.claude/skills/pipeline/SKILL.md`) и файлом состояния `pipeline/<feature>.json`. Каждый агент читает этот файл в начале и дописывает в конце (что сделал, какие файлы, кто следующий); `/pipeline` по нему сам запускает следующего агента и останавливается только на ручных воротах. Субагент Claude Code не может вызвать другого субагента напрямую — поэтому переход делает главная сессия.
 
 ```
-pm → [человек утверждает спеку] → architect → developer ⇄ reviewer (≤3 итерации)
-   → qa → [человек мержит PR] → release → docs → video-scriptwriter → video-producer
+pm → [человек утверждает спеку] → architect → developer ✓✓ ⇄ reviewer (≤3 итерации)
+   → qa ✓✓ → [человек мержит PR] → release → docs → video-scriptwriter → video-producer ✓✓
    → [человек одобряет видео] → publisher
 ```
+
+✓✓ — двойная проверка: агент сам проходит список проверок своего режима из `.claude/agents/verifier.md`, затем `verifier` независимо проверяет всё заново. Не подтверждено — работа возвращается агенту; две неудачи подряд — решает человек.
 
 | Агент | Результат |
 |---|---|
@@ -91,6 +93,7 @@ pm → [человек утверждает спеку] → architect → develo
 | docs | `docs/user-guide/<role>.md` |
 | video-scriptwriter | `videos/scenarios/<feature>.md` — шаги + озвучка на кыргызском и русском |
 | video-producer | `videos/output/<feature>/<lang>.mp4` + `.srt` |
+| verifier | `reviews/<feature>.verify.md` — второй, независимый проход по работе developer, qa, video-producer: «подтверждено» или расхождения |
 | publisher | `videos/registry.json`; публикует в Telegram-канал только одобренные видео |
 
 **Ручные ворота (агенты их не обходят):** утверждение спеки (`Статус: утверждено` в спеке ставит человек), мерж PR, одобрение видео (`"approved": true` в реестре ставит человек). Никаких автопубликаций.
