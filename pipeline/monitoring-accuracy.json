@@ -2,9 +2,9 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "verifier",
+  "next": "reviewer",
   "waiting_for": null,
-  "review_iteration": 1,
+  "review_iteration": 2,
   "verify_attempt": {
     "developer": 0,
     "qa": 0,
@@ -95,6 +95,13 @@
       "iteration": 2,
       "result": "коммиты 4a5e05c, 50e440a, 931a22b: comment null/\"\"/пробелы в PUT /monitoring/lesson-marks -> 200 и null (max_length только на str), 501 символ -> 422; PATCH /non-working-days с null в start_date/end_date -> 422 (мелочь ревью №2); LateThresholdCard без key — «Сакталды» остаётся, проверка добавлена в e2e rector AC-2.22. pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed, 0 failed",
       "next": "verifier (режим developer)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "developer",
+      "at": "2026-11-13T11:20+06:00",
+      "result": "подтверждено: pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed / 15 skipped / 0 failed; на старом коде падают test_empty_comment_is_saved_as_null (3), test_invalid_update_is_422 и e2e AC-2.22; поправки: test_too_long_comment_is_422 проходит и на старом коде (страховка), в e2e не названы 15 skipped; замечания ревью 1 и 3 открыты (мелочи)",
+      "next": "reviewer"
     }
   ]
 }

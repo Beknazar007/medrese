@@ -56,3 +56,30 @@
 Поправки к отчёту: 1) было «comment null или "" → 500» → на деле также строка из одних пробелов `"   "` → 500 (тот же `_blank_to_none` превращает её в `None`)
 
 Для developer (баг 1): в `LessonMarkUpsert.comment` ограничение длины должно применяться только к строке (например, `Annotated[str, Field(max_length=500)] | None` с `BeforeValidator` снаружи); добавить pytest на PUT с `comment: null`, `""` и `"   "` → 200 и `comment: null` в ответе.
+
+## developer · попытка 1 (исправления перед ревью итерации 2) — 2026-11-13 — ПОДТВЕРЖДЕНО
+Перезапущено: pytest -q — 202 passed (115 с) · oxlint — 0 ошибок, 2 старых предупреждения (AuthContext.tsx, ConfirmContext.tsx) · npm run build — ok · `npx playwright test tests/monitoring-accuracy` — 33 passed, 15 skipped, 0 failed (2,7 мин; повторный прогон для свежего `playwright-report/` — тоже зелёный) · проверка «падает на старом коде»: файлы из e4d2765 временно возвращались через `git checkout e4d2765 -- <файл>` и восстанавливались `git checkout HEAD -- <файл>`, в конце `git status` чистый · миграций нет
+
+| Утверждение агента / пункт списка | Что увидел | Итог |
+|---|---|---|
+| Ветка `feature/monitoring-accuracy`, дерево чистое, коммиты 4a5e05c, 50e440a, 931a22b, 1e34a67 | так и есть; дифф e4d2765..HEAD: `non_working_days.py`, `schemas/monitoring.py`, `test_lesson_marks.py`, `test_non_working_days.py`, `LateThresholdCard.tsx`, `rector.spec.ts`, `pipeline/`, `reviews/` | ✓ |
+| №1: `comment` null / `""` / `"   "` → 200 и `null` в ответе и в базе | `schemas/monitoring.py:61` — `Annotated[Annotated[str, Field(max_length=500)] \| None, BeforeValidator(_blank_to_none)]`; `test_empty_comment_is_saved_as_null[None, "", "   "]` проверяет ответ и `mark.comment` в базе | ✓ |
+| №1: 501 символ → 422 | `test_too_long_comment_is_422` проходит | ✓ |
+| №1: `_put` реально шлёт null (маркер `_OMIT`) | `_OMIT = object()`, поле пропускается только при `_OMIT`; `comment=None` кладёт `null` в тело | ✓ |
+| №1: в схемах `non_working_day` и `settings` той же ошибки нет | `non_working_day.py`: `Name = Annotated[str, StringConstraints(max_length=255)…]`, в `Update` — `Name \| None`, ограничение на ветке str; дат с ограничениями нет | ✓ |
+| №2: PATCH с `start_date: null` / `end_date: null` → 422, даты не меняются | `non_working_days.py:55-57`; `test_invalid_update_is_422` проверяет оба кода и что даты остались 2027-03-21 / 2027-03-22. Снятая проверка `if value is not None` в цикле безопасна: явный null теперь отсекается для всех трёх полей `NonWorkingDayUpdate` | ✓ |
+| №3: убран `key` у `ThresholdForm`, e2e AC-2.22 ждёт «Сакталды» после перезагрузки настроек | `LateThresholdCard.tsx:77` без `key`; `rector.spec.ts:44-46` — `networkidle` и `alert` «Сакталды» | ✓ |
+| Новые тесты падают на старом коде | старая схема: `test_empty_comment_is_saved_as_null` — 3 failed (`TypeError … max_length … None`); старый роутер: `test_invalid_update_is_422` — `assert 200 == 422` на `start_date: None`; старый `LateThresholdCard.tsx`: AC-2.22 [desktop] — failed на `getByRole('alert').filter({hasText: 'Сакталды'})`, element not found. `test_too_long_comment_is_422` проходит и на старом коде — это страховка, ошибку он и не должен был ловить | ✓ (для 501 — ✗ отчёт, см. ниже) |
+| pytest — 202 passed | 202 passed | ✓ |
+| lint — 0 ошибок, build ok | так и есть | ✓ |
+| e2e tests/monitoring-accuracy — 33 passed, 0 failed | 33 passed, 15 skipped, 0 failed; AC-2.24 (dean, desktop) прошёл | ✓ (пропущенные не названы — ✗ отчёт) |
+| Тест на каждое изменение бэкенда, права ролей | оба изменения бэкенда покрыты; новых адресов нет, права не менялись | ✓ |
+| i18n | новых ключей нет | ✓ |
+| `toISOString()`, hex, сырой SQL, отладка (`print`, `console.log`, `debugger`), секреты | в добавленных строках нет | ✓ |
+| Миграция | в этой итерации нет | — |
+| Итерация > 1: замечания ревью закрыты | Ревью итерации 1 — ОДОБРЕНО, только мелочи. Закрыта №2 (null-даты). №1 (отделение при межотделенческой замене), №3 (импорт хелпера между роутерами), №4, №5 не трогались. Ревьюер разрешил вынести их в отдельные задачи (№4, №5 — «ничего не делать сейчас»), и developer их не заявлял как сделанные. Баг qa (AC-2.24) закрыт | ✓ |
+
+Расхождения в работе: нет
+Поправки к отчёту: 1) было «новые тесты падают на старом коде» → на деле падают `test_empty_comment_is_saved_as_null` (3 варианта), `test_invalid_update_is_422` и e2e AC-2.22, а `test_too_long_comment_is_422` проходит и на старом коде (страховка от регрессии) · 2) было «e2e 33 passed, 0 failed» → полностью: 33 passed, 15 skipped (skip по `isMobile`, как у qa), 0 failed
+
+Для reviewer (итерация 2): замечания 1 и 3 из итерации 1 остаются открытыми. Решить, оставлять ли их отдельной задачей.
