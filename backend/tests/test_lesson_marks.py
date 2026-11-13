@@ -95,9 +95,13 @@ def _log(db: Session, w, teacher_key="teacher_a"):
     }
 
 
-def _put(client, entry, on_date, kind="FORGOT_TO_OPEN", comment=None):
+_OMIT = object()
+
+
+def _put(client, entry, on_date, kind="FORGOT_TO_OPEN", comment=_OMIT):
+    # _OMIT leaves the field out; comment=None really sends null, as the interface does.
     body = {"schedule_entry_id": entry.id, "date": on_date.isoformat(), "kind": kind}
-    if comment is not None:
+    if comment is not _OMIT:
         body["comment"] = comment
     return client.put(URL, json=body)
 
@@ -213,6 +217,19 @@ def test_mark_on_a_day_later_declared_non_working_is_ignored(db: Session, client
     db.flush()
     assert _row(db, w) == (9, 8, 1, 89)
     assert MISSED_1 not in _log(db, w)
+
+
+@pytest.mark.parametrize("comment", [None, "", "   "])
+def test_empty_comment_is_saved_as_null(db: Session, client_as, w, comment):
+    response = _put(client_as(w["rector"]), w["entry_a"], MISSED_1, kind="EXCUSED", comment=comment)
+    assert response.status_code == 200, response.text
+    assert response.json()["comment"] is None
+    assert _log(db, w)[MISSED_1].mark.comment is None
+
+
+def test_too_long_comment_is_422(db: Session, client_as, w):
+    response = _put(client_as(w["rector"]), w["entry_a"], MISSED_1, kind="EXCUSED", comment="x" * 501)
+    assert response.status_code == 422
 
 
 def test_invalid_payloads_are_422(db: Session, client_as, w):

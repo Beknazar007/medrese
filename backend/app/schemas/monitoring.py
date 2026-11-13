@@ -57,7 +57,8 @@ class LessonMarkUpsert(BaseModel):
     schedule_entry_id: int
     date: date
     kind: LessonMarkKind
-    comment: Annotated[str | None, BeforeValidator(_blank_to_none), Field(max_length=500)] = None
+    # The length limit sits on the str branch only: on the outer type pydantic applies it to None too.
+    comment: Annotated[Annotated[str, Field(max_length=500)] | None, BeforeValidator(_blank_to_none)] = None
 
 
 class LessonMarkOut(BaseModel):
