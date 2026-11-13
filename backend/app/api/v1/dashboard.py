@@ -3,10 +3,12 @@ from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.deps import require_role
+from app.api.v1.monitoring import get_semester_or_404
+from app.core.deps import department_scope, require_role
 from app.db.session import get_db
 from app.models.enums import UserRole
 from app.models.user import User
+from app.schemas.monitoring import StudentAttendanceSummaryOut, TeacherMonitoringSummaryOut
 from app.services.monitoring import student_attendance_summary, teacher_monitoring_summary
 from app.services.workload import teacher_workload, unassigned_subjects
 
@@ -39,7 +41,7 @@ def get_unassigned_subjects(
     return unassigned_subjects(db, semester_id=semester_id, department_id=department_id)
 
 
-@router.get("/teacher-monitoring-summary")
+@router.get("/teacher-monitoring-summary", response_model=TeacherMonitoringSummaryOut)
 def get_teacher_monitoring_summary(
     semester_id: int,
     date_from: date,
@@ -47,16 +49,14 @@ def get_teacher_monitoring_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.RECTOR, UserRole.DEAN)),
 ):
-    department_id = None
-    if current_user.role == UserRole.DEAN and current_user.headed_department is not None:
-        department_id = current_user.headed_department.id
-
+    department_id = department_scope(current_user)
+    get_semester_or_404(db, semester_id)
     return teacher_monitoring_summary(
         db, semester_id=semester_id, date_from=date_from, date_to=date_to, department_id=department_id
     )
 
 
-@router.get("/student-attendance-summary")
+@router.get("/student-attendance-summary", response_model=StudentAttendanceSummaryOut)
 def get_student_attendance_summary(
     semester_id: int,
     date_from: date,
@@ -64,10 +64,8 @@ def get_student_attendance_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.RECTOR, UserRole.DEAN)),
 ):
-    department_id = None
-    if current_user.role == UserRole.DEAN and current_user.headed_department is not None:
-        department_id = current_user.headed_department.id
-
+    department_id = department_scope(current_user)
+    get_semester_or_404(db, semester_id)
     return student_attendance_summary(
         db, semester_id=semester_id, date_from=date_from, date_to=date_to, department_id=department_id
     )

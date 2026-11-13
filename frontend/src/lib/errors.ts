@@ -67,6 +67,15 @@ const EXACT_MESSAGE_KEYS: Record<string, string> = {
   "page_to must be >= page_from": "errors.hifz_page_order",
   "Cannot change the group or semester of an assignment that is in the timetable": "errors.assignment_scheduled_fields",
   "The new teacher must be from the same department as the assignment": "errors.new_teacher_other_department",
+  lesson_opened: "errors.mark_lesson_opened",
+  lesson_not_ended: "errors.mark_lesson_not_ended",
+  outside_semester: "errors.mark_outside_semester",
+  non_working_day: "errors.mark_non_working_day",
+  wrong_weekday: "errors.mark_wrong_weekday",
+  "Lesson mark not found": "errors.lesson_mark_not_found",
+  "Non-working day not found": "errors.non_working_day_not_found",
+  "end_date must not be before start_date": "non_working_days.error_end_before_start",
+  "Name must not be empty": "non_working_days.error_name_required",
 };
 
 const PATTERN_MESSAGE_KEYS: { pattern: RegExp; key: string }[] = [

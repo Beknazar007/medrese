@@ -27,7 +27,8 @@ import SemesterSelect from "../components/SemesterSelect";
 import WorkloadBars from "../components/WorkloadBars";
 import { useDepartments, useGroups, useSemesters } from "../hooks/useReferenceData";
 import { computeRange, type DateRange } from "../lib/dateRanges";
-import { STATUS_FILL } from "../lib/palette";
+import { percentColor, percentTone } from "../lib/monitoring";
+import { filledSx, STATUS_FILL } from "../lib/palette";
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -243,21 +244,46 @@ export default function DashboardPage() {
                       value={teacherSummary.late_lessons}
                       tone={teacherSummary.late_lessons > 0 ? "warning" : "good"}
                     />
+                    <StatTile
+                      label={t("monitoring.col_attention")}
+                      value={teacherSummary.attention_lessons ?? "—"}
+                      tone={(teacherSummary.attention_lessons ?? 0) > 0 ? "warning" : "good"}
+                    />
+                    <StatTile
+                      label={t("monitoring.col_percent")}
+                      value={teacherSummary.conducted_percent === null ? "—" : `${teacherSummary.conducted_percent}%`}
+                      tone={percentTone(teacherSummary.conducted_percent)}
+                    />
                   </Box>
                   <Paper variant="outlined" sx={{ p: 2 }}>
                     <MonitoringBar
                       conducted={teacherSummary.conducted_lessons}
                       missed={teacherSummary.missed_lessons}
                     />
-                    {teacherSummary.top_missed.length > 0 ? (
+                    {/* An older backend doesn't send lowest_percent yet — treat it as an empty list. */}
+                    {(teacherSummary.lowest_percent ?? []).length > 0 ? (
                       <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 2 }}>
                         <Typography variant="caption" color="text.secondary">
-                          {t("dashboard.top_missed_title")}
+                          {t("dashboard.lowest_percent_title")}
                         </Typography>
-                        {teacherSummary.top_missed.map((row) => (
-                          <Box key={row.teacher_id} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <Typography variant="body2">{row.full_name}</Typography>
-                            <Chip size="small" color="error" label={row.missed_lessons} />
+                        {teacherSummary.lowest_percent.map((row) => (
+                          <Box key={row.teacher_id} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }}>
+                              {row.full_name}
+                            </Typography>
+                            {row.conducted_percent !== null && (
+                              <Chip
+                                size="small"
+                                sx={filledSx(percentColor(row.conducted_percent))}
+                                label={`${row.conducted_percent}%`}
+                              />
+                            )}
+                            <Chip
+                              size="small"
+                              color="error"
+                              variant="outlined"
+                              label={`${t("monitoring.col_missed")}: ${row.missed_lessons}`}
+                            />
                           </Box>
                         ))}
                       </Box>

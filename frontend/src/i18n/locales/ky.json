@@ -16,6 +16,7 @@
     "groups": "Топтор",
     "assignments": "Дайындоолор",
     "semesters": "Семестрлер",
+    "non_working_days": "Иш эмес күндөр",
     "rooms": "Аудиториялар",
     "timeslots": "Сабак убактылары",
     "schedule": "Сабак жадыбалы",
@@ -110,7 +111,7 @@
     "monitoring_title": "Мониторинг",
     "teacher_monitoring_title": "Мугалимдер",
     "student_stats_title": "Окуучулар",
-    "top_missed_title": "Эң көп сабак калтыргандар",
+    "lowest_percent_title": "Эң төмөн көрсөткүч",
     "no_missed_hint": "Бул мезгилде калтырылган сабак жок.",
     "download_report": "Отчетту жүктөп алуу",
     "unplaced_count": "{{count}} коюлган эмес"
@@ -193,7 +194,9 @@
     "order": "Сабак №",
     "start": "Башталышы",
     "end": "Аягы",
-    "empty_hint": "Азырынча сабак убактысы жок. Ректор кошо алат (мисалы, 1-сабак = 08:00-08:50)."
+    "empty_hint": "Азырынча сабак убактысы жок. Ректор кошо алат (мисалы, 1-сабак = 08:00-08:50).",
+    "late_threshold": "Кечигүү босогосу, мүнөт",
+    "late_threshold_error": "0дөн 60ка чейинки сан жазыңыз."
   },
   "assignments": {
     "title": "Дайындоолор",
@@ -347,8 +350,10 @@
     "col_conducted": "Өткөрүлгөн",
     "col_missed": "Калтырылган",
     "col_late": "Кечиккен",
-    "col_score": "Көрсөткүч",
+    "col_percent": "Өткөрүлгөн %",
+    "col_attention": "Көңүл буруу керек",
     "empty_hint": "Бул мезгилде пландалган сабак жок.",
+    "out_of_semester": "Тандалган мезгил семестрдин датасына кирбейт.",
     "log_title": "Сабактар: {{name}}",
     "log_col_date": "Күнү",
     "log_col_subject": "Предмет",
@@ -358,7 +363,19 @@
     "log_col_checkout": "Аяктаган убактысы",
     "status_conducted": "Өткөрүлгөн",
     "status_missed": "Калтырылган",
-    "status_late": "Кечикти"
+    "status_late": "Кечикти",
+    "log_col_actions": "Себеби",
+    "mark_reason": "Себебин белгилөө",
+    "reason_forgot": "Өткөрүлгөн, мугалим ачканды унутуп калган",
+    "reason_excused": "Себептүү",
+    "reason_cancelled": "Сабак жокко чыгарылган",
+    "status_conducted_by_mark": "Өткөрүлгөн (белги боюнча)",
+    "mark_comment": "Түшүндүрмө",
+    "mark_by": "Белгилеген: {{name}}, {{date}}",
+    "remove_mark": "Белгини алып салуу",
+    "remove_mark_confirm": "Бул белгини алып саласызбы?",
+    "flag_no_marks": "Студенттер белгиленген эмес",
+    "flag_early_finish": "Жарымына жетпей бүттү"
   },
   "hifz": {
     "title": "Хафиз журналы",
@@ -555,7 +572,14 @@
     "assignment_scheduled_fields": "Бул дайындоо жадыбалда турат — топту же семестрди алмаштыруу үчүн адегенде аны жадыбалдан алып салыңыз",
     "new_teacher_busy": "Жаңы мугалим бул убакта бош эмес: {{slots}}",
     "new_teacher_other_department": "Жаңы мугалим ушул кафедрадан болушу керек",
-    "busy_slot": "{{day}} {{n}}-сабак"
+    "busy_slot": "{{day}} {{n}}-сабак",
+    "mark_lesson_opened": "Бул сабак ачылган, ага себеп белгиленбейт.",
+    "mark_lesson_not_ended": "Сабак али бүтө элек.",
+    "mark_outside_semester": "Бул күн семестрдин датасына кирбейт.",
+    "mark_non_working_day": "Бул күн иш эмес күн.",
+    "mark_wrong_weekday": "Бул күнү мындай сабак жок.",
+    "lesson_mark_not_found": "Белги табылган жок.",
+    "non_working_day_not_found": "Иш эмес күн табылган жок."
   },
   "app_short_title": "Медресе",
   "validation": {
@@ -571,5 +595,15 @@
     "too_long": "Текст өтө узун",
     "generic": "Талаалар туура эмес толтурулган — текшериңиз",
     "field_message": "{{field}}: {{message}}"
+  },
+  "non_working_days": {
+    "title": "Иш эмес күндөр",
+    "name": "Аталышы",
+    "start": "Башталышы",
+    "end": "Аягы",
+    "empty_hint": "Азырынча иш эмес күн жок. Майрамдарды жана каникулдарды кошуңуз.",
+    "delete_confirm": "Бул иш эмес күндү өчүрөсүзбү?",
+    "error_end_before_start": "Аягы башталышынан мурун боло албайт.",
+    "error_name_required": "Аталышын жазыңыз."
   }
 }

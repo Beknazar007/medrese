@@ -15,6 +15,7 @@ const AssignmentsPage = lazy(() => import("./pages/AssignmentsPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const DepartmentsPage = lazy(() => import("./pages/DepartmentsPage"));
 const GroupsPage = lazy(() => import("./pages/GroupsPage"));
+const NonWorkingDaysPage = lazy(() => import("./pages/NonWorkingDaysPage"));
 const RoomsPage = lazy(() => import("./pages/RoomsPage"));
 const ScheduleGridPage = lazy(() => import("./pages/ScheduleGridPage"));
 const SemestersPage = lazy(() => import("./pages/SemestersPage"));
@@ -107,6 +108,14 @@ export default function App() {
                   element={
                     <RoleRoute roles={["RECTOR"]}>
                       <SemestersPage />
+                    </RoleRoute>
+                  }
+                />
+                <Route
+                  path="/non-working-days"
+                  element={
+                    <RoleRoute roles={["RECTOR"]}>
+                      <NonWorkingDaysPage />
                     </RoleRoute>
                   }
                 />

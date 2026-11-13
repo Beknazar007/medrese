@@ -17,6 +17,7 @@ import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import EventBusyIcon from "@mui/icons-material/EventBusy";
+import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import {
   Alert,
   AppBar,
@@ -154,6 +155,7 @@ export default function Layout() {
   if (user?.role === "RECTOR") {
     scheduleItems.push(
       { to: "/semesters", label: t("nav.semesters"), icon: <CalendarMonthIcon /> },
+      { to: "/non-working-days", label: t("nav.non_working_days"), icon: <BeachAccessIcon /> },
       { to: "/rooms", label: t("nav.rooms"), icon: <MeetingRoomIcon /> },
       { to: "/timeslots", label: t("nav.timeslots"), icon: <EventNoteIcon /> },
     );

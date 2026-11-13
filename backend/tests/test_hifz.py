@@ -13,6 +13,7 @@ from app.services import hifz as hifz_service
 from app.services import journal as journal_service
 from app.services import monitoring as monitoring_service
 from tests.factories import (
+    bishkek,
     make_assignment,
     make_department,
     make_group,
@@ -297,7 +298,7 @@ def test_opening_a_scheduled_hafiz_class_creates_a_session_that_counts_in_monito
         semester_id=semester.id,
         date_from=date(2026, 9, 1),
         date_to=date(2026, 9, 30),
-        today=date(2026, 9, 30),
+        now=bishkek(date(2026, 9, 30), 23, 59),
     )
     assert len(rows) == 1
     assert rows[0].teacher_id == teacher.id

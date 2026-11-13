@@ -1,0 +1,127 @@
+{
+  "feature": "monitoring-accuracy",
+  "title": "Точный мониторинг учителей",
+  "branch": "feature/monitoring-accuracy",
+  "next": "release",
+  "waiting_for": "pr_merge",
+  "review_iteration": 2,
+  "verify_attempt": {
+    "developer": 0,
+    "qa": 0,
+    "video-producer": 0
+  },
+  "version": null,
+  "artifacts": {
+    "spec": "specs/monitoring-accuracy.md",
+    "plan": "specs/monitoring-accuracy.plan.md",
+    "review": "reviews/monitoring-accuracy.md",
+    "e2e": [
+      "e2e/tests/monitoring-accuracy/rector.spec.ts",
+      "e2e/tests/monitoring-accuracy/dean.spec.ts",
+      "e2e/tests/monitoring-accuracy/teacher.spec.ts",
+      "e2e/tests/monitoring-accuracy/hafiz.spec.ts",
+      "e2e/tests/monitoring-accuracy/stand.ts",
+      "e2e/tests/monitoring-accuracy/forbidden.ts",
+      "e2e/fixtures/seed.py",
+      "e2e/playwright-report/"
+    ],
+    "user_guide": [],
+    "scenario": null,
+    "videos": null,
+    "verify": "reviews/monitoring-accuracy.verify.md",
+    "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)"
+  },
+  "history": [
+    {
+      "agent": "human",
+      "at": "2026-11-13T01:10+06:00",
+      "result": "запрос: сделать оба шага (исправить подсчёт + учесть причины)",
+      "next": "pm"
+    },
+    {
+      "agent": "pm",
+      "at": "2026-11-13T01:45+06:00",
+      "result": "спека-черновик specs/monitoring-accuracy.md: шаг 1 (подсчёт, семестр, процент, Бишкек) + шаг 2 (нерабочие дни, отметки причин, «требует внимания», порог опоздания); 7 открытых вопросов с рекомендациями",
+      "next": "spec_approval → architect"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-13T01:25+06:00",
+      "result": "spec_approval открыты: «утверждено», рекомендации по вопросам 1–7 приняты",
+      "next": "architect"
+    },
+    {
+      "agent": "architect",
+      "at": "2026-11-13T02:10+06:00",
+      "result": "план specs/monitoring-accuracy.plan.md: общий _occurrences для мониторинга/главной/журнала, now по Бишкеку, обрезка семестром; таблицы non_working_days, lesson_marks, app_settings (одна миграция, только шаг 2); новые адреса /non-working-days, /settings, /monitoring/lesson-marks; department_scope закрывает доступ декана без отделения; шаги 1–4 = шаг 1 спеки, 5–11 = шаг 2. Объём L",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-13T03:40+06:00",
+      "result": "шаги 1–11 плана: department_scope, _occurrences (Бишкек, семестр, процент), схемы, фронтенд шага 1; миграция fbec5af838f4 (non_working_days, lesson_marks, app_settings), /settings, /non-working-days, /monitoring/lesson-marks, флаги внимания, фронтенд шага 2, seed e2e. pytest 198 passed, lint/build ok, e2e 167 passed / 33 skipped",
+      "next": "verifier (режим developer)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "developer",
+      "at": "2026-11-13T02:41+06:00",
+      "result": "подтверждено: pytest 198 passed, lint 0 ошибок, build ok, миграция up/down/up + check ok на временной docker-базе, i18n 557×3, шаги 1–11 плана в диффе, права с 403; e2e не перезапускал — проверит qa",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-13T10:06+06:00",
+      "iteration": 1,
+      "result": "ОДОБРЕНО: блокеров 0, важных 0, мелочей 5 (фильтр отделения в списке декана по текущему учителю записи при межотделенческой замене; PATCH non-working-days с null-датами; импорт хелпера между роутерами; осиротевшие отметки; индекс hifz_records.date). pytest 198 passed, lint 0 ошибок, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-13T11:40+06:00",
+      "result": "коммит e4d2765; 24 теста x 2 проекта: tests/monitoring-accuracy 32 passed, 1 failed, 15 skipped; весь набор 199 passed, 1 failed, 48 skipped. Баг: PUT /monitoring/lesson-marks с comment null или пустым -> 500, в UI отметка без комментария не сохраняется (AC-2.24)",
+      "next": "verifier (режим qa)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "qa",
+      "at": "2026-11-13T10:53+06:00",
+      "result": "подтверждено: tests/monitoring-accuracy 32 passed, 1 failed (dean AC-2.24), 15 skipped — как в отчёте; баг 1 воспроизведён pytest-ом: comment null, \"\" и \"   \" -> TypeError max_length (500), без поля -> 200; поправка: пробельный комментарий тоже 500; весь набор не перезапускал",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-13T11:09+06:00",
+      "iteration": 2,
+      "result": "коммиты 4a5e05c, 50e440a, 931a22b: comment null/\"\"/пробелы в PUT /monitoring/lesson-marks -> 200 и null (max_length только на str), 501 символ -> 422; PATCH /non-working-days с null в start_date/end_date -> 422 (мелочь ревью №2); LateThresholdCard без key — «Сакталды» остаётся, проверка добавлена в e2e rector AC-2.22. pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed, 0 failed",
+      "next": "verifier (режим developer)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "developer",
+      "at": "2026-11-13T11:20+06:00",
+      "result": "подтверждено: pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed / 15 skipped / 0 failed; на старом коде падают test_empty_comment_is_saved_as_null (3), test_invalid_update_is_422 и e2e AC-2.22; поправки: test_too_long_comment_is_422 проходит и на старом коде (страховка), в e2e не названы 15 skipped; замечания ревью 1 и 3 открыты (мелочи)",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-13T11:24+06:00",
+      "iteration": 2,
+      "result": "ОДОБРЕНО: блокеров 0, важных 0, мелочей 2 новых (№6 поле порога не синхронизируется с сервером без key; №7 networkidle в e2e AC-2.22). Исправления бага qa, мелочи №2 и «Сакталды» подтверждены. Мелочи №1 и №3 — отдельной задачей. pytest 202 passed, lint 0 ошибок, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-13T11:42+06:00",
+      "result": "повторный прогон после исправлений: мелочь ревью №7 закрыта (rector AC-2.22 ждёт ответ GET /settings после PATCH вместо networkidle); tests/monitoring-accuracy 33 passed, 0 failed, 15 skipped (по устройству); весь набор 200 passed, 0 failed, 48 skipped; баг 1 (пустой комментарий отметки -> 500) больше не воспроизводится, новых багов нет",
+      "next": "verifier (режим qa)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "qa",
+      "at": "2026-11-13T11:46+06:00",
+      "result": "подтверждено: tests/monitoring-accuracy 33 passed, 15 skipped (по isMobile), 0 failed; 43 AC в названиях e2e + 1.2, 1.9, 1.14, 2.15 в pytest (4 passed); мелочь ревью №7 закрыта; изменения qa только в e2e/; весь набор не перезапускал — проверит CI",
+      "next": "pr_merge → release"
+    }
+  ]
+}

@@ -10,11 +10,13 @@ from app.api.v1 import (
     hifz,
     journal,
     monitoring,
+    non_working_days,
     notes,
     reports,
     rooms,
     schedule,
     semesters,
+    settings,
     students,
     subjects,
     teachers,
@@ -42,3 +44,5 @@ api_router.include_router(notes.router)
 api_router.include_router(monitoring.router)
 api_router.include_router(hifz.router)
 api_router.include_router(reports.router)
+api_router.include_router(settings.router)
+api_router.include_router(non_working_days.router)

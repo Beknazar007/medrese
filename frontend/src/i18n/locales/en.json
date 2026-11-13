@@ -16,6 +16,7 @@
     "groups": "Groups",
     "assignments": "Assignments",
     "semesters": "Semesters",
+    "non_working_days": "Non-working days",
     "rooms": "Rooms",
     "timeslots": "Time slots",
     "schedule": "Schedule",
@@ -110,7 +111,7 @@
     "monitoring_title": "Monitoring",
     "teacher_monitoring_title": "Teachers",
     "student_stats_title": "Students",
-    "top_missed_title": "Most missed lessons",
+    "lowest_percent_title": "Lowest percentage",
     "no_missed_hint": "No missed lessons for this period.",
     "download_report": "Download report",
     "unplaced_count": "{{count}} not placed"
@@ -193,7 +194,9 @@
     "order": "Period #",
     "start": "Start",
     "end": "End",
-    "empty_hint": "No time slots yet. Rector can add one (e.g. period 1 = 08:00-08:50)."
+    "empty_hint": "No time slots yet. Rector can add one (e.g. period 1 = 08:00-08:50).",
+    "late_threshold": "Late threshold, min",
+    "late_threshold_error": "Enter a number from 0 to 60."
   },
   "assignments": {
     "title": "Assignments",
@@ -347,8 +350,10 @@
     "col_conducted": "Conducted",
     "col_missed": "Missed",
     "col_late": "Late",
-    "col_score": "Performance",
+    "col_percent": "Conducted %",
+    "col_attention": "Needs attention",
     "empty_hint": "No lessons scheduled for this period.",
+    "out_of_semester": "The selected period is outside the semester dates.",
     "log_title": "Lessons: {{name}}",
     "log_col_date": "Date",
     "log_col_subject": "Subject",
@@ -358,7 +363,19 @@
     "log_col_checkout": "Checked out",
     "status_conducted": "Conducted",
     "status_missed": "Missed",
-    "status_late": "Late"
+    "status_late": "Late",
+    "log_col_actions": "Reason",
+    "mark_reason": "Mark reason",
+    "reason_forgot": "Held, the teacher forgot to open it",
+    "reason_excused": "Excused",
+    "reason_cancelled": "Lesson cancelled",
+    "status_conducted_by_mark": "Held (by mark)",
+    "mark_comment": "Comment",
+    "mark_by": "Marked by {{name}}, {{date}}",
+    "remove_mark": "Remove mark",
+    "remove_mark_confirm": "Remove this mark?",
+    "flag_no_marks": "Students not marked",
+    "flag_early_finish": "Finished before half time"
   },
   "hifz": {
     "title": "Hafiz journal",
@@ -555,7 +572,14 @@
     "assignment_scheduled_fields": "This assignment is already in the timetable — remove it from the timetable first to change the group or semester",
     "new_teacher_busy": "The new teacher is busy at: {{slots}}",
     "new_teacher_other_department": "The new teacher must be from the same department",
-    "busy_slot": "{{day}}, period {{n}}"
+    "busy_slot": "{{day}}, period {{n}}",
+    "mark_lesson_opened": "This lesson was opened, a reason can't be set.",
+    "mark_lesson_not_ended": "The lesson hasn't ended yet.",
+    "mark_outside_semester": "This date is outside the semester.",
+    "mark_non_working_day": "This is a non-working day.",
+    "mark_wrong_weekday": "There is no such lesson on this day.",
+    "lesson_mark_not_found": "Mark not found.",
+    "non_working_day_not_found": "Non-working day not found."
   },
   "app_short_title": "Medrese",
   "validation": {
@@ -571,5 +595,15 @@
     "too_long": "The text is too long",
     "generic": "Some fields are filled in incorrectly — please check them",
     "field_message": "{{field}}: {{message}}"
+  },
+  "non_working_days": {
+    "title": "Non-working days",
+    "name": "Name",
+    "start": "Start",
+    "end": "End",
+    "empty_hint": "No non-working days yet. Add holidays and vacations.",
+    "delete_confirm": "Delete this non-working day?",
+    "error_end_before_start": "The end can't be before the start.",
+    "error_name_required": "Enter a name."
   }
 }

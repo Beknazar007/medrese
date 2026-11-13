@@ -1,4 +1,5 @@
-from datetime import date, time
+from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -150,3 +151,8 @@ def make_session(
     db.add(session)
     db.flush()
     return session
+
+
+def bishkek(on_date: date, hour: int, minute: int = 0) -> datetime:
+    """An aware Bishkek-local moment — what monitoring treats as "now"."""
+    return datetime.combine(on_date, time(hour, minute), tzinfo=ZoneInfo("Asia/Bishkek"))
