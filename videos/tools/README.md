@@ -80,7 +80,7 @@ videos/tools/.venv/Scripts/python videos/tools/publish_telegram.py --send   # о
 ```
 
 Уходят только записи реестра со `status: "draft"`, `"approved": true` и `religious_review` не `required`. Подпись к видео:
-название из сценария, язык, роль, версия, «Что нового» из секции `CHANGELOG.md` этой версии и `comment` записи
+название из сценария, язык, роль, версия, «Что нового» из секции `CHANGELOG.md` этой версии (или поле `news` записи — список строк, когда переснято одно видео) и `comment` записи
 (комментарий пишет человек при одобрении или publisher по его словам). После отправки скрипт ставит
 `status: "published"`, `published_url`, `published_at`, а видео из `replaces` — `outdated`.
 Лимит подписи в Telegram — 1024 символа, длинное обрезается.

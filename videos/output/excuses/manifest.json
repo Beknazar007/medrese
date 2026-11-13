@@ -2,29 +2,6 @@
   "feature": "excuses",
   "videos": [
     {
-      "id": "excuses-rector-ky",
-      "feature": "excuses",
-      "role": "rector",
-      "lang": "ky",
-      "device": "desktop",
-      "file": "videos/output/excuses/rector-ky.mp4",
-      "subtitles": "videos/output/excuses/rector-ky.srt",
-      "duration_s": 36.0,
-      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
-      "voice_note": null,
-      "scenario": "videos/scenarios/excuses.md",
-      "scenario_hash": "81d2028bd245e92e4eeafb5b10747e253456d1e3ccceea89a7cb41d1584ce20c",
-      "app_version": "1.0.0",
-      "religious_review": "not_needed",
-      "native_speaker_review": "required",
-      "frames": [
-        "videos/output/excuses/frames/rector-ky-start.png",
-        "videos/output/excuses/frames/rector-ky-middle.png",
-        "videos/output/excuses/frames/rector-ky-end.png"
-      ],
-      "created_at": "2026-11-11T14:32:13+06:00"
-    },
-    {
       "id": "excuses-rector-ru",
       "feature": "excuses",
       "role": "rector",
@@ -46,6 +23,29 @@
         "videos/output/excuses/frames/rector-ru-end.png"
       ],
       "created_at": "2026-11-11T14:33:21+06:00"
+    },
+    {
+      "id": "excuses-rector-ky",
+      "feature": "excuses",
+      "role": "rector",
+      "lang": "ky",
+      "device": "desktop",
+      "file": "videos/output/excuses/rector-ky.mp4",
+      "subtitles": "videos/output/excuses/rector-ky.srt",
+      "duration_s": 36.2,
+      "voice": "elevenlabs:eleven_v3:jsSE6b3qmZL9jOxuseza",
+      "voice_note": null,
+      "scenario": "videos/scenarios/excuses.md",
+      "scenario_hash": "d718237f839d4ab26654df8e697c240d88ef41fa059baf445a009309a51297bb",
+      "app_version": "1.0.2",
+      "religious_review": "not_needed",
+      "native_speaker_review": "required",
+      "frames": [
+        "videos/output/excuses/frames/rector-ky-start.png",
+        "videos/output/excuses/frames/rector-ky-middle.png",
+        "videos/output/excuses/frames/rector-ky-end.png"
+      ],
+      "created_at": "2026-11-13T00:03:18+06:00"
     }
   ]
 }
