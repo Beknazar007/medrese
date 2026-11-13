@@ -4,7 +4,7 @@
   "branch": "feature/monitoring-accuracy",
   "next": "verifier",
   "waiting_for": null,
-  "review_iteration": 0,
+  "review_iteration": 1,
   "verify_attempt": {
     "developer": 0,
     "qa": 0,
@@ -14,12 +14,21 @@
   "artifacts": {
     "spec": "specs/monitoring-accuracy.md",
     "plan": "specs/monitoring-accuracy.plan.md",
-    "review": null,
-    "e2e": [],
+    "review": "reviews/monitoring-accuracy.md",
+    "e2e": [
+      "e2e/tests/monitoring-accuracy/rector.spec.ts",
+      "e2e/tests/monitoring-accuracy/dean.spec.ts",
+      "e2e/tests/monitoring-accuracy/teacher.spec.ts",
+      "e2e/tests/monitoring-accuracy/hafiz.spec.ts",
+      "e2e/tests/monitoring-accuracy/stand.ts",
+      "e2e/tests/monitoring-accuracy/forbidden.ts",
+      "e2e/fixtures/seed.py",
+      "e2e/playwright-report/"
+    ],
     "user_guide": [],
     "scenario": null,
     "videos": null,
-    "verify": null,
+    "verify": "reviews/monitoring-accuracy.verify.md",
     "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)"
   },
   "history": [
@@ -51,6 +60,40 @@
       "agent": "developer",
       "at": "2026-11-13T03:40+06:00",
       "result": "шаги 1–11 плана: department_scope, _occurrences (Бишкек, семестр, процент), схемы, фронтенд шага 1; миграция fbec5af838f4 (non_working_days, lesson_marks, app_settings), /settings, /non-working-days, /monitoring/lesson-marks, флаги внимания, фронтенд шага 2, seed e2e. pytest 198 passed, lint/build ok, e2e 167 passed / 33 skipped",
+      "next": "verifier (режим developer)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "developer",
+      "at": "2026-11-13T02:41+06:00",
+      "result": "подтверждено: pytest 198 passed, lint 0 ошибок, build ok, миграция up/down/up + check ok на временной docker-базе, i18n 557×3, шаги 1–11 плана в диффе, права с 403; e2e не перезапускал — проверит qa",
+      "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-13T10:06+06:00",
+      "iteration": 1,
+      "result": "ОДОБРЕНО: блокеров 0, важных 0, мелочей 5 (фильтр отделения в списке декана по текущему учителю записи при межотделенческой замене; PATCH non-working-days с null-датами; импорт хелпера между роутерами; осиротевшие отметки; индекс hifz_records.date). pytest 198 passed, lint 0 ошибок, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-13T11:40+06:00",
+      "result": "коммит e4d2765; 24 теста x 2 проекта: tests/monitoring-accuracy 32 passed, 1 failed, 15 skipped; весь набор 199 passed, 1 failed, 48 skipped. Баг: PUT /monitoring/lesson-marks с comment null или пустым -> 500, в UI отметка без комментария не сохраняется (AC-2.24)",
+      "next": "verifier (режим qa)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "qa",
+      "at": "2026-11-13T10:53+06:00",
+      "result": "подтверждено: tests/monitoring-accuracy 32 passed, 1 failed (dean AC-2.24), 15 skipped — как в отчёте; баг 1 воспроизведён pytest-ом: comment null, \"\" и \"   \" -> TypeError max_length (500), без поля -> 200; поправка: пробельный комментарий тоже 500; весь набор не перезапускал",
+      "next": "developer"
+    },
+    {
+      "agent": "developer",
+      "at": "2026-11-13T11:09+06:00",
+      "iteration": 2,
+      "result": "коммиты 4a5e05c, 50e440a, 931a22b: comment null/\"\"/пробелы в PUT /monitoring/lesson-marks -> 200 и null (max_length только на str), 501 символ -> 422; PATCH /non-working-days с null в start_date/end_date -> 422 (мелочь ревью №2); LateThresholdCard без key — «Сакталды» остаётся, проверка добавлена в e2e rector AC-2.22. pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed, 0 failed",
       "next": "verifier (режим developer)"
     }
   ]
