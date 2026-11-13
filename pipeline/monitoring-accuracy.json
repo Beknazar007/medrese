@@ -2,7 +2,7 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "reviewer",
+  "next": "verifier",
   "waiting_for": null,
   "review_iteration": 2,
   "verify_attempt": {
@@ -102,6 +102,19 @@
       "at": "2026-11-13T11:20+06:00",
       "result": "подтверждено: pytest 202 passed, lint 0 ошибок, build ok, e2e tests/monitoring-accuracy 33 passed / 15 skipped / 0 failed; на старом коде падают test_empty_comment_is_saved_as_null (3), test_invalid_update_is_422 и e2e AC-2.22; поправки: test_too_long_comment_is_422 проходит и на старом коде (страховка), в e2e не названы 15 skipped; замечания ревью 1 и 3 открыты (мелочи)",
       "next": "reviewer"
+    },
+    {
+      "agent": "reviewer",
+      "at": "2026-11-13T11:24+06:00",
+      "iteration": 2,
+      "result": "ОДОБРЕНО: блокеров 0, важных 0, мелочей 2 новых (№6 поле порога не синхронизируется с сервером без key; №7 networkidle в e2e AC-2.22). Исправления бага qa, мелочи №2 и «Сакталды» подтверждены. Мелочи №1 и №3 — отдельной задачей. pytest 202 passed, lint 0 ошибок, build ok",
+      "next": "qa"
+    },
+    {
+      "agent": "qa",
+      "at": "2026-11-13T11:42+06:00",
+      "result": "повторный прогон после исправлений: мелочь ревью №7 закрыта (rector AC-2.22 ждёт ответ GET /settings после PATCH вместо networkidle); tests/monitoring-accuracy 33 passed, 0 failed, 15 skipped (по устройству); весь набор 200 passed, 0 failed, 48 skipped; баг 1 (пустой комментарий отметки -> 500) больше не воспроизводится, новых багов нет",
+      "next": "verifier (режим qa)"
     }
   ]
 }

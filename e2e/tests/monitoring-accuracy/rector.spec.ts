@@ -36,13 +36,17 @@ const TODAY = bishkekToday();
 /** «Сактоо» next to the threshold; the server's answer is the proof, and «Сакталды» must stay on screen. */
 async function saveThreshold(page: Page, save: Locator, minutes: number) {
   const saved = page.waitForResponse((r) => r.url().endsWith("/settings") && r.request().method() === "PATCH");
+  // The save invalidates ["settings"]; the message used to vanish when that refetch remounted the form,
+  // so the check must come after this GET, not after an arbitrary "network idle".
+  const refetched = page.waitForResponse((r) => r.url().endsWith("/settings") && r.request().method() === "GET");
   await save.click();
   const res = await saved;
   expect(res.status()).toBe(200);
   expect((await res.json()).late_threshold_minutes).toBe(minutes);
+  const again = await refetched;
+  expect(again.status()).toBe(200);
+  expect((await again.json()).late_threshold_minutes).toBe(minutes);
   await expect(page.getByLabel(tr("timeslots.late_threshold"))).toHaveValue(String(minutes));
-  // Wait for the settings refetch after the save: the message used to vanish when the form remounted.
-  await page.waitForLoadState("networkidle");
   await expect(page.getByRole("alert").filter({ hasText: tr("common.saved") })).toBeVisible();
 }
 
