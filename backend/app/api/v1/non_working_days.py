@@ -48,15 +48,18 @@ def update_non_working_day(
     if day is None:
         raise HTTPException(status_code=404, detail="Non-working day not found")
     changes = payload.model_dump(exclude_unset=True)
+    # Every field is required on the record, so an explicit null is an error, not "leave as is".
     if "name" in changes and changes["name"] is None:
         raise HTTPException(status_code=422, detail="Name must not be empty")
+    for field in ("start_date", "end_date"):
+        if field in changes and changes[field] is None:
+            raise HTTPException(status_code=422, detail=f"{field} must not be empty")
     start = changes.get("start_date") or day.start_date
     end = changes.get("end_date") or day.end_date
     if end < start:
         raise HTTPException(status_code=422, detail="end_date must not be before start_date")
     for field, value in changes.items():
-        if value is not None:
-            setattr(day, field, value)
+        setattr(day, field, value)
     db.commit()
     db.refresh(day)
     return day

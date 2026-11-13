@@ -116,6 +116,10 @@ def test_invalid_update_is_422(db: Session, client_as):
     assert client.patch(f"{URL}/{day_id}", json={"start_date": "2027-03-23"}).status_code == 422
     assert client.patch(f"{URL}/{day_id}", json={"name": "  "}).status_code == 422
     assert client.patch(f"{URL}/{day_id}", json={"name": None}).status_code == 422
+    assert client.patch(f"{URL}/{day_id}", json={"start_date": None}).status_code == 422
+    assert client.patch(f"{URL}/{day_id}", json={"end_date": None}).status_code == 422
+    unchanged = client.get(URL).json()[0]
+    assert (unchanged["start_date"], unchanged["end_date"]) == ("2027-03-21", "2027-03-22")
 
 
 def test_dean_reads_but_cannot_change(db: Session, client_as):
