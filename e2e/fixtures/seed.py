@@ -8,7 +8,7 @@ Usage: DATABASE_URL=sqlite:///... python e2e/fixtures/seed.py
 import os
 import random
 import sys
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -183,7 +183,7 @@ with Session(engine) as db:
         prep_group = f.make_group(db, hafiz_dep, "Даярдоо 1")  # another department's ordinary group
         for name in ("Иманалиев Саид", "Жолдошев Бекзат"):
             f.make_student(db, group3, name)
-        f.make_student(db, prep_group, "Курманов Алым")
+        prep_student = f.make_student(db, prep_group, "Курманов Алым")
 
         extra_teachers = {}
         for username, full_name in (("teacher3", "Жээнбеков Канат"), ("teacher4", "Токтоматов Нурлан"),
@@ -235,6 +235,38 @@ with Session(engine) as db:
                         score=88))
         db.add(User(username="pwd_rector", hashed_password=hash_password(PASSWORD), role=UserRole.RECTOR,
                     must_change_password=True))
+
+        # monitoring-accuracy: a teacher of the dean's department whose lessons cover every case,
+        # so the tests don't depend on the random history above. Times go in as UTC (SQLite keeps
+        # the wall clock and the app reads it back as UTC). Entry A: an ordinary group, pair 3
+        # (11:00–12:20, half at 11:40) on d2; entry B: the hafiz group, pair 3 on d3.
+        t6 = f.make_teacher(db, hafiz_dep, "teacher6")
+        t6.full_name = "Бейшеев Тилек"
+        t6.user.must_change_password = False
+        e_t6 = f.make_schedule_entry(db, f.make_assignment(db, t6, tajwid, prep_group, sem), room1, slot3, d2)
+        e_t6_hifz = f.make_schedule_entry(db, f.make_assignment(db, t6, hifz_subject, hafiz_group, sem), room1, slot3, d3)
+
+        def utc(d: date, hh: int, mm: int) -> datetime:
+            return at(d, hh, mm).astimezone(timezone.utc)
+
+        def t6_session(entry, d: date, check_in: tuple[int, int], check_out: tuple[int, int], roster=()):
+            s = LessonSession(schedule_entry_id=entry.id, date=d, teacher_id=t6.id,
+                              teacher_checked_in_at=utc(d, *check_in), teacher_checked_out_at=utc(d, *check_out))
+            db.add(s)
+            db.flush()
+            for student in roster:
+                db.add(AttendanceRecord(session_id=s.id, student_id=student.id, status=AttendanceStatus.PRESENT))
+
+        a_dates, b_dates = past_dates(d2), past_dates(d3)
+        # 12 min late (late only with a threshold below 12), pupils marked, finished at 11:30 → early.
+        t6_session(e_t6, a_dates[0], (11, 12), (11, 30), [prep_student])
+        t6_session(e_t6, a_dates[1], (11, 1), (12, 20))  # no pupils marked
+        t6_session(e_t6, a_dates[2], (11, 1), (11, 20))  # no pupils marked and early: one attention lesson
+        # Hafiz lesson without attendance: within the last two weeks the group has hifz scores
+        # (not "pupils not marked"); three weeks back it has none (flagged).
+        t6_session(e_t6_hifz, b_dates[0], (11, 1), (12, 20))
+        t6_session(e_t6_hifz, b_dates[2], (11, 1), (12, 20))
+        # Every other date of both entries since the semester start is a missed lesson.
     db.commit()
 
 print(f"stand seeded for {today} ({dow_today.name})")
