@@ -83,3 +83,26 @@
 Поправки к отчёту: 1) было «новые тесты падают на старом коде» → на деле падают `test_empty_comment_is_saved_as_null` (3 варианта), `test_invalid_update_is_422` и e2e AC-2.22, а `test_too_long_comment_is_422` проходит и на старом коде (страховка от регрессии) · 2) было «e2e 33 passed, 0 failed» → полностью: 33 passed, 15 skipped (skip по `isMobile`, как у qa), 0 failed
 
 Для reviewer (итерация 2): замечания 1 и 3 из итерации 1 остаются открытыми. Решить, оставлять ли их отдельной задачей.
+
+## qa · попытка 1 (повторный прогон после исправлений) — 2026-11-13 — ПОДТВЕРЖДЕНО
+Перезапущено: `cd e2e && npx playwright test tests/monitoring-accuracy` на af9ca2c — 33 passed, 15 skipped, 0 failed (2,8 мин) · pytest четырёх тестов, на которые qa сослался вместо e2e, — 4 passed · весь e2e-набор не перезапускал (прогонит CI на PR)
+
+| Утверждение агента / пункт списка | Что увидел | Итог |
+|---|---|---|
+| 24 теста (rector 13, dean 5, teacher 3, hafiz 3) × 2 проекта = 48 | `test(` в файлах: 13 / 5 / 3 / 3; в прогоне 48 строк | ✓ |
+| Все AC 1.1–1.17, 2.1–2.30 в названиях тестов, кроме 1.2, 1.9, 1.14, 2.15 | в спеке 47 критериев; в названиях `test("AC-…")` — 43, разница ровно 1.2, 1.9, 1.14, 2.15; лишних номеров нет | ✓ |
+| 1.2, 1.9, 1.14, 2.15 покрыты pytest | `test_ended_pair_counts_as_missed`, `test_now_is_bishkek_not_utc`, `test_student_attendance_summary_clamped_to_semester_and_now` (test_monitoring_rules.py), `test_mark_follows_teacher_responsible_on_that_date` (test_lesson_marks.py) есть и проходят | ✓ |
+| tests/monitoring-accuracy — 33 passed, 0 failed, 15 skipped | 33 passed, 15 skipped, 0 failed. Пропуски: mobile — dean 2 и rector 10 (блок «компьютер»), desktop — rector 3 (блок «телефон»), все по `isMobile` с причиной | ✓ |
+| Весь набор — 200 passed, 0 failed, 48 skipped | не перезапускал (по заданию; проверит CI) | не удалось проверить: не запускался |
+| Мелочь ревью №7: networkidle заменён на ожидание PATCH и GET /settings со статусом 200 | дифф af9ca2c: `waitForResponse` PATCH и GET `/settings`, оба `status 200` и `late_threshold_minutes`, затем «Сакталды»; `networkidle` удалён. GET-ожидание создаётся до клика — гонки нет. AC-2.22 [desktop] прошёл | ✓ |
+| Нет test.only, test.fixme, безусловного skip, waitForTimeout, networkidle | grep: ни одного; три `test.skip(({ isMobile }) => …, "<причина>")` | ✓ |
+| Каждый тест что-то утверждает | `expect` в файлах: rector 141, dean 39, teacher 11, hafiz 12; teacher/hafiz-тесты вызывают общие проверки из `forbidden.ts`, где есть `expect` | ✓ |
+| Запреты: меню, прямой URL, API 403 | teacher, hafiz — `forbidden.ts` (нет пунктов меню, адреса уводят на /schedule или /hifz-journal, все адреса 403); dean — AC-1.16/2.25 (403 на журнал и отметки чужого отделения), AC-2.26, AC-2.27 (нет пункта меню, URL уводит, 403) | ✓ |
+| Тесты учителя и хафиза идут в `mobile` | в teacher.spec.ts и hafiz.spec.ts skip нет; в прогоне есть [mobile] и [desktop] | ✓ |
+| Изменения qa только в e2e/ (плюс pipeline/, reviews/) | e4d2765 — только e2e/ (включая `e2e/fixtures/seed.py`); af9ca2c — rector.spec.ts, pipeline/, reviews/; `git status` чистый | ✓ |
+| Баги: нет; AC-2.24 у декана проходит | dean AC-2.24 [desktop] — ok; упавших тестов нет | ✓ |
+| Адреса прода в тестах | `http(s)://`, onrender, pages.dev, neon — ни одного; стенд из playwright.config (localhost) | ✓ |
+| Самопроверка (проход 1) | строка есть, все ✓ | ✓ |
+
+Расхождения в работе: нет
+Поправки к отчёту: нет (весь набор 200/0/48 — со слов qa, не перепроверен; подтвердит CI на PR)

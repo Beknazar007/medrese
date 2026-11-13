@@ -2,8 +2,8 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "verifier",
-  "waiting_for": null,
+  "next": "release",
+  "waiting_for": "pr_merge",
   "review_iteration": 2,
   "verify_attempt": {
     "developer": 0,
@@ -115,6 +115,13 @@
       "at": "2026-11-13T11:42+06:00",
       "result": "повторный прогон после исправлений: мелочь ревью №7 закрыта (rector AC-2.22 ждёт ответ GET /settings после PATCH вместо networkidle); tests/monitoring-accuracy 33 passed, 0 failed, 15 skipped (по устройству); весь набор 200 passed, 0 failed, 48 skipped; баг 1 (пустой комментарий отметки -> 500) больше не воспроизводится, новых багов нет",
       "next": "verifier (режим qa)"
+    },
+    {
+      "agent": "verifier",
+      "mode": "qa",
+      "at": "2026-11-13T11:46+06:00",
+      "result": "подтверждено: tests/monitoring-accuracy 33 passed, 15 skipped (по isMobile), 0 failed; 43 AC в названиях e2e + 1.2, 1.9, 1.14, 2.15 в pytest (4 passed); мелочь ревью №7 закрыта; изменения qa только в e2e/; весь набор не перезапускал — проверит CI",
+      "next": "pr_merge → release"
     }
   ]
 }
