@@ -33,7 +33,7 @@ import {
 const ROLE = "rector" as const;
 const TODAY = bishkekToday();
 
-/** «Сактоо» next to the threshold; the server's answer is the proof (the form is redrawn with the new value). */
+/** «Сактоо» next to the threshold; the server's answer is the proof, and «Сакталды» must stay on screen. */
 async function saveThreshold(page: Page, save: Locator, minutes: number) {
   const saved = page.waitForResponse((r) => r.url().endsWith("/settings") && r.request().method() === "PATCH");
   await save.click();
@@ -41,6 +41,9 @@ async function saveThreshold(page: Page, save: Locator, minutes: number) {
   expect(res.status()).toBe(200);
   expect((await res.json()).late_threshold_minutes).toBe(minutes);
   await expect(page.getByLabel(tr("timeslots.late_threshold"))).toHaveValue(String(minutes));
+  // Wait for the settings refetch after the save: the message used to vanish when the form remounted.
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByRole("alert").filter({ hasText: tr("common.saved") })).toBeVisible();
 }
 
 /** «Күн» preset, waiting for today's figures. */

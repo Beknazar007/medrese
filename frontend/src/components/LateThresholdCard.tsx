@@ -72,8 +72,9 @@ export default function LateThresholdCard() {
   const { data } = useQuery({ queryKey: ["settings"], queryFn: settingsApi.get });
   return (
     <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-      {/* Mounted once the value is known, so the field starts with it instead of empty. */}
-      {data && <ThresholdForm key={data.late_threshold_minutes} initial={data.late_threshold_minutes} />}
+      {/* Mounted once the value is known, so the field starts with it instead of empty.
+          No key on the value: remounting after a save would wipe the "saved" message. */}
+      {data && <ThresholdForm initial={data.late_threshold_minutes} />}
     </Paper>
   );
 }
