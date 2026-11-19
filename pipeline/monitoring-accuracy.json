@@ -2,8 +2,8 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "publisher",
-  "waiting_for": "tag_confirm",
+  "next": "video-producer",
+  "waiting_for": "human_decision",
   "review_iteration": 2,
   "verify_attempt": {
     "developer": 0,
@@ -25,8 +25,18 @@
       "e2e/fixtures/seed.py",
       "e2e/playwright-report/"
     ],
-    "user_guide": [],
-    "scenario": null,
+    "user_guide": [
+      "docs/user-guide/rector.md",
+      "docs/user-guide/dean.md",
+      "docs/user-guide/index.md",
+      "docs/user-guide/features.md"
+    ],
+    "scenario": [
+      "videos/scenarios/dashboard.md",
+      "videos/scenarios/monitoring.md",
+      "videos/scenarios/timeslots.md",
+      "videos/scenarios/non-working-days.md"
+    ],
     "videos": null,
     "verify": "reviews/monitoring-accuracy.verify.md",
     "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)",
@@ -40,7 +50,16 @@
         "CHANGELOG.md"
       ],
       "tag": "v1.1.0 (не создан, ждёт подтверждения)"
-    }
+    },
+    "registry": "videos/registry.json",
+    "outdated_videos": [
+      "dashboard-rector-ky-v2",
+      "dashboard-rector-ru-v2",
+      "monitoring-rector-ky-v2",
+      "monitoring-rector-ru-v2",
+      "timeslots-rector-ky-v2",
+      "timeslots-rector-ru-v2"
+    ]
   },
   "history": [
     {
@@ -145,6 +164,36 @@
       "at": "2026-11-13T14:09+06:00",
       "result": "v1.1.0 (было v1.0.2), MINOR: нерабочие дни, отметки причин, порог опоздания, процент и «требует внимания». Ветка release/v1.1.0 от origin/main 12cd9be: версии в package.json/package-lock.json/pyproject.toml, секция CHANGELOG с предупреждением ректору о смене цифр. Миграция fbec5af838f4 — без ручных шагов, Render применяет сам. Коммит, пуш, PR и тег не выполнялись",
       "next": "tag_confirm → publisher (режим 2) → docs"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-19T12:00+06:00",
+      "result": "tag_confirm открыты: человек сказал «да»; PR #15 смержен, CI зелёный, тег v1.1.0 на e0140b3, Deploy (Cloudflare Pages) success",
+      "next": "publisher"
+    },
+    {
+      "agent": "publisher",
+      "at": "2026-11-19T12:30+06:00",
+      "result": "режим 2 (v1.1.0): outdated — dashboard-rector-ky/ru-v2 (удалён dashboard.top_missed_title, новые плитки), monitoring-rector-ky/ru-v2 (новые колонки, «Отметить причину»), timeslots-rector-ky/ru-v2 (карточка порога опоздания) — все три сценария к video-scriptwriter; нужен новый сценарий non-working-days. Пункт меню «Нерабочие дни» в остальных видео ректора — косметика, не помечены. Ничего не опубликовано, approved не менялся",
+      "next": "docs"
+    },
+    {
+      "agent": "docs",
+      "at": "2026-11-19T13:00+06:00",
+      "result": "v1.1.0: rector.md — «Главная страница и отчёт», «Проверить, проводят ли учителя уроки», новый «Отметить причину пропущенного урока», новый «1а. Нерабочие дни», «2. Звонки» (порог опоздания); новый dean.md (мониторинг кафедры, отметки, декан без кафедры); index.md — dean.md в оглавлении и «Что нового в v1.1.0» с предупреждением о смене цифр и прошедших праздниках; features.md — D1, D3, D3а, R1а, R3. teacher.md и hafiz-teacher.md не менялись (экраны не изменились). Религиозного контента нет",
+      "next": "video-scriptwriter"
+    },
+    {
+      "agent": "video-scriptwriter",
+      "at": "2026-11-19T13:30+06:00",
+      "result": "v1.1.0, rector, desktop, ky+ru: dashboard.md обновлён (~65 с: top_missed_title → lowest_percent_title, плитки «Пландалган», «Көңүл буруу керек», «Өткөрүлгөн %», период «Жыл»); monitoring.md обновлён (~100 с: колонки «Көңүл буруу керек» и «Өткөрүлгөн %», сортировка и цвета, «Себебин белгилөө» → радиокнопки причин, комментарий, «Өткөрүлгөн (белги боюнча)»; outro — пропуск только после конца пары, нерабочие дни); timeslots.md обновлён (~70 с: поле «Кечигүү босогосу, мүнөт» 15 → 10 и «Сакталды» до таблицы пар); новый non-working-days.md (~80 с: добавить «Кышкы каникул» 28–31.12.2026, изменить начало на 26.12, удалить с подтверждением). Все локаторы — @ключи из ky/ru.json. Религиозного контента нет; проверка носителем кыргызского — нужна",
+      "next": "video-producer"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-20T10:00+06:00",
+      "result": "решение: видео пока не записывать (расход ElevenLabs); закоммитить инструкции, сценарии, реестр и открыть PR. Запись 8 видео (dashboard, monitoring, timeslots, non-working-days × ky/ru) — по отдельной команде",
+      "next": "video-producer"
     }
   ]
 }
