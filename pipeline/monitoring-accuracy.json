@@ -2,15 +2,15 @@
   "feature": "monitoring-accuracy",
   "title": "Точный мониторинг учителей",
   "branch": "feature/monitoring-accuracy",
-  "next": "release",
-  "waiting_for": "pr_merge",
+  "next": "publisher",
+  "waiting_for": "tag_confirm",
   "review_iteration": 2,
   "verify_attempt": {
     "developer": 0,
     "qa": 0,
     "video-producer": 0
   },
-  "version": null,
+  "version": "1.1.0",
   "artifacts": {
     "spec": "specs/monitoring-accuracy.md",
     "plan": "specs/monitoring-accuracy.plan.md",
@@ -29,7 +29,18 @@
     "scenario": null,
     "videos": null,
     "verify": "reviews/monitoring-accuracy.verify.md",
-    "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)"
+    "code": "branch feature/monitoring-accuracy (backend/, frontend/src/, e2e/fixtures/seed.py)",
+    "release": {
+      "branch": "release/v1.1.0",
+      "changelog": "CHANGELOG.md",
+      "files": [
+        "frontend/package.json",
+        "frontend/package-lock.json",
+        "backend/pyproject.toml",
+        "CHANGELOG.md"
+      ],
+      "tag": "v1.1.0 (не создан, ждёт подтверждения)"
+    }
   },
   "history": [
     {
@@ -122,6 +133,18 @@
       "at": "2026-11-13T11:46+06:00",
       "result": "подтверждено: tests/monitoring-accuracy 33 passed, 15 skipped (по isMobile), 0 failed; 43 AC в названиях e2e + 1.2, 1.9, 1.14, 2.15 в pytest (4 passed); мелочь ревью №7 закрыта; изменения qa только в e2e/; весь набор не перезапускал — проверит CI",
       "next": "pr_merge → release"
+    },
+    {
+      "agent": "human",
+      "at": "2026-11-13T12:00+06:00",
+      "result": "pr_merge открыты: PR #14 смержен в main (и PR #13)",
+      "next": "release"
+    },
+    {
+      "agent": "release",
+      "at": "2026-11-13T14:09+06:00",
+      "result": "v1.1.0 (было v1.0.2), MINOR: нерабочие дни, отметки причин, порог опоздания, процент и «требует внимания». Ветка release/v1.1.0 от origin/main 12cd9be: версии в package.json/package-lock.json/pyproject.toml, секция CHANGELOG с предупреждением ректору о смене цифр. Миграция fbec5af838f4 — без ручных шагов, Render применяет сам. Коммит, пуш, PR и тег не выполнялись",
+      "next": "tag_confirm → publisher (режим 2) → docs"
     }
   ]
 }
